@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="Jotty Logo" width="100"> 
+  <img src="assets/logo_readme.png" alt="Jotty Logo" width="100"> 
   <br />
   <h1 align="center">JotTick</h1><br/>
 </p>
