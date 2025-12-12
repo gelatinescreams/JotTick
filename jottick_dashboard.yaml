@@ -1,0 +1,1813 @@
+title: Notes
+icon: mdi:notebook
+views:
+  - title: Notes
+    path: notes
+    icon: mdi:note-text
+    sections:
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .create-note-form { padding: 16px; }
+                .create-note-form h3 { margin: 0 0 12px 0; color: var(--primary-text-color); }
+                .create-note-form input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--divider-color); border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
+                .create-note-form textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--divider-color); border-radius: 6px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
+                .create-note-form button { padding: 10px 20px; background: var(--primary-color); color: var(--text-primary-color, white); border: none; border-radius: 6px; cursor: pointer; font-size: 1em; margin-top: 10px; }
+                .create-note-form button:hover { opacity: 0.9; }
+              </style>
+              <div class="create-note-form">
+                <h3>New Note</h3>
+                <input type="text" class="new-note-title" placeholder="Title">
+                <textarea class="new-note-content" placeholder="Content (no character limit)"></textarea>
+                <button onclick="(function(btn){var p=btn.parentElement;var t=p.querySelector('.new-note-title').value;var c=p.querySelector('.new-note-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Creating...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','create_note',{title:t,content:c});}p.querySelector('.new-note-title').value='';p.querySelector('.new-note-content').value='';setTimeout(function(){btn.disabled=false;btn.textContent='Create';},1500);})(this);">Create</button>
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                @keyframes slideDown { from {top:40px;opacity:0;} to {top:60px;opacity:1;} }
+                #jottick-loading {
+                  display:none;
+                  position:fixed;
+                  top:60px;
+                  left:50%;
+                  transform:translateX(-50%);
+                  z-index:9999;
+                  background:var(--primary-color);
+                  color:var(--text-primary-color, white);
+                  padding:12px 24px;
+                  border-radius:8px;
+                  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                  font-weight:600;
+                  animation:slideDown 0.3s ease;
+                }
+                .notes-container { padding: 4px; }
+                .note-card {
+                  background: var(--ha-card-background));
+                  border: 1px solid var(--divider-color, var(--divider-color));
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 16px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  transition: box-shadow 0.2s;
+                }
+                .note-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+                .note-title {
+                  font-size: 1.4em;
+                  font-weight: 600;
+                  color: var(--primary-text-color);
+                  margin-bottom: 12px;
+                  padding-bottom: 8px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .note-content {
+                  color: var(--primary-text-color);
+                  margin-bottom: 12px;
+                  white-space: pre-wrap;
+                  line-height: 1.6;
+                  font-size: 1em;
+                }
+                .note-timestamp {
+                  font-size: 0.85em;
+                  color: var(--secondary-text-color);
+                  font-style: italic;
+                  text-align: right;
+                }
+                .note-send-section, .note-edit-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: var(--secondary-background-color);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 8px;
+                  display: none;
+                }
+                .note-send-section.show, .note-edit-section.show { display: block; }
+                .note-send-section h4, .note-edit-section h4 { margin: 0 0 12px 0; color: var(--primary-text-color); }
+                .send-targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+                .send-targets label { display: flex; align-items: center; gap: 4px; font-size: 0.9em; cursor: pointer; }
+                .send-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .note-edit-section input[type="text"] { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
+                .note-edit-section textarea { width: 100%; min-height: 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
+                .note-edit-section .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+                .note-edit-section .edit-save-btn { padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .note-edit-section .edit-cancel-btn { padding: 8px 16px; background: var(--card-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; }
+              </style>
+              <div id="jottick-loading">Loading...</div>
+              <script>
+                (function checkLoading(){
+                  var banner=document.getElementById('jottick-loading');
+                  if(banner){
+                    var el=document.querySelector('home-assistant');
+                    if(el&&el.hass&&el.hass.states['input_boolean.jottick_is_loading']){
+                      var state=el.hass.states['input_boolean.jottick_is_loading'].state;
+                      banner.style.display=state==='on'?'block':'none';
+                    }
+                  }
+                  setTimeout(checkLoading,300);
+                })();
+              </script>
+              <div class="notes-container">
+                {% set ns = namespace(count=0, notes=[]) %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Note:') and state.state != 'unavailable' %}
+                    {% set ns.notes = ns.notes + [state] %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.notes | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is odd %}
+                    {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    <div class="note-card">
+                      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}</div>
+                        <div style="display:flex;gap:4px;">
+                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
+                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                        </div>
+                      </div>
+                      <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      <div class="note-timestamp">
+                        Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
+                      </div>
+                      <div class="note-send-section">
+                        <h4>Send Note To :</h4>
+                        <div class="send-targets">
+                          {% for n in notifiers %}{% if n != 'Nobody' %}
+                          <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                          {% endif %}{% endfor %}
+                        </div>
+                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                      </div>
+                      <div class="note-edit-section">
+                        <h4>Edit Note</h4>
+                        <input type="text" class="edit-title" value="{{ state.state }}" placeholder="Title">
+                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') }}</textarea>
+                        <div class="edit-actions">
+                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .notes-container { padding: 4px; }
+                .note-card {
+                  background: var(--ha-card-background));
+                  border: 1px solid var(--divider-color, var(--divider-color));
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 16px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  transition: box-shadow 0.2s;
+                }
+                .note-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+                .note-title {
+                  font-size: 1.4em;
+                  font-weight: 600;
+                  color: var(--primary-text-color);
+                  margin-bottom: 12px;
+                  padding-bottom: 8px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .note-content {
+                  color: var(--primary-text-color);
+                  margin-bottom: 12px;
+                  white-space: pre-wrap;
+                  line-height: 1.6;
+                  font-size: 1em;
+                }
+                .note-timestamp {
+                  font-size: 0.85em;
+                  color: var(--secondary-text-color);
+                  font-style: italic;
+                  text-align: right;
+                }
+                .note-send-section, .note-edit-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: var(--secondary-background-color);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 8px;
+                  display: none;
+                }
+                .note-send-section.show, .note-edit-section.show { display: block; }
+                .note-send-section h4, .note-edit-section h4 { margin: 0 0 12px 0; color: var(--primary-text-color); }
+                .send-targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+                .send-targets label { display: flex; align-items: center; gap: 4px; font-size: 0.9em; cursor: pointer; }
+                .send-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .note-edit-section input[type="text"] { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
+                .note-edit-section textarea { width: 100%; min-height: 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
+                .note-edit-section .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+                .note-edit-section .edit-save-btn { padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .note-edit-section .edit-cancel-btn { padding: 8px 16px; background: var(--card-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; }
+              </style>
+              <div class="notes-container">
+                {% set ns = namespace(count=0, notes=[]) %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Note:') and state.state != 'unavailable' %}
+                    {% set ns.notes = ns.notes + [state] %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.notes | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is even %}
+                    {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    <div class="note-card">
+                      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}</div>
+                        <div style="display:flex;gap:4px;">
+                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
+                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                        </div>
+                      </div>
+                      <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      <div class="note-timestamp">
+                        Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
+                      </div>
+                      <div class="note-send-section">
+                        <h4>Send Note To :</h4>
+                        <div class="send-targets">
+                          {% for n in notifiers %}{% if n != 'Nobody' %}
+                          <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                          {% endif %}{% endfor %}
+                        </div>
+                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                      </div>
+                      <div class="note-edit-section">
+                        <h4>Edit Note</h4>
+                        <input type="text" class="edit-title" value="{{ state.state }}" placeholder="Title">
+                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') }}</textarea>
+                        <div class="edit-actions">
+                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+  - title: Lists
+    path: lists
+    icon: mdi:format-list-checks
+    sections:
+      - type: grid
+        cards:
+          - type: entities
+            title: New List
+            entities:
+              - entity: input_text.jottick_checklist_title
+                name: Title
+            footer:
+              type: buttons
+              entities:
+                - entity: script.jottick_create_checklist
+                  name: Create
+                  icon: mdi:plus-circle
+            grid_options:
+              columns: full
+              rows: auto
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                @keyframes slideDown { from {top:40px;opacity:0;} to {top:60px;opacity:1;} }
+                #jottick-loading-lists {
+                  display:none;
+                  position:fixed;
+                  top:60px;
+                  left:50%;
+                  transform:translateX(-50%);
+                  z-index:9999;
+                  background:var(--success-color);
+                  color:var(--text-primary-color, white);
+                  padding:12px 24px;
+                  border-radius:8px;
+                  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                  font-weight:600;
+                  animation:slideDown 0.3s ease;
+                }
+                .lists-container { padding: 4px; }
+                .list-card {
+                  background: var(--ha-card-background));
+                  border: 1px solid var(--divider-color, var(--divider-color));
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                .list-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                  padding-bottom: 12px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .list-title { font-size: 1.4em; font-weight: 600; color: var(--primary-text-color); }
+                .list-progress {
+                  font-size: 0.9em;
+                  background:var(--primary-color);
+                  color: white;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                }
+                .list-items { margin-top: 12px; }
+                .list-item {
+                  display: flex;
+                  align-items: center;
+                  padding: 8px;
+                  margin-bottom: 8px;
+                  background: var(--secondary-background-color, var(--secondary-background-color));
+                  border-radius: 8px;
+                  gap: 12px;
+                  transition: opacity 0.2s;
+                }
+                .list-item:hover { background: var(--divider-color, var(--divider-color)); }
+                .item-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
+                .item-checkbox:disabled { cursor: wait; }
+                .item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
+                .item-text.completed { text-decoration: line-through; opacity: 0.6; }
+                .add-item-section {
+                  margin-top: 16px;
+                  padding-top: 12px;
+                  border-top: 1px solid var(--divider-color);
+                  display: flex;
+                  gap: 8px;
+                }
+                .add-item-input {
+                  flex-grow: 1;
+                  padding: 8px 12px;
+                  border: 1px solid var(--divider-color);
+                  border-radius: 4px;
+                  background: var(--card-background-color);
+                  color: var(--primary-text-color);
+                  font-size: 1em;
+                }
+                .add-item-btn {
+                  padding: 8px 16px;
+                  background: var(--primary-color);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                }
+                .add-item-btn:hover { opacity: 0.9; }
+                .add-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+                .delete-list-btn {
+                  padding: 4px 12px;
+                  background: var(--error-color, #ff5555);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.85em;
+                }
+                .reminder-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .reminder-btn:hover { background: var(--primary-color-translucent, rgba(156,39,176,0.1)); }
+                .reminder-btn.active { color: var(--primary-color); }
+                .reminder-btn.inactive { opacity: 0.4; }
+                .recurring-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .recurring-btn:hover { background: var(--success-color-translucent, rgba(76,175,80,0.1)); }
+                .recurring-btn.active { color: var(--success-color); }
+                .recurring-btn.inactive { opacity: 0.4; }
+                .recurring-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--success-color-translucent, rgba(76,175,80,0.1)), var(--success-color-translucent, rgba(56,142,60,0.1)));
+                  border: 1px solid var(--success-color-translucent, rgba(76,175,80,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .recurring-section.show { display: block; }
+                .recurring-section h4 { margin: 0 0 12px 0; color: var(--success-color); }
+                .header-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+                .reminder-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--primary-color-translucent, rgba(156,39,176,0.1)), var(--primary-color-translucent, rgba(103,58,183,0.1)));
+                  border: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .reminder-section.show { display: block; }
+                .reminder-section h4 { margin: 0 0 12px 0; color: var(--text-primary-color, #fff); }
+                .reminder-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+                .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
+                .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+                .reminder-row select { min-width: 120px; }
+                .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
+                .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
+              </style>
+              <div id="jottick-loading-lists">Loading...</div>
+              <script>
+                (function checkLoading(){
+                  var banner=document.getElementById('jottick-loading-lists');
+                  if(banner){
+                    var el=document.querySelector('home-assistant');
+                    if(el&&el.hass&&el.hass.states['input_boolean.jottick_is_loading']){
+                      var state=el.hass.states['input_boolean.jottick_is_loading'].state;
+                      banner.style.display=state==='on'?'block':'none';
+                    }
+                  }
+                  setTimeout(checkLoading,300);
+                })();
+              </script>
+              <div class="lists-container">
+                {% set ns = namespace(count=0, lists=[]) %}
+                {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
+                {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick List:') and state.state != 'unavailable' %}
+                    {% set list_type = state_attr(state.entity_id, 'type') %}
+                    {% if list_type != 'task' %}
+                      {% set ns.lists = ns.lists + [state] %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.lists | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is odd %}
+                    {% set list_id = state_attr(state.entity_id, 'checklist_id') %}
+                    {% set list_title = state_attr(state.entity_id, 'title') %}
+                    {% set items = state_attr(state.entity_id, 'items') or [] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') %}
+                    {% set total = state_attr(state.entity_id, 'total') %}
+                    {% set has_reminder = reminder_configs is mapping and list_id in reminder_configs %}
+                    {% set has_recurring = recurring_configs is mapping and list_id in recurring_configs %}
+                    {% set config = reminder_configs.get(list_id, {}) if reminder_configs is mapping else {} %}
+                    {% set rec_config = recurring_configs.get(list_id, {}) if recurring_configs is mapping else {} %}
+                    <div class="list-card">
+                      <div class="list-header">
+                        <div class="list-title">{{ list_title }}</div>
+                        <div class="header-actions">
+                          <button class="reminder-btn {{ 'active' if has_reminder else 'inactive' }}" title="{{ 'Edit reminder' if has_reminder else 'Add reminder' }}" onclick="(function(btn){var panel=btn.closest('.list-card').querySelector('.reminder-section');if(panel){panel.classList.toggle('show');}})(this);">Remind</button>
+                          <button class="recurring-btn {{ 'active' if has_recurring else 'inactive' }}" title="{{ 'Edit recurring reset' if has_recurring else 'Add recurring reset' }}" onclick="(function(btn){var panel=btn.closest('.list-card').querySelector('.recurring-section');if(panel){panel.classList.toggle('show');}})(this);">Recurring</button>
+                          <div class="list-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      <div class="list-items">
+                        {% for item in items %}
+                          <div class="list-item">
+                            <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                            <span class="item-text {{ 'completed' if item.completed else '' }}">{{ item.text }}</span>
+                            <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <div class="add-item-section">
+                        <input type="text" class="add-item-input" placeholder="Add new item...">
+                        <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
+                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                      </div>
+                      <div class="reminder-section">
+                        <h4>Reminder Notifications</h4>
+                        <div class="reminder-row" style="flex-direction:column;align-items:flex-start;">
+                          <label>Notify:</label>
+                          <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                            {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
+                            {% for n in notifiers %}{% if n != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% endif %}{% endfor %}
+                          </div>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Every:</label>
+                          <select class="r-interval">
+                            {% for iv in ['30 minutes','1 hour','2 hours','4 hours','8 hours','12 hours','Once a day'] %}<option value="{{ iv }}" {{ 'selected' if config.get('interval','1 hour')==iv else '' }}>{{ iv }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="r-days">
+                            <option value="weekdays" {{ 'selected' if config.get('days','weekdays')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if config.get('days','weekdays')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if config.get('days','weekdays')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Title:</label>
+                          <input type="text" class="r-title" placeholder="List/Task name" value="{{ config.get('custom_title','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>Message:</label>
+                          <input type="text" class="r-message" placeholder="X item(s) remaining" value="{{ config.get('custom_message','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>From:</label>
+                          <input type="time" class="r-start" value="{{ config.get('start','09:00') }}">
+                          <label>To:</label>
+                          <input type="time" class="r-end" value="{{ config.get('end','21:00') }}">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" onclick="(function(btn){var sec=btn.closest('.reminder-section');var t=Array.from(sec.querySelectorAll('.r-target-cb:checked')).map(cb=>cb.value).join(',');if(!t){alert('Select at least one device');return;}var i=sec.querySelector('.r-interval').value;var d=sec.querySelector('.r-days').value;var s=sec.querySelector('.r-start').value;var e=sec.querySelector('.r-end').value;var ti=sec.querySelector('.r-title').value;var m=sec.querySelector('.r-message').value;btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_reminder_inline',{item_id:'{{ list_id }}',item_type:'checklist',target:t,interval:i,days:d,start_time:s,end_time:e,custom_title:ti,custom_message:m});}setTimeout(function(){btn.disabled=false;btn.textContent='Save Notification';sec.classList.remove('show');},1500);})(this);">Save Notification</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove reminder?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_reminder_inline',{item_id:'{{ list_id }}'});}var sec=btn.closest('.reminder-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                      <div class="recurring-section">
+                        <h4>Daily Reset</h4>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="rec-days">
+                            <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Preset:</label>
+                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                            <option value="custom">Custom...</option>
+                            <optgroup label="Once Daily">
+                              <option value="05:00">5:00 AM</option>
+                              <option value="06:00">6:00 AM</option>
+                              <option value="07:00">7:00 AM</option>
+                              <option value="08:00">8:00 AM</option>
+                              <option value="09:00">9:00 AM</option>
+                              <option value="12:00">12:00 PM</option>
+                              <option value="18:00">6:00 PM</option>
+                              <option value="21:00">9:00 PM</option>
+                              <option value="00:00">12:00 AM (midnight)</option>
+                            </optgroup>
+                            <optgroup label="Twice Daily">
+                              <option value="06:00, 18:00">6:00 AM, 6:00 PM</option>
+                              <option value="06:00, 21:00">6:00 AM, 9:00 PM</option>
+                              <option value="08:00, 20:00">8:00 AM, 8:00 PM</option>
+                              <option value="09:00, 17:00">9:00 AM, 5:00 PM</option>
+                              <option value="09:00, 21:00">9:00 AM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Three Times Daily">
+                              <option value="06:00, 12:00, 18:00">6:00 AM, 12:00 PM, 6:00 PM</option>
+                              <option value="06:00, 12:00, 21:00">6:00 AM, 12:00 PM, 9:00 PM</option>
+                              <option value="07:00, 12:00, 19:00">7:00 AM, 12:00 PM, 7:00 PM</option>
+                              <option value="08:00, 14:00, 20:00">8:00 AM, 2:00 PM, 8:00 PM</option>
+                              <option value="09:00, 15:00, 21:00">9:00 AM, 3:00 PM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Frequent">
+                              <option value="06:00, 14:00, 22:00">Every 8 hours (6 AM, 2 PM, 10 PM)</option>
+                              <option value="06:00, 12:00, 18:00, 00:00">Every 6 hours (6 AM, 12 PM, 6 PM, 12 AM)</option>
+                              <option value="06:00, 10:00, 14:00, 18:00, 22:00">Every 4 hours (6 AM - 10 PM)</option>
+                              <option value="06:00, 09:00, 12:00, 15:00, 18:00, 21:00">Every 3 hours (6 AM - 9 PM)</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
+                          <label>Times:</label>
+                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .lists-container { padding: 4px; }
+                .list-card {
+                  background: var(--ha-card-background));
+                  border: 1px solid var(--divider-color, var(--divider-color));
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                .list-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                  padding-bottom: 12px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .list-title { font-size: 1.4em; font-weight: 600; color: var(--primary-text-color); }
+                .list-progress {
+                  font-size: 0.9em;
+                  background: var(--primary-color);
+                  color: white;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                }
+                .list-items { margin-top: 12px; }
+                .list-item {
+                  display: flex;
+                  align-items: center;
+                  padding: 8px;
+                  margin-bottom: 8px;
+                  background: var(--secondary-background-color, var(--secondary-background-color));
+                  border-radius: 8px;
+                  gap: 12px;
+                  transition: opacity 0.2s;
+                }
+                .list-item:hover { background: var(--divider-color, var(--divider-color)); }
+                .item-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
+                .item-checkbox:disabled { cursor: wait; }
+                .item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
+                .item-text.completed { text-decoration: line-through; opacity: 0.6; }
+                .add-item-section {
+                  margin-top: 16px;
+                  padding-top: 12px;
+                  border-top: 1px solid var(--divider-color);
+                  display: flex;
+                  gap: 8px;
+                }
+                .add-item-input {
+                  flex-grow: 1;
+                  padding: 8px 12px;
+                  border: 1px solid var(--divider-color);
+                  border-radius: 4px;
+                  background: var(--card-background-color);
+                  color: var(--primary-text-color);
+                  font-size: 1em;
+                }
+                .add-item-btn {
+                  padding: 8px 16px;
+                  background: var(--primary-color);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.9em;
+                }
+                .add-item-btn:hover { opacity: 0.9; }
+                .add-item-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+                .delete-list-btn {
+                  padding: 4px 12px;
+                  background: var(--error-color, #ff5555);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.85em;
+                }
+                .reminder-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .reminder-btn:hover { background: var(--primary-color-translucent, rgba(156,39,176,0.1)); }
+                .reminder-btn.active { color: var(--primary-color); }
+                .reminder-btn.inactive { opacity: 0.4; }
+                .recurring-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .recurring-btn:hover { background: var(--success-color-translucent, rgba(76,175,80,0.1)); }
+                .recurring-btn.active { color: var(--success-color); }
+                .recurring-btn.inactive { opacity: 0.4; }
+                .recurring-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--success-color-translucent, rgba(76,175,80,0.1)), var(--success-color-translucent, rgba(56,142,60,0.1)));
+                  border: 1px solid var(--success-color-translucent, rgba(76,175,80,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .recurring-section.show { display: block; }
+                .recurring-section h4 { margin: 0 0 12px 0; color: var(--success-color); }
+                .header-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+                .reminder-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--primary-color-translucent, rgba(156,39,176,0.1)), var(--primary-color-translucent, rgba(103,58,183,0.1)));
+                  border: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .reminder-section.show { display: block; }
+                .reminder-section h4 { margin: 0 0 12px 0; color: var(--text-primary-color, #fff); }
+                .reminder-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+                .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
+                .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+                .reminder-row select { min-width: 120px; }
+                .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
+                .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
+              </style>
+              <div class="lists-container">
+                {% set ns = namespace(count=0, lists=[]) %}
+                {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
+                {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick List:') and state.state != 'unavailable' %}
+                    {% set list_type = state_attr(state.entity_id, 'type') %}
+                    {% if list_type != 'task' %}
+                      {% set ns.lists = ns.lists + [state] %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.lists | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is even %}
+                    {% set list_id = state_attr(state.entity_id, 'checklist_id') %}
+                    {% set list_title = state_attr(state.entity_id, 'title') %}
+                    {% set items = state_attr(state.entity_id, 'items') or [] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') %}
+                    {% set total = state_attr(state.entity_id, 'total') %}
+                    {% set has_reminder = reminder_configs is mapping and list_id in reminder_configs %}
+                    {% set has_recurring = recurring_configs is mapping and list_id in recurring_configs %}
+                    {% set config = reminder_configs.get(list_id, {}) if reminder_configs is mapping else {} %}
+                    {% set rec_config = recurring_configs.get(list_id, {}) if recurring_configs is mapping else {} %}
+                    <div class="list-card">
+                      <div class="list-header">
+                        <div class="list-title">{{ list_title }}</div>
+                        <div class="header-actions">
+                          <button class="reminder-btn {{ 'active' if has_reminder else 'inactive' }}" title="{{ 'Edit reminder' if has_reminder else 'Add reminder' }}" onclick="(function(btn){var panel=btn.closest('.list-card').querySelector('.reminder-section');if(panel){panel.classList.toggle('show');}})(this);">Remind</button>
+                          <button class="recurring-btn {{ 'active' if has_recurring else 'inactive' }}" title="{{ 'Edit recurring reset' if has_recurring else 'Add recurring reset' }}" onclick="(function(btn){var panel=btn.closest('.list-card').querySelector('.recurring-section');if(panel){panel.classList.toggle('show');}})(this);">Reset</button>
+                          <div class="list-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      <div class="list-items">
+                        {% for item in items %}
+                          <div class="list-item">
+                            <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                            <span class="item-text {{ 'completed' if item.completed else '' }}">{{ item.text }}</span>
+                            <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <div class="add-item-section">
+                        <input type="text" class="add-item-input" placeholder="Add new item...">
+                        <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
+                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                      </div>
+                      <div class="reminder-section">
+                        <h4>Reminder Notifications</h4>
+                        <div class="reminder-row" style="flex-direction:column;align-items:flex-start;">
+                          <label>Notify:</label>
+                          <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                            {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
+                            {% for n in notifiers %}{% if n != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% endif %}{% endfor %}
+                          </div>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Every:</label>
+                          <select class="r-interval">
+                            {% for iv in ['30 minutes','1 hour','2 hours','4 hours','8 hours','12 hours','Once a day'] %}<option value="{{ iv }}" {{ 'selected' if config.get('interval','1 hour')==iv else '' }}>{{ iv }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="r-days">
+                            <option value="weekdays" {{ 'selected' if config.get('days','weekdays')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if config.get('days','weekdays')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if config.get('days','weekdays')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Title:</label>
+                          <input type="text" class="r-title" placeholder="List/Task name" value="{{ config.get('custom_title','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>Message:</label>
+                          <input type="text" class="r-message" placeholder="X item(s) remaining" value="{{ config.get('custom_message','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>From:</label>
+                          <input type="time" class="r-start" value="{{ config.get('start','09:00') }}">
+                          <label>To:</label>
+                          <input type="time" class="r-end" value="{{ config.get('end','21:00') }}">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" onclick="(function(btn){var sec=btn.closest('.reminder-section');var t=Array.from(sec.querySelectorAll('.r-target-cb:checked')).map(cb=>cb.value).join(',');if(!t){alert('Select at least one device');return;}var i=sec.querySelector('.r-interval').value;var d=sec.querySelector('.r-days').value;var s=sec.querySelector('.r-start').value;var e=sec.querySelector('.r-end').value;var ti=sec.querySelector('.r-title').value;var m=sec.querySelector('.r-message').value;btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_reminder_inline',{item_id:'{{ list_id }}',item_type:'checklist',target:t,interval:i,days:d,start_time:s,end_time:e,custom_title:ti,custom_message:m});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove reminder?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_reminder_inline',{item_id:'{{ list_id }}'});}var sec=btn.closest('.reminder-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                      <div class="recurring-section">
+                        <h4>Daily Reset</h4>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="rec-days">
+                            <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Preset:</label>
+                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                            <option value="custom">Custom...</option>
+                            <optgroup label="Once Daily">
+                              <option value="05:00">5:00 AM</option>
+                              <option value="06:00">6:00 AM</option>
+                              <option value="07:00">7:00 AM</option>
+                              <option value="08:00">8:00 AM</option>
+                              <option value="09:00">9:00 AM</option>
+                              <option value="12:00">12:00 PM</option>
+                              <option value="18:00">6:00 PM</option>
+                              <option value="21:00">9:00 PM</option>
+                              <option value="00:00">12:00 AM (midnight)</option>
+                            </optgroup>
+                            <optgroup label="Twice Daily">
+                              <option value="06:00, 18:00">6:00 AM, 6:00 PM</option>
+                              <option value="06:00, 21:00">6:00 AM, 9:00 PM</option>
+                              <option value="08:00, 20:00">8:00 AM, 8:00 PM</option>
+                              <option value="09:00, 17:00">9:00 AM, 5:00 PM</option>
+                              <option value="09:00, 21:00">9:00 AM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Three Times Daily">
+                              <option value="06:00, 12:00, 18:00">6:00 AM, 12:00 PM, 6:00 PM</option>
+                              <option value="06:00, 12:00, 21:00">6:00 AM, 12:00 PM, 9:00 PM</option>
+                              <option value="07:00, 12:00, 19:00">7:00 AM, 12:00 PM, 7:00 PM</option>
+                              <option value="08:00, 14:00, 20:00">8:00 AM, 2:00 PM, 8:00 PM</option>
+                              <option value="09:00, 15:00, 21:00">9:00 AM, 3:00 PM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Frequent">
+                              <option value="06:00, 14:00, 22:00">Every 8 hours (6 AM, 2 PM, 10 PM)</option>
+                              <option value="06:00, 12:00, 18:00, 00:00">Every 6 hours (6 AM, 12 PM, 6 PM, 12 AM)</option>
+                              <option value="06:00, 10:00, 14:00, 18:00, 22:00">Every 4 hours (6 AM - 10 PM)</option>
+                              <option value="06:00, 09:00, 12:00, 15:00, 18:00, 21:00">Every 3 hours (6 AM - 9 PM)</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
+                          <label>Times:</label>
+                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+  - title: Tasks
+    path: tasks
+    icon: mdi:clipboard-list
+    sections:
+      - type: grid
+        cards:
+          - type: entities
+            title: New Task List
+            entities:
+              - entity: input_text.jottick_task_title
+                name: Title
+            footer:
+              type: buttons
+              entities:
+                - entity: script.jottick_create_task
+                  name: Create
+                  icon: mdi:plus-circle
+            grid_options:
+              columns: full
+              rows: auto
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                @keyframes slideDown { from {top:40px;opacity:0;} to {top:60px;opacity:1;} }
+                #jottick-loading-tasks {
+                  display:none;
+                  position:fixed;
+                  top:60px;
+                  left:50%;
+                  transform:translateX(-50%);
+                  z-index:9999;
+                  background:var(--primary-color);
+                  color:var(--text-primary-color, white);
+                  padding:12px 24px;
+                  border-radius:8px;
+                  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                  font-weight:600;
+                  animation:slideDown 0.3s ease;
+                }
+                .tasks-container { padding: 4px; }
+                .task-card {
+                  background: var(--ha-card-background));
+                  border: 1px solid var(--divider-color, var(--divider-color));
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                .task-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                  padding-bottom: 12px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .task-title { font-size: 1.4em; font-weight: 600; color: var(--primary-text-color); }
+                .task-progress {
+                  font-size: 0.9em;
+                  background: var(--primary-color);
+                  color: white;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                }
+                .task-items { margin-top: 12px; }
+                .task-item {
+                  display: flex;
+                  align-items: center;
+                  padding: 8px;
+                  margin-bottom: 4px;
+                  background: var(--secondary-background-color, var(--secondary-background-color));
+                  border-radius: 8px;
+                  gap: 8px;
+                }
+                .task-item:hover { background: var(--divider-color, var(--divider-color)); }
+                .task-item.depth-0 { margin-left: 0; border-left: 3px solid var(--success-color); }
+                .task-item.depth-1 { margin-left: 30px; border-left: 3px solid var(--primary-color); }
+                .task-item.depth-2 { margin-left: 60px; border-left: 3px solid var(--warning-color); }
+                .task-item.depth-3 { margin-left: 90px; border-left: 3px solid var(--info-color); }
+                .task-item.depth-4 { margin-left: 120px; border-left: 3px solid var(--accent-color); }
+                .task-item.depth-5 { margin-left: 150px; border-left: 3px solid var(--primary-color); }
+                .task-item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
+                .task-item-text.completed { text-decoration: line-through; opacity: 0.6; }
+                .task-status-select {
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                  border: 1px solid var(--divider-color);
+                  background: var(--card-background-color);
+                  color: var(--primary-text-color);
+                  font-size: 0.85em;
+                  cursor: pointer;
+                }
+                .delete-item-btn {
+                  padding: 2px 8px;
+                  background: var(--error-color, #ff5555);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.8em;
+                }
+                .add-sub-btn {
+                  padding: 2px 6px;
+                  background: var(--primary-color);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 0.75em;
+                }
+                .add-task-section {
+                  margin-top: 16px;
+                  padding-top: 12px;
+                  border-top: 1px solid var(--divider-color);
+                  display: flex;
+                  gap: 8px;
+                  flex-wrap: wrap;
+                }
+                .add-task-input {
+                  flex-grow: 1;
+                  min-width: 150px;
+                  padding: 8px 12px;
+                  border: 1px solid var(--divider-color);
+                  border-radius: 4px;
+                  background: var(--card-background-color);
+                  color: var(--primary-text-color);
+                }
+                .add-task-btn {
+                  padding: 8px 16px;
+                  background: var(--primary-color);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                }
+                .delete-task-btn {
+                  padding: 4px 12px;
+                  background: var(--error-color, #ff5555);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                }
+                .kanban-btn {
+                  padding: 4px 12px;
+                  background: var(--primary-color);
+                  color: white;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                }
+                .status-todo { border-left: 3px solid var(--warning-color, #ff9800); }
+                .status-in_progress { border-left: 3px solid var(--primary-color); }
+                .status-completed { border-left: 3px solid var(--success-color); }
+                .status-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: var(--secondary-background-color);
+                  border-radius: 8px;
+                  display: none;
+                }
+                .status-section.show { display: block; }
+                .status-list { margin: 8px 0; }
+                .status-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 6px;
+                  background: var(--card-background-color);
+                  border-radius: 4px;
+                  margin-bottom: 4px;
+                }
+                .status-color {
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 4px;
+                  flex-shrink: 0;
+                }
+                .status-name { flex-grow: 1; font-weight: 500; }
+                .status-id { font-size: 0.8em; color: var(--secondary-text-color); }
+                .new-status-form {
+                  display: flex;
+                  gap: 8px;
+                  flex-wrap: wrap;
+                  margin-top: 8px;
+                  padding-top: 8px;
+                  border-top: 1px solid var(--divider-color);
+                }
+                .new-status-form input {
+                  padding: 6px 10px;
+                  border: 1px solid var(--divider-color);
+                  border-radius: 4px;
+                  background: var(--card-background-color);
+                  color: var(--primary-text-color);
+                }
+                .new-status-form input[type="color"] {
+                  width: 40px;
+                  padding: 2px;
+                }
+                .reminder-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .reminder-btn:hover { background: var(--primary-color-translucent, rgba(156,39,176,0.1)); }
+                .reminder-btn.active { color: var(--primary-color); }
+                .reminder-btn.inactive { opacity: 0.4; }
+                .recurring-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .recurring-btn:hover { background: var(--success-color-translucent, rgba(76,175,80,0.1)); }
+                .recurring-btn.active { color: var(--success-color); }
+                .recurring-btn.inactive { opacity: 0.4; }
+                .recurring-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--success-color-translucent, rgba(76,175,80,0.1)), var(--success-color-translucent, rgba(56,142,60,0.1)));
+                  border: 1px solid var(--success-color-translucent, rgba(76,175,80,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .recurring-section.show { display: block; }
+                .recurring-section h4 { margin: 0 0 12px 0; color: var(--success-color); }
+                .header-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+                .reminder-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--primary-color-translucent, rgba(156,39,176,0.1)), var(--primary-color-translucent, rgba(103,58,183,0.1)));
+                  border: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .reminder-section.show { display: block; }
+                .reminder-section h4 { margin: 0 0 12px 0; color: var(--text-primary-color, #fff); }
+                .reminder-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+                .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
+                .reminder-row select, .reminder-row input[type="time"], .reminder-row input[type="text"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+                .reminder-row select { min-width: 120px; }
+                .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
+                .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
+              </style>
+              <div id="jottick-loading-tasks">Loading...</div>
+              <script>
+                (function checkLoading(){
+                  var banner=document.getElementById('jottick-loading-tasks');
+                  if(banner){
+                    var el=document.querySelector('home-assistant');
+                    if(el&&el.hass&&el.hass.states['input_boolean.jottick_is_loading']){
+                      banner.style.display=el.hass.states['input_boolean.jottick_is_loading'].state==='on'?'block':'none';
+                    }
+                  }
+                  setTimeout(checkLoading,300);
+                })();
+              </script>
+              <div class="tasks-container">
+                {% set ns = namespace(count=0, tasks=[]) %}
+                {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
+                {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
+                    {% set ns.tasks = ns.tasks + [state] %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.tasks | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is odd %}
+                    {% set task_id = state_attr(state.entity_id, 'task_id') %}
+                    {% set task_title = state_attr(state.entity_id, 'title') %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
+                    {% set statuses = state_attr(state.entity_id, 'statuses') or [{'id':'todo','name':'To Do','order':0},{'id':'in_progress','name':'In Progress','order':1},{'id':'completed','name':'Completed','order':2}] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') %}
+                    {% set total = state_attr(state.entity_id, 'total') %}
+                    {% set has_reminder = reminder_configs is mapping and task_id in reminder_configs %}
+                    {% set has_recurring = recurring_configs is mapping and task_id in recurring_configs %}
+                    {% set config = reminder_configs.get(task_id, {}) if reminder_configs is mapping else {} %}
+                    {% set rec_config = recurring_configs.get(task_id, {}) if recurring_configs is mapping else {} %}
+                    <div class="task-card">
+                      <div class="task-header">
+                        <div class="task-title">{{ task_title }}</div>
+                        <div class="header-actions">
+                          <button class="reminder-btn {{ 'active' if has_reminder else 'inactive' }}" title="{{ 'Edit reminder' if has_reminder else 'Add reminder' }}" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.reminder-section');if(panel){panel.classList.toggle('show');}})(this);">Remind</button>
+                          <button class="recurring-btn {{ 'active' if has_recurring else 'inactive' }}" title="{{ 'Edit recurring reset' if has_recurring else 'Add recurring reset' }}" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.recurring-section');if(panel){panel.classList.toggle('show');}})(this);">Recurring</button>
+                          <div class="task-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      <div class="task-items">
+                        {% for item in flat_items %}
+                          {% set index_path = item.index_path | default('0') %}
+                          {% set depth = index_path.split('.') | length - 1 %}
+                          <div class="task-item depth-{{ depth }} status-{{ item.status }}">
+                            <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}setTimeout(function(){sel.disabled=false;sel.parentElement.style.opacity='1';},1000);})(this);">
+                              {% for status in statuses | sort(attribute='order') %}
+                                <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
+                              {% endfor %}
+                            </select>
+                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
+                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <div class="add-task-section">
+                        <input type="text" class="add-task-input" placeholder="Add new task...">
+                        <select class="task-status-select" style="min-width:100px;">
+                          {% for status in statuses | sort(attribute='order') %}
+                            <option value="{{ status.id }}">{{ status.name }}</option>
+                          {% endfor %}
+                        </select>
+                        <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
+                        <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
+                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                      </div>
+                      <div class="status-section">
+                        <strong>Kanban Task Columns</strong>
+                        <div class="status-list">
+                          {% for status in statuses | sort(attribute='order') %}
+                            <div class="status-item">
+                              <div class="status-color" style="background:{{ status.color if status.color else 'var(--secondary-text-color)' }};"></div>
+                              <span class="status-name">{{ status.name }}</span>
+                              <span class="status-id">({{ status.id }})</span>
+                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
+                              {% if statuses | length > 1 %}
+                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
+                              {% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+                        <div class="new-status-form">
+                          <input type="text" placeholder="ID (e.g. review)" style="width:100px;" class="new-status-id">
+                          <input type="text" placeholder="Label" style="width:120px;" class="new-status-label">
+                          <input type="color" value="var(--info-color, #3b82f6)" class="new-status-color">
+                          <button class="add-task-btn" style="padding:6px 12px;" onclick="(function(btn){const form=btn.closest('.new-status-form');const idInp=form.querySelector('.new-status-id');const labelInp=form.querySelector('.new-status-label');const colorInp=form.querySelector('.new-status-color');if(!idInp.value.trim()||!labelInp.value.trim()){alert('ID and Label required');return;}btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'create_status|||{{ task_id }}|||'+idInp.value.trim()+'|||'+labelInp.value.trim()+'|||'+colorInp.value});}idInp.value='';labelInp.value='';setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Column</button>
+                        </div>
+                      </div>
+                      <div class="reminder-section">
+                        <h4>Reminder Notifications</h4>
+                        <div class="reminder-row" style="flex-direction:column;align-items:flex-start;">
+                          <label>Notify:</label>
+                          <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                            {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
+                            {% for n in notifiers %}{% if n != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% endif %}{% endfor %}
+                          </div>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Every:</label>
+                          <select class="r-interval">
+                            {% for iv in ['30 minutes','1 hour','2 hours','4 hours','8 hours','12 hours','Once a day'] %}<option value="{{ iv }}" {{ 'selected' if config.get('interval','1 hour')==iv else '' }}>{{ iv }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="r-days">
+                            <option value="weekdays" {{ 'selected' if config.get('days','weekdays')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if config.get('days','weekdays')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if config.get('days','weekdays')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Title:</label>
+                          <input type="text" class="r-title" placeholder="List/Task name" value="{{ config.get('custom_title','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>Message:</label>
+                          <input type="text" class="r-message" placeholder="X item(s) remaining" value="{{ config.get('custom_message','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>From:</label>
+                          <input type="time" class="r-start" value="{{ config.get('start','09:00') }}">
+                          <label>To:</label>
+                          <input type="time" class="r-end" value="{{ config.get('end','21:00') }}">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" onclick="(function(btn){var sec=btn.closest('.reminder-section');var t=Array.from(sec.querySelectorAll('.r-target-cb:checked')).map(cb=>cb.value).join(',');if(!t){alert('Select at least one device');return;}var i=sec.querySelector('.r-interval').value;var d=sec.querySelector('.r-days').value;var s=sec.querySelector('.r-start').value;var e=sec.querySelector('.r-end').value;var ti=sec.querySelector('.r-title').value;var m=sec.querySelector('.r-message').value;btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_reminder_inline',{item_id:'{{ task_id }}',item_type:'task',target:t,interval:i,days:d,start_time:s,end_time:e,custom_title:ti,custom_message:m});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove reminder?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_reminder_inline',{item_id:'{{ task_id }}'});}var sec=btn.closest('.reminder-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                      <div class="recurring-section">
+                        <h4>Daily Reset</h4>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="rec-days">
+                            <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Preset:</label>
+                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                            <option value="custom">Custom...</option>
+                            <optgroup label="Once Daily">
+                              <option value="05:00">5:00 AM</option>
+                              <option value="06:00">6:00 AM</option>
+                              <option value="07:00">7:00 AM</option>
+                              <option value="08:00">8:00 AM</option>
+                              <option value="09:00">9:00 AM</option>
+                              <option value="12:00">12:00 PM</option>
+                              <option value="18:00">6:00 PM</option>
+                              <option value="21:00">9:00 PM</option>
+                              <option value="00:00">12:00 AM (midnight)</option>
+                            </optgroup>
+                            <optgroup label="Twice Daily">
+                              <option value="06:00, 18:00">6:00 AM, 6:00 PM</option>
+                              <option value="06:00, 21:00">6:00 AM, 9:00 PM</option>
+                              <option value="08:00, 20:00">8:00 AM, 8:00 PM</option>
+                              <option value="09:00, 17:00">9:00 AM, 5:00 PM</option>
+                              <option value="09:00, 21:00">9:00 AM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Three Times Daily">
+                              <option value="06:00, 12:00, 18:00">6:00 AM, 12:00 PM, 6:00 PM</option>
+                              <option value="06:00, 12:00, 21:00">6:00 AM, 12:00 PM, 9:00 PM</option>
+                              <option value="07:00, 12:00, 19:00">7:00 AM, 12:00 PM, 7:00 PM</option>
+                              <option value="08:00, 14:00, 20:00">8:00 AM, 2:00 PM, 8:00 PM</option>
+                              <option value="09:00, 15:00, 21:00">9:00 AM, 3:00 PM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Frequent">
+                              <option value="06:00, 14:00, 22:00">Every 8 hours (6 AM, 2 PM, 10 PM)</option>
+                              <option value="06:00, 12:00, 18:00, 00:00">Every 6 hours (6 AM, 12 PM, 6 PM, 12 AM)</option>
+                              <option value="06:00, 10:00, 14:00, 18:00, 22:00">Every 4 hours (6 AM - 10 PM)</option>
+                              <option value="06:00, 09:00, 12:00, 15:00, 18:00, 21:00">Every 3 hours (6 AM - 9 PM)</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
+                          <label>Times:</label>
+                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .tasks-container { padding: 4px; }
+                .task-card { background: var(--ha-card-background); border: 1px solid var(--divider-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid var(--primary-color); }
+                .task-title { font-size: 1.4em; font-weight: 600; }
+                .task-progress { font-size: 0.9em; background: var(--primary-color); color: white; padding: 4px 12px; border-radius: 12px; }
+                .task-items { margin-top: 12px; }
+                .task-item { display: flex; align-items: center; padding: 8px; margin-bottom: 4px; background: var(--secondary-background-color); border-radius: 8px; gap: 8px; }
+                .task-item:hover { background: var(--divider-color); }
+                .task-item.depth-0 { margin-left: 0; border-left: 3px solid var(--success-color); }
+                .task-item.depth-1 { margin-left: 30px; border-left: 3px solid var(--primary-color); }
+                .task-item.depth-2 { margin-left: 60px; border-left: 3px solid var(--warning-color); }
+                .task-item.depth-3 { margin-left: 90px; border-left: 3px solid var(--info-color); }
+                .task-item.depth-4 { margin-left: 120px; border-left: 3px solid var(--accent-color); }
+                .task-item.depth-5 { margin-left: 150px; border-left: 3px solid var(--primary-color); }
+                .task-item-text { flex-grow: 1; }
+                .task-item-text.completed { text-decoration: line-through; opacity: 0.6; }
+                .task-status-select { padding: 4px 8px; border-radius: 4px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.85em; cursor: pointer; }
+                .delete-item-btn { padding: 2px 8px; background: var(--error-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+                .add-sub-btn { padding: 2px 6px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75em; }
+                .add-task-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--divider-color); display: flex; gap: 8px; flex-wrap: wrap; }
+                .add-task-input { flex-grow: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); }
+                .add-task-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .delete-task-btn { padding: 4px 12px; background: var(--error-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .kanban-btn { padding: 4px 12px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .status-todo { border-left: 3px solid var(--warning-color, #ff9800); }
+                .status-in_progress { border-left: 3px solid var(--primary-color); }
+                .status-completed { border-left: 3px solid var(--success-color); }
+                .status-section { margin-top: 12px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; display: none; }
+                .status-section.show { display: block; }
+                .status-list { margin: 8px 0; }
+                .status-item { display: flex; align-items: center; gap: 8px; padding: 6px; background: var(--card-background-color); border-radius: 4px; margin-bottom: 4px; }
+                .status-color { width: 20px; height: 20px; border-radius: 4px; }
+                .status-name { flex-grow: 1; font-weight: 500; }
+                .status-id { font-size: 0.8em; color: var(--secondary-text-color); }
+                .new-status-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider-color); }
+                .new-status-form input { padding: 6px 10px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); }
+                .new-status-form input[type="color"] { width: 40px; padding: 2px; }
+                .reminder-section { margin-top: 12px; padding: 12px; background: linear-gradient(135deg, var(--primary-color-translucent, rgba(156,39,176,0.1)), var(--primary-color-translucent, rgba(103,58,183,0.1))); border: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.3)); border-radius: 8px; display: none; }
+                .reminder-section.show { display: block; }
+                .reminder-section h4 { margin: 0 0 12px 0; color: var(--text-primary-color, #fff); }
+                .reminder-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+                .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
+                .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+                .reminder-row select { min-width: 120px; }
+                .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
+                .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .reminder-remove-btn { padding: 8px 16px; background: var(--error-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .reminder-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .reminder-btn:hover { background: var(--primary-color-translucent, rgba(156,39,176,0.1)); }
+                .reminder-btn.active { color: var(--primary-color); }
+                .reminder-btn.inactive { opacity: 0.4; }
+                .recurring-btn {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 4px 8px;
+                  font-size: 1.1em;
+                  border-radius: 4px;
+                  transition: all 0.2s;
+                }
+                .recurring-btn:hover { background: var(--success-color-translucent, rgba(76,175,80,0.1)); }
+                .recurring-btn.active { color: var(--success-color); }
+                .recurring-btn.inactive { opacity: 0.4; }
+                .recurring-section {
+                  margin-top: 12px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, var(--success-color-translucent, rgba(76,175,80,0.1)), var(--success-color-translucent, rgba(56,142,60,0.1)));
+                  border: 1px solid var(--success-color-translucent, rgba(76,175,80,0.3));
+                  border-radius: 8px;
+                  display: none;
+                }
+                .recurring-section.show { display: block; }
+                .recurring-section h4 { margin: 0 0 12px 0; color: var(--success-color); }
+                .header-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+              </style>
+              <div class="tasks-container">
+                {% set ns = namespace(count=0, tasks=[]) %}
+                {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
+                {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
+                    {% set ns.tasks = ns.tasks + [state] %}
+                  {% endif %}
+                {% endfor %}
+                {% for state in ns.tasks | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is even %}
+                    {% set task_id = state_attr(state.entity_id, 'task_id') %}
+                    {% set task_title = state_attr(state.entity_id, 'title') %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
+                    {% set statuses = state_attr(state.entity_id, 'statuses') or [{'id':'todo','name':'To Do','order':0},{'id':'in_progress','name':'In Progress','order':1},{'id':'completed','name':'Completed','order':2}] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') %}
+                    {% set total = state_attr(state.entity_id, 'total') %}
+                    {% set has_reminder = reminder_configs is mapping and task_id in reminder_configs %}
+                    {% set has_recurring = recurring_configs is mapping and task_id in recurring_configs %}
+                    {% set config = reminder_configs.get(task_id, {}) if reminder_configs is mapping else {} %}
+                    {% set rec_config = recurring_configs.get(task_id, {}) if recurring_configs is mapping else {} %}
+                    <div class="task-card">
+                      <div class="task-header">
+                        <div class="task-title">{{ task_title }}</div>
+                        <div class="header-actions">
+                          <button class="reminder-btn {{ 'active' if has_reminder else 'inactive' }}" title="{{ 'Edit reminder' if has_reminder else 'Add reminder' }}" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.reminder-section');if(panel){panel.classList.toggle('show');}})(this);">Remind</button>
+                          <button class="recurring-btn {{ 'active' if has_recurring else 'inactive' }}" title="{{ 'Edit recurring reset' if has_recurring else 'Add recurring reset' }}" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.recurring-section');if(panel){panel.classList.toggle('show');}})(this);">Reset</button>
+                          <div class="task-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      <div class="task-items">
+                        {% for item in flat_items %}
+                          {% set index_path = item.index_path | default('0') %}
+                          {% set depth = index_path.split('.') | length - 1 %}
+                          <div class="task-item depth-{{ depth }} status-{{ item.status }}">
+                            <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}})(this);">
+                              {% for status in statuses | sort(attribute='order') %}
+                                <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
+                              {% endfor %}
+                            </select>
+                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
+                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <div class="add-task-section">
+                        <input type="text" class="add-task-input" placeholder="Add new task...">
+                        <select class="task-status-select" style="min-width:100px;">
+                          {% for status in statuses | sort(attribute='order') %}
+                            <option value="{{ status.id }}">{{ status.name }}</option>
+                          {% endfor %}
+                        </select>
+                        <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
+                        <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Task Categories</button>
+                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                      </div>
+                      <div class="status-section">
+                        <strong>Kanban Task Columns</strong>
+                        <div class="status-list">
+                          {% for status in statuses | sort(attribute='order') %}
+                            <div class="status-item">
+                              <div class="status-color" style="background:{{ status.color if status.color else 'var(--secondary-text-color)' }};"></div>
+                              <span class="status-name">{{ status.name }}</span>
+                              <span class="status-id">({{ status.id }})</span>
+                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
+                              {% if statuses | length > 1 %}
+                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
+                              {% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+                        <div class="new-status-form">
+                          <input type="text" placeholder="ID (e.g. review)" style="width:100px;" class="new-status-id">
+                          <input type="text" placeholder="Label" style="width:120px;" class="new-status-label">
+                          <input type="color" value="var(--info-color, #3b82f6)" class="new-status-color">
+                          <button class="add-task-btn" style="padding:6px 12px;" onclick="(function(btn){const form=btn.closest('.new-status-form');const idInp=form.querySelector('.new-status-id');const labelInp=form.querySelector('.new-status-label');const colorInp=form.querySelector('.new-status-color');if(!idInp.value.trim()||!labelInp.value.trim()){alert('ID and Label required');return;}btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'create_status|||{{ task_id }}|||'+idInp.value.trim()+'|||'+labelInp.value.trim()+'|||'+colorInp.value});}idInp.value='';labelInp.value='';setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Task Column</button>
+                        </div>
+                      </div>
+                      <div class="reminder-section">
+                        <h4>Reminder Notification Settings</h4>
+                        <div class="reminder-row" style="flex-direction:column;align-items:flex-start;">
+                          <label>Notify:</label>
+                          <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                            {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
+                            {% for n in notifiers %}{% if n != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% endif %}{% endfor %}
+                          </div>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Every:</label>
+                          <select class="r-interval">
+                            {% for iv in ['30 minutes','1 hour','2 hours','4 hours','8 hours','12 hours','Once a day'] %}<option value="{{ iv }}" {{ 'selected' if config.get('interval','1 hour')==iv else '' }}>{{ iv }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="r-days">
+                            <option value="weekdays" {{ 'selected' if config.get('days','weekdays')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if config.get('days','weekdays')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if config.get('days','weekdays')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Title:</label>
+                          <input type="text" class="r-title" placeholder="List/Task name" value="{{ config.get('custom_title','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>Message:</label>
+                          <input type="text" class="r-message" placeholder="X item(s) remaining" value="{{ config.get('custom_message','') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-row">
+                          <label>From:</label>
+                          <input type="time" class="r-start" value="{{ config.get('start','09:00') }}">
+                          <label>To:</label>
+                          <input type="time" class="r-end" value="{{ config.get('end','21:00') }}">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" onclick="(function(btn){var sec=btn.closest('.reminder-section');var t=Array.from(sec.querySelectorAll('.r-target-cb:checked')).map(cb=>cb.value).join(',');if(!t){alert('Select at least one device');return;}var i=sec.querySelector('.r-interval').value;var d=sec.querySelector('.r-days').value;var s=sec.querySelector('.r-start').value;var e=sec.querySelector('.r-end').value;var ti=sec.querySelector('.r-title').value;var m=sec.querySelector('.r-message').value;btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_reminder_inline',{item_id:'{{ task_id }}',item_type:'task',target:t,interval:i,days:d,start_time:s,end_time:e,custom_title:ti,custom_message:m});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove reminder?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_reminder_inline',{item_id:'{{ task_id }}'});}var sec=btn.closest('.reminder-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                      <div class="recurring-section">
+                        <h4>Daily Reset</h4>
+                        <div class="reminder-row">
+                          <label>Days:</label>
+                          <select class="rec-days">
+                            <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                            <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row">
+                          <label>Preset:</label>
+                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                            <option value="custom">Custom...</option>
+                            <optgroup label="Once Daily">
+                              <option value="05:00">5:00 AM</option>
+                              <option value="06:00">6:00 AM</option>
+                              <option value="07:00">7:00 AM</option>
+                              <option value="08:00">8:00 AM</option>
+                              <option value="09:00">9:00 AM</option>
+                              <option value="12:00">12:00 PM</option>
+                              <option value="18:00">6:00 PM</option>
+                              <option value="21:00">9:00 PM</option>
+                              <option value="00:00">12:00 AM (midnight)</option>
+                            </optgroup>
+                            <optgroup label="Twice Daily">
+                              <option value="06:00, 18:00">6:00 AM, 6:00 PM</option>
+                              <option value="06:00, 21:00">6:00 AM, 9:00 PM</option>
+                              <option value="08:00, 20:00">8:00 AM, 8:00 PM</option>
+                              <option value="09:00, 17:00">9:00 AM, 5:00 PM</option>
+                              <option value="09:00, 21:00">9:00 AM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Three Times Daily">
+                              <option value="06:00, 12:00, 18:00">6:00 AM, 12:00 PM, 6:00 PM</option>
+                              <option value="06:00, 12:00, 21:00">6:00 AM, 12:00 PM, 9:00 PM</option>
+                              <option value="07:00, 12:00, 19:00">7:00 AM, 12:00 PM, 7:00 PM</option>
+                              <option value="08:00, 14:00, 20:00">8:00 AM, 2:00 PM, 8:00 PM</option>
+                              <option value="09:00, 15:00, 21:00">9:00 AM, 3:00 PM, 9:00 PM</option>
+                            </optgroup>
+                            <optgroup label="Frequent">
+                              <option value="06:00, 14:00, 22:00">Every 8 hours (6 AM, 2 PM, 10 PM)</option>
+                              <option value="06:00, 12:00, 18:00, 00:00">Every 6 hours (6 AM, 12 PM, 6 PM, 12 AM)</option>
+                              <option value="06:00, 10:00, 14:00, 18:00, 22:00">Every 4 hours (6 AM - 10 PM)</option>
+                              <option value="06:00, 09:00, 12:00, 15:00, 18:00, 21:00">Every 3 hours (6 AM - 9 PM)</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
+                          <label>Times:</label>
+                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        </div>
+                        <div class="reminder-actions">
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+  - title: Quick
+    path: quick
+    icon: mdi:lightning-bolt
+    cards:
+      - type: markdown
+        content: |
+          # Quick Actions
+          One-tap notes and lists!
+      - type: button
+        name: Refresh All Data
+        icon: mdi:refresh
+        tap_action:
+          action: call-service
+          service: script.jottick_refresh_dashboard_data
+        show_state: false
+      - type: grid
+        columns: 2
+        cards:
+          - type: button
+            name: Shopping List
+            icon: mdi:cart
+            tap_action:
+              action: call-service
+              service: jottick.create_checklist
+              service_data:
+                title: Shopping List
+                type: simple
+          - type: button
+            name: To-Do Today
+            icon: mdi:calendar-today
+            tap_action:
+              action: call-service
+              service: jottick.create_task
+              service_data:
+                title: '{{ now().strftime(''%A'') }} Tasks'
+          - type: button
+            name: Quick Note
+            icon: mdi:note-plus
+            tap_action:
+              action: call-service
+              service: jottick.create_note
+              service_data:
+                title: 'Note: {{ now().strftime(''%H:%M'') }}'
+                content: ''
+          - type: button
+            name: Reminder
+            icon: mdi:bell
+            tap_action:
+              action: call-service
+              service: jottick.create_note
+              service_data:
+                title: Reminder
+                content: Don't forget to...
+          - type: button
+            name: Meal Plan
+            icon: mdi:food
+            tap_action:
+              action: call-service
+              service: jottick.create_note
+              service_data:
+                title: Meal Plan
+                content: |-
+                  Monday:
+                  Tuesday:
+                  Wednesday:
+          - type: button
+            name: Packing List
+            icon: mdi:bag-checked
+            tap_action:
+              action: call-service
+              service: jottick.create_checklist
+              service_data:
+                title: Packing List
+                type: simple
+          - type: button
+            name: New Task List
+            icon: mdi:clipboard-plus
+            tap_action:
+              action: call-service
+              service: jottick.create_task
+              service_data:
+                title: Tasks {{ now().strftime('%m/%d') }}
+          - type: button
+            name: Update Dropdowns
+            icon: mdi:sync
+            tap_action:
+              action: call-service
+              service: script.jottick_update_both_dropdowns
+          - type: button
+            name: Force Refresh
+            icon: mdi:database-refresh
+            tap_action:
+              action: call-service
+              service: homeassistant.update_entity
+              service_data:
+                entity_id:
+                  - sensor.jottick_total_notes
+                  - sensor.jottick_total_checklists
+                  - sensor.jottick_total_tasks
+          - type: button
+            name: Refresh Notifiers
+            icon: mdi:bell-ring
+            tap_action:
+              action: call-service
+              service: script.jottick_refresh_notifiers
+  - title: Stats
+    path: stats
+    icon: mdi:chart-box
+    cards:
+      - type: markdown
+        content: |
+          # Family Stats
+      - type: horizontal-stack
+        cards:
+          - type: statistic
+            entity: sensor.jottick_total_notes
+            name: Notes
+            stat_type: mean
+            period: 999
+          - type: statistic
+            entity: sensor.jottick_total_checklists
+            name: Lists
+            stat_type: mean
+            period: 999
+          - type: statistic
+            entity: sensor.jottick_total_tasks
+            name: Tasks
+            stat_type: mean
+            period: 999
+          - type: statistic
+            entity: sensor.jottick_completion_rate
+            name: Done
+            unit: '%'
+            stat_type: mean
+            period: 999
+      - type: horizontal-stack
+        cards:
+          - type: statistic
+            entity: sensor.jottick_total_items
+            name: Items
+            stat_type: mean
+            period: 99
+          - type: statistic
+            entity: sensor.jottick_completed_items
+            name: Done
+            stat_type: mean
+            period: 99
+          - type: statistic
+            entity: sensor.jottick_pending_items
+            name: Pending
+            stat_type: mean
+            period: 99
+      - type: entities
+        title: Detailed Statistics
+        entities:
+          - entity: sensor.jottick_total_notes
+            name: Total Notes
+            icon: mdi:note-text
+          - entity: sensor.jottick_total_checklists
+            name: Total Lists
+            icon: mdi:format-list-checks
+          - entity: sensor.jottick_total_tasks
+            name: Total Tasks
+            icon: mdi:clipboard-list
+          - entity: sensor.jottick_total_items
+            name: Total Items
+            icon: mdi:checkbox-multiple-marked
+          - entity: sensor.jottick_completed_items
+            name: Completed Items
+            icon: mdi:check-all
+          - entity: sensor.jottick_pending_items
+            name: Pending Items
+            icon: mdi:clock-outline
+          - entity: sensor.jottick_completion_rate
+            name: Completion Rate
+            icon: mdi:percent

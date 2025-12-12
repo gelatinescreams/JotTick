@@ -1,0 +1,379 @@
+# =============================================================================
+# JotTick HOME ASSISTANT INTEGRATION VIA HACS
+# These helpers MUST be created for JotTick to work properly
+# Go to Settings > Devices & Services > Helpers > Create Helper
+# Create each helper exactly as specified below
+# =============================================================================
+
+input_text:
+
+  jottick_editing_reminder_id:
+    name: "Editing Reminder ID"
+    initial: ""
+    max: 255
+
+  jottick_editing_reminder_type:
+    name: "Editing Reminder Type"
+    initial: ""
+    max: 20
+
+  jottick_editing_reminder_title:
+    name: "Editing Reminder Title"
+    initial: ""
+    max: 255
+    
+  jottick_note_id:
+    name: "Note ID"
+    initial: ""
+    max: 255
+
+  jottick_quick_action_data:
+    name: Quick Action Data
+    max: 255
+    icon: mdi:cog
+
+  jottick_note_title:
+    name: "Note Title"
+    initial: ""
+    max: 255
+
+  jottick_note_content:
+    name: "Note Content"
+    initial: ""
+    max: 255
+    mode: text
+
+  jottick_edit_note_content:
+    name: "Edit Note Content"
+    initial: ""
+    max: 255
+    mode: text
+
+  jottick_edit_note_title:
+    name: "Edit Note Title"
+    initial: ""
+    max: 255
+
+  jottick_checklist_id:
+    name: "Checklist ID"
+    initial: ""
+    max: 255
+
+  jottick_checklist_title:
+    name: "Checklist Title"
+    initial: ""
+    max: 255
+
+  jottick_task_title:
+    name: "Task Title"
+    initial: ""
+    max: 255
+    
+  jottick_selected_checklist_id:
+    name: "Selected Checklist ID"
+    initial: ""
+    max: 255
+
+  jottick_selected_checklist_title:
+    name: "Selected Checklist Title"
+    initial: ""
+    max: 255
+
+  jottick_selected_checklist_type:
+    name: "Selected Checklist Type"
+    initial: "simple"
+    max: 50
+
+  jottick_item_text:
+    name: "Item Text"
+    initial: ""
+    max: 255
+
+  jottick_loading_item:
+    name: "Loading Item"
+    initial: ""
+    max: 100
+  jottick_quick_task_action_data:
+    name: Quick Task Action Data
+    max: 255
+    icon: mdi:clipboard-list
+
+  jottick_quick_delete_item_data:
+    name: Quick Delete Item Data
+    max: 255
+    icon: mdi:delete
+
+  jottick_selected_task_id:
+    name: "Selected Task ID"
+    initial: ""
+    max: 255
+
+  jottick_selected_task_title:
+    name: "Selected Task Title"
+    initial: ""
+    max: 255
+
+  jottick_task_item_text:
+    name: "Task Item Text"
+    initial: ""
+    max: 255
+  jottick_new_status_id:
+    name: "New Status ID"
+    initial: ""
+    max: 50
+    icon: mdi:identifier
+
+  jottick_new_status_label:
+    name: "New Status Label"
+    initial: ""
+    max: 100
+    icon: mdi:label
+
+  jottick_new_status_color:
+    name: "New Status Color"
+    initial: "#3b82f6"
+    max: 20
+    icon: mdi:palette
+
+  jottick_edit_status_id:
+    name: "Edit Status ID"
+    initial: ""
+    max: 50
+
+  jottick_edit_status_label:
+    name: "Edit Status Label"
+    initial: ""
+    max: 100
+
+  jottick_edit_status_color:
+    name: "Edit Status Color"
+    initial: ""
+    max: 20
+
+  jottick_kanban_action_data:
+    name: Kanban Action Data
+    max: 255
+    icon: mdi:view-column
+
+  jottick_parent_item_index:
+    name: "Parent Item Index"
+    initial: ""
+    max: 50
+    icon: mdi:file-tree    
+
+
+#under input_select  
+input_select:
+  jottick_reminder_target:
+    name: "Remind Who"
+    options:
+      - "Nobody"
+    initial: "Nobody"
+    icon: mdi:account-bell
+
+  jottick_reminder_interval:
+    name: "Remind Every"
+    options:
+      - "30 minutes"
+      - "1 hour"
+      - "2 hours"
+      - "4 hours"
+      - "8 hours"
+      - "12 hours"
+      - "Once a day"
+    initial: "1 hour"
+    icon: mdi:timer-outline
+
+  jottick_reminder_days:
+    name: "On Days"
+    options:
+      - "Weekdays"
+      - "Weekends"
+      - "Every day"
+    initial: "Weekdays"
+    icon: mdi:calendar-week
+    
+  jottick_status_picker:
+    name: "Status Column Picker"
+    options:
+      - "-- Select status --"
+    initial: "-- Select status --"
+    icon: mdi:view-column
+  jottick_checklist_type:
+    name: "Checklist Type"
+    options:
+      - "simple"
+      - "task"
+    initial: "simple"
+
+  jottick_task_status:
+    name: "Task Status"
+    options:
+      - "todo"
+      - "in_progress"
+      - "paused"
+      - "completed"
+    initial: "todo"
+
+  jottick_note_picker:
+    name: "Note Picker"
+    options:
+      - "-- Pick a note --"
+    initial: "-- Pick a note --"
+
+  jottick_checklist_picker:
+    name: "Checklist Picker"
+    options:
+      - "-- Pick a checklist --"
+    initial: "-- Pick a checklist --"
+
+  jottick_item_picker:
+    name: "Item Picker"
+    options:
+      - "-- Select item --"
+    initial: "-- Select item --"
+
+  jottick_task_picker:
+    name: "Task Picker"
+    options:
+      - "-- Pick a task list --"
+    initial: "-- Pick a task list --"
+
+  jottick_task_item_picker:
+    name: "Task Item Picker"
+    options:
+      - "-- Select task item --"
+    initial: "-- Select task item --"
+
+  jottick_new_task_item_status:
+    name: "New Task Item Status"
+    options:
+      - "todo"
+      - "in_progress"
+      - "completed"
+    initial: "todo"
+    
+  jottick_item_status:
+    name: "Item Status"
+    options:
+      - "-- Select status --"
+      - "todo"
+      - "in_progress"
+      - "paused"
+      - "completed"
+    initial: "-- Select status --"
+
+#under input_number 
+input_number:
+  jottick_selected_item_index:
+    name: "Selected Item Index"
+    min: 0
+    max: 1000
+    step: 1
+    initial: 0
+    mode: box
+  jottick_new_status_order:
+    name: "New Status Order"
+    initial: 0
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:sort-numeric-ascending    
+
+#under input_boolean    
+input_boolean:
+  jottick_item_completed:
+    name: "Item Completed"
+    initial: false
+
+  jottick_is_loading:
+    name: "Is Loading"
+    initial: false
+    icon: mdi:loading
+
+  jottick_enable_reminder:
+    name: "Enable Reminder"
+    initial: false
+    icon: mdi:bell-plus
+
+  jottick_show_reminder_popup:
+    name: "Show Reminder Popup"
+    initial: false
+    icon: mdi:popup
+    
+input_datetime:    
+
+  jottick_reminder_start:
+    name: "From Time"
+    has_date: false
+    has_time: true
+
+  jottick_reminder_end:
+    name: "Until Time"
+    has_date: false
+    has_time: true
+
+#at the bottom of config    
+template:
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_reminder_update
+    sensor:
+      - name: "JotTick Reminders"
+        unique_id: jottick_reminders_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+            {{ trigger.event.data.configs | length }}
+          {% else %}
+            {{ this.attributes.configs | default({}) | length }}
+          {% endif %}
+        attributes:
+          configs: >
+            {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+              {{ trigger.event.data.configs }}
+            {% else %}
+              {{ this.attributes.configs | default({}) }}
+            {% endif %}
+            
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: time_pattern
+        hours: "/6"
+    sensor:
+      - name: "JotTick Available Notifiers"
+        unique_id: jottick_available_notifiers
+        state: "{{ this.attributes.notifiers | default([]) | length }}"
+        attributes:
+          notifiers: >
+            {% set devices = integration_entities('mobile_app') | select('match','device_tracker') | expand | map(attribute='name') | map('slugify') | list %}
+            {% set ns = namespace(services=[]) %}
+            {% for device in devices %}
+              {% set ns.services = ns.services + ['notify.mobile_app_' ~ device] %}
+            {% endfor %}
+            {{ ns.services }}    
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_recurring_update
+    sensor:
+      - name: "JotTick Recurring"
+        unique_id: jottick_recurring_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+            {{ trigger.event.data.configs | length }}
+          {% else %}
+            {{ this.attributes.configs | default({}) | length }}
+          {% endif %}
+        attributes:
+          configs: >
+            {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+              {{ trigger.event.data.configs }}
+            {% else %}
+              {{ this.attributes.configs | default({}) }}
+            {% endif %}

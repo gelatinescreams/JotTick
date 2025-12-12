@@ -1,0 +1,343 @@
+create_note:
+  name: Create Note
+  description: Create a new note
+  fields:
+    title:
+      name: Title
+      required: true
+      selector:
+        text:
+    content:
+      name: Content
+      required: false
+      selector:
+        text:
+          multiline: true
+
+update_note:
+  name: Update Note
+  description: Update an existing note
+  fields:
+    note_id:
+      name: Note ID
+      required: true
+      selector:
+        text:
+    title:
+      name: Title
+      required: false
+      selector:
+        text:
+    content:
+      name: Content
+      required: false
+      selector:
+        text:
+          multiline: true
+
+delete_note:
+  name: Delete Note
+  description: Delete a note
+  fields:
+    note_id:
+      name: Note ID
+      required: true
+      selector:
+        text:
+
+create_checklist:
+  name: Create Checklist
+  description: Create a new checklist
+  fields:
+    title:
+      name: Title
+      required: true
+      selector:
+        text:
+    type:
+      name: Type
+      required: false
+      default: "simple"
+      selector:
+        select:
+          options:
+            - "simple"
+            - "task"
+
+update_checklist:
+  name: Update Checklist
+  description: Update checklist title
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    title:
+      name: Title
+      required: false
+      selector:
+        text:
+
+delete_checklist:
+  name: Delete Checklist
+  description: Delete a checklist
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+
+add_checklist_item:
+  name: Add Checklist Item
+  description: Add an item to a checklist
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    text:
+      name: Item Text
+      required: true
+      selector:
+        text:
+    status:
+      name: Status
+      required: false
+      selector:
+        select:
+          options:
+            - "in_progress"
+            - "paused"
+            - "completed"
+    parent_index:
+      name: Parent Index
+      required: false
+      selector:
+        text:
+
+check_item:
+  name: Check Item
+  description: Mark checklist item as completed
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      required: true
+      selector:
+        text:
+
+uncheck_item:
+  name: Uncheck Item
+  description: Mark checklist item as incomplete
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      required: true
+      selector:
+        text:
+
+delete_checklist_item:
+  name: Delete Checklist Item
+  description: Delete an item from a checklist
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      required: true
+      selector:
+        text:
+
+create_task:
+  name: Create Task List
+  description: Create a new task list
+  fields:
+    title:
+      name: Title
+      required: true
+      selector:
+        text:
+
+update_task:
+  name: Update Task List
+  description: Update task list title
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    title:
+      name: Title
+      required: false
+      selector:
+        text:
+
+delete_task:
+  name: Delete Task List
+  description: Delete a task list
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+
+add_task_item:
+  name: Add Task Item
+  description: Add an item to a task list
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    text:
+      name: Item Text
+      required: true
+      selector:
+        text:
+    status:
+      name: Status
+      required: false
+      default: "todo"
+      selector:
+        select:
+          options:
+            - "todo"
+            - "in_progress"
+            - "completed"
+    parent_index:
+      name: Parent Index
+      required: false
+      selector:
+        text:
+
+update_task_item_status:
+  name: Update Task Item Status
+  description: Change task item status
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      required: true
+      selector:
+        text:
+    status:
+      name: Status
+      required: true
+      selector:
+        text:
+
+delete_task_item:
+  name: Delete Task Item
+  description: Delete an item from a task list
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      required: true
+      selector:
+        text:
+
+create_task_status:
+  name: Create Task Status
+  description: Add a new Kanban column
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    status_id:
+      name: Status ID
+      required: true
+      selector:
+        text:
+    label:
+      name: Label
+      required: true
+      selector:
+        text:
+    color:
+      name: Color
+      required: false
+      selector:
+        text:
+    order:
+      name: Order
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+update_task_status:
+  name: Update Task Status
+  description: Update a Kanban column
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    status_id:
+      name: Status ID
+      required: true
+      selector:
+        text:
+    label:
+      name: Label
+      required: false
+      selector:
+        text:
+    color:
+      name: Color
+      required: false
+      selector:
+        text:
+    order:
+      name: Order
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+delete_task_status:
+  name: Delete Task Status
+  description: Delete a Kanban column
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    status_id:
+      name: Status ID
+      required: true
+      selector:
+        text:

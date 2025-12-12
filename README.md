@@ -6,9 +6,8 @@
 <p align="center">
 <i>Jot notes. Tick tasks. Get Notified. Simple.</i>
 </p>
-A notes, checklists, and task management integration for Home Assistant. Includes per device and list notification controls along with powerful recurring list functionality.
 
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
+A notes, checklists, and task management integration for Home Assistant. Includes per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
 ## Features
 

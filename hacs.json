@@ -1,0 +1,7 @@
+{
+  "name": "JotTick",
+  "render_readme": true,
+  "domains": ["sensor"],
+  "iot_class": "local_polling",
+  "homeassistant": "2024.12.0"
+}
