@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo_readme.png" alt="Jotty Logo" width="100"> 
+  <img src="assets/logo_readme.png" alt="JotTik Logo" width="100"> 
   <br />
   <h1 align="center">JotTick</h1><br/>
 </p>
@@ -9,7 +9,16 @@
 
 A notes, checklists, and task management integration for Home Assistant. Includes per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
-## Features
+<p align="center">
+  <img src="assets/notes-preview.gif"> 
+</p>
+<p align="center">
+  <img src="assets/lists-preview.gif"> 
+</p>
+<p align="center">
+  <img src="assets/tasks-preview.gif"> 
+</p>
+
 
 ### Notes
 - Create, edit, and delete notes
@@ -42,12 +51,14 @@ A notes, checklists, and task management integration for Home Assistant. Include
 - Version 2024.12 or newer
 
 ### HACS Frontend Components
+* Will be needed now or for future plans
 Install these via HACS → Frontend:
 
 | Component | Required For |
 |-----------|--------------|
-| [html-template-card](https://github.com/nickneos/lovelace-html-template-card) | All dashboard cards |
-| [lovelace-multiline-text-input-card](https://github.com/faeibson/lovelace-multiline-text-input-card) | Multi line text inputs |
+| [html template card](https://github.com/PiotrMachowski/Home-Assistant-Lovelace-HTML-Jinja2-Template-card) | html template card |
+| [lovelace multiline text input card](https://github.com/faeibson/lovelace-multiline-text-input-card) | Multi line text inputs |
+| [lovelace html card](https://github.com/PiotrMachowski/lovelace-html-card) | Lovelace hthml card |
 
 ---
 
@@ -259,6 +270,10 @@ JotTick creates sensors for each item:
 | Three Times Daily | 08:00, 13:00, 20:00 |
 | Every 6 Hours | 00:00, 06:00, 12:00, 18:00 |
 ---
+
+## Credit where credit is due
+
+Thank you to the creator of [Jotty](https://github.com/fccview/jotty) that started my journey into notes, lists and tasks. I also have a plugin that integrate Jotty with Home Assistant [Here](https://github.com/gelatinescreams/HA-HACS-Notes-and-Lists-Jotty-integration) that uses the same core features as this one.
 
 ## License
 
