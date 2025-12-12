@@ -1,18 +1,3 @@
-:root {
-  color-scheme: light dark;
-}
-
-body {
-  background-color: #ffffff;
-  color: #000000;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #0d1117;
-    color: #c9d1d9;
-  }
-}
 <p align="center">
   <img src="assets/logo_readme.png" alt="JotTik Logo" width="100"> 
   <br />
