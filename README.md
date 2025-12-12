@@ -64,7 +64,18 @@ Install these via HACS → Frontend:
 
 ## Installation
 
-### Step 1: Install the Integration
+### Step 1: Add Custom Repository to HACS
+
+1. Open Home Assistant
+2. Navigate to HACS in the sidebar
+3. Click the three dots menu (top right)
+4. Select "Custom repositories"
+5. Add the repository:
+6. Repository URL: https://github.com/gelatinescreams/JotTick
+7. Category: Integration
+8. Click "Add"
+
+### Step 2: Install the Integration
 
 #### Option A: HACS (Recommended)
 1. Open HACS → Integrations
@@ -72,32 +83,32 @@ Install these via HACS → Frontend:
 3. Add this repository URL and select "Integration"
 4. Search for "JotTick" and install
 5. Restart Home Assistant
-6. Continue to step 2
+6. Continue to step 3
 
 #### Option B: Manual
 1. Download the `jottick` folder from this repository
 2. Copy it to `config/custom_components/jottick/`
 3. Restart Home Assistant
 
-### Step 2: Add the Integration
+### Step 3: Add the Integration
 1. Go to **Settings → Devices & Services**
 2. Click **Add Integration**
 3. Search for "JotTick"
 4. Click to add.
 
-### Step 3: Install Helper Entities
+### Step 4: Install Helper Entities
 1. Copy the contents of `jottick_input_helpers.yaml` to your `configuration.yaml` or packages folder
 2. Restart Home Assistant (or reload Input helpers)
 
-### Step 4: Install Scripts
+### Step 5: Install Scripts
 1. Copy the contents of `jottick_scripts.yaml` to your scripts configuration
 2. Reload Scripts (Developer Tools → YAML → Reload Scripts)
 
-### Step 5: Install Automations
+### Step 6: Install Automations
 1. Copy the contents of `jottick_automations.yaml` to your automations configuration
 2. Reload Automations (Developer Tools → YAML → Reload Automations)
 
-### Step 6: Create the Dashboard
+### Step 7: Create the Dashboard
 1. Go to **Settings → Dashboards**
 2. Click **Add Dashboard**
 3. Name it "Notes AND Lists AND tasks OMG" (or whatever you prefer)
