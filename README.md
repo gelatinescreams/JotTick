@@ -273,7 +273,7 @@ JotTick creates sensors for each item:
 
 ## Credit where credit is due
 
-Thank you to the creator of [Jotty](https://github.com/fccview/jotty) that started my journey into notes, lists and tasks. I also have a plugin that integrate Jotty with Home Assistant [Here](https://github.com/gelatinescreams/HA-HACS-Notes-and-Lists-Jotty-integration) that uses the same core features as this one.
+Thank you to the creator of [Jotty](https://github.com/fccview/jotty) that started my journey into notes, lists and tasks. I also have a plugin that integrates Jotty with Home Assistant [Here](https://github.com/gelatinescreams/HA-HACS-Notes-and-Lists-Jotty-integration) and uses the same core features as this one.
 
 ## License
 
