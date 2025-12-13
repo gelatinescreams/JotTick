@@ -738,7 +738,21 @@
               targets: "{{ config.targets | default(config.target | default('')) }}"
               target_list: "{{ targets.split(',') if targets else [] }}"
               notification_title: "{% if custom_title != '' %}{{ custom_title }}{% else %}{{ item_title }}{% endif %}"
-              notification_message: "{% if custom_message != '' %}{{ custom_message }}{% else %}{{ incomplete_count }} item(s) remaining{% endif %}"
+              incomplete_items_list: >
+                {% if item_type == 'task' %}
+                  {% set items = state_attr(sensor_entity, 'flat_items') | default([]) %}
+                  {% set incomplete = items | rejectattr('status', 'eq', 'completed') | map(attribute='text') | list %}
+                {% else %}
+                  {% set items = state_attr(sensor_entity, 'items') | default([]) %}
+                  {% set incomplete = items | selectattr('completed', 'eq', false) | map(attribute='text') | list %}
+                {% endif %}
+                {{ incomplete | join('\n• ') }}
+              notification_message: >
+                {% if custom_message != '' %}
+                  {{ custom_message }}
+                {% else %}
+                  • {{ incomplete_items_list | trim }}
+                {% endif %}
           - repeat:
               count: "{{ target_list | length }}"
               sequence:

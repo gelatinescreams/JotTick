@@ -17,17 +17,27 @@ views:
                 .create-note-form textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--divider-color); border-radius: 6px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
                 .create-note-form button { padding: 10px 20px; background: var(--primary-color); color: var(--text-primary-color, white); border: none; border-radius: 6px; cursor: pointer; font-size: 1em; margin-top: 10px; }
                 .create-note-form button:hover { opacity: 0.9; }
+                .create-note-form .btn-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+                .create-img-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+                .create-img-preview .preview-thumb { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; }
+                .create-img-preview .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                .create-img-preview .preview-thumb button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; }
+                .create-status { font-size: 0.85em; color: var(--primary-color); margin-top: 8px; min-height: 20px; }
               </style>
               <div class="create-note-form">
                 <h3>New Note</h3>
                 <input type="text" class="new-note-title" placeholder="Title">
-                <textarea class="new-note-content" placeholder="Content (no character limit)"></textarea>
-                <button onclick="(function(btn){var p=btn.parentElement;var t=p.querySelector('.new-note-title').value;var c=p.querySelector('.new-note-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Creating...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','create_note',{title:t,content:c});}p.querySelector('.new-note-title').value='';p.querySelector('.new-note-content').value='';setTimeout(function(){btn.disabled=false;btn.textContent='Create';},1500);})(this);">Create</button>
+                <textarea class="new-note-content" placeholder="Content (html tags accepted)"></textarea>
+                <div class="create-img-preview"></div>
+                <div class="btn-row">
+                  <label class="add-img-label" style="display:inline-block;padding:10px 16px;background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:6px;cursor:pointer;font-size:1em;">📷 Add Images<input type="file" accept="image/*" multiple style="display:none;" onchange="var input=this,form=input.closest('.create-note-form'),preview=form.querySelector('.create-img-preview'),maxBytes=15*1024*1024;for(var i=0;i<input.files.length;i++){(function(file){var addThumb=function(dataUrl,name){var div=document.createElement('div');div.className='preview-thumb';div.dataset.name=name;div.dataset.type='image/jpeg';div.dataset.data=dataUrl;var img=document.createElement('img');img.src=dataUrl;div.appendChild(img);var btn=document.createElement('button');btn.textContent='×';btn.onclick=function(){div.remove();};div.appendChild(btn);preview.appendChild(div);};if(file.size<=maxBytes){var reader=new FileReader();reader.onload=function(e){addThumb(e.target.result,file.name);};reader.readAsDataURL(file);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,s=1;var tryIt=function(){canvas.width=w*s;canvas.height=h*s;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){var r2=new FileReader();r2.onload=function(e2){addThumb(e2.target.result,file.name.replace(/\.[^.]+$/,'.jpg'));};r2.readAsDataURL(blob);}else{q-=0.1;if(q<0.5)s*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}})(input.files[i]);}input.value='';"></label>
+                  <button onclick="var btn=this,form=btn.closest('.create-note-form'),title=form.querySelector('.new-note-title').value,content=form.querySelector('.new-note-content').value,status=form.querySelector('.create-status'),preview=form.querySelector('.create-img-preview'),thumbs=preview.querySelectorAll('.preview-thumb');if(!title.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Creating...';var noteId='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c=='x'?r:(r&0x3|0x8)).toString(16);});var ha=document.querySelector('home-assistant'),token=ha.hass.auth.data.access_token;ha.hass.callService('jottick','create_note',{title:title,content:content,note_id:noteId});if(thumbs.length>0){status.textContent='Uploading images...';var done=0,total=thumbs.length;thumbs.forEach(function(thumb){fetch(thumb.dataset.data).then(function(r){return r.blob();}).then(function(blob){var fd=new FormData();fd.append('note_id',noteId);fd.append('file',blob,thumb.dataset.name);return fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});}).then(function(){done++;status.textContent='Uploaded '+done+'/'+total;if(done>=total){status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}}).catch(function(e){status.textContent='Error: '+e;});});}else{status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}form.querySelector('.new-note-title').value='';form.querySelector('.new-note-content').value='';preview.innerHTML='';">Create</button>
+                </div>
+                <div class="create-status"></div>
               </div>
             grid_options:
               columns: full
               rows: auto
-
       - type: grid
         cards:
           - type: custom:html-template-card
@@ -82,6 +92,22 @@ views:
                   font-style: italic;
                   text-align: right;
                 }
+                .note-image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; margin: 10px 0; }
+                .note-image-thumb { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; cursor: pointer; background: var(--secondary-background-color); }
+                .note-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                .note-image-thumb:hover { opacity: 0.9; }
+                .note-image-thumb .img-del { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.2s; line-height: 1; padding: 0; }
+                .note-image-thumb:hover .img-del { opacity: 1; }
+                .image-count { display: inline-block; padding: 1px 6px; background: var(--primary-color); color: white; border-radius: 8px; font-size: 0.7em; margin-left: 6px; vertical-align: middle; }
+                .edit-images { margin: 10px 0; padding: 10px; background: var(--card-background-color); border-radius: 6px; }
+                .edit-images h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
+                .edit-upload-label { display: inline-block; padding: 6px 12px; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+                .edit-upload-label input { display: none; }
+                .upload-status { font-size: 0.8em; color: var(--primary-color); margin-top: 6px; min-height: 16px; }
+                .create-img-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+                .create-img-preview .preview-thumb { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; }
+                .create-img-preview .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                .create-img-preview .preview-thumb button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; }
                 .note-send-section, .note-edit-section {
                   margin-top: 12px;
                   padding: 12px;
@@ -127,16 +153,28 @@ views:
                   {% set ns.count = ns.count + 1 %}
                   {% if ns.count is odd %}
                     {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    {% set images = state_attr(state.entity_id, 'images') or [] %}
+                    {% set img_count = images | length %}
                     <div class="note-card">
                       <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}</div>
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}</div>
                         <div style="display:flex;gap:4px;">
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
-                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
                       <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      {% if img_count > 0 %}
+                      <div class="note-image-gallery">
+                        {% for img in images %}
+                        <div class="note-image-thumb" onclick="var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display=&quot;none&quot;;};document.body.appendChild(lb);}lb.querySelector('img').src='{{ img.url }}';lb.style.display='flex';">
+                          <img src="{{ img.url }}" loading="lazy" alt="">
+                          <button class="img-del" onclick="event.stopPropagation();if(confirm('Delete image?')){var btn=this,thumb=btn.closest('.note-image-thumb'),card=btn.closest('.note-card'),token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/delete-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({note_id:'{{ note_id }}',image_id:'{{ img.id }}'})}).then(function(r){return r.json();}).then(function(d){if(d.success){thumb.remove();var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;if(n<=1){badge.remove();}else{badge.textContent='📷'+(n-1);}}}else{alert(d.error||'Error');}});}">×</button>
+                        </div>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
                       <div class="note-timestamp">
                         Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
                       </div>
@@ -147,12 +185,27 @@ views:
                           <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
-                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
                       </div>
                       <div class="note-edit-section">
                         <h4>Edit Note</h4>
-                        <input type="text" class="edit-title" value="{{ state.state }}" placeholder="Title">
-                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') }}</textarea>
+                        <input type="text" class="edit-title" value="{{ state.state | e }}" placeholder="Title">
+                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') | e }}</textarea>
+                        <div class="edit-images">
+                          <h5>Images</h5>
+                          {% if img_count > 0 %}
+                          <div class="note-image-gallery">
+                            {% for img in images %}
+                            <div class="note-image-thumb" onclick="var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display=&quot;none&quot;;};document.body.appendChild(lb);}lb.querySelector('img').src='{{ img.url }}';lb.style.display='flex';">
+                              <img src="{{ img.url }}" loading="lazy" alt="">
+                              <button class="img-del" onclick="event.stopPropagation();if(confirm('Delete image?')){var btn=this,thumb=btn.closest('.note-image-thumb'),card=btn.closest('.note-card'),token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/delete-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({note_id:'{{ note_id }}',image_id:'{{ img.id }}'})}).then(function(r){return r.json();}).then(function(d){if(d.success){thumb.remove();var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;if(n<=1){badge.remove();}else{badge.textContent='📷'+(n-1);}}}else{alert(d.error||'Error');}});}">×</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          {% endif %}
+                          <label class="edit-upload-label">📤 Add Image<input type="file" accept="image/*" onchange="var input=this,card=input.closest('.note-card'),editImages=input.closest('.edit-images'),status=editImages.querySelector('.upload-status'),maxBytes=15*1024*1024;if(input.files[0]){status.textContent='Processing...';var file=input.files[0];var doUpload=function(blob,fname){status.textContent='Uploading...';var fd=new FormData();fd.append('note_id','{{ note_id }}');fd.append('file',blob,fname);var token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd}).then(function(r){return r.json();}).then(function(d){if(d.success){status.textContent='Done!';var gallery=editImages.querySelector('.note-image-gallery');if(!gallery){gallery=document.createElement('div');gallery.className='note-image-gallery';editImages.insertBefore(gallery,editImages.querySelector('.edit-upload-label'));}var thumb=document.createElement('div');thumb.className='note-image-thumb';var timg=document.createElement('img');timg.src=d.image.url;timg.loading='lazy';thumb.appendChild(timg);thumb.onclick=function(){var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display='none';};document.body.appendChild(lb);}lb.querySelector('img').src=d.image.url;lb.style.display='flex';};gallery.appendChild(thumb);var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;badge.textContent='📷'+(n+1);}else{badge=document.createElement('span');badge.className='image-count';badge.textContent='📷1';card.querySelector('.note-title').appendChild(badge);}setTimeout(function(){status.textContent='';},1500);}else{status.textContent='Error: '+(d.error||'Unknown');}}).catch(function(e){status.textContent='Error';});};if(file.size<=maxBytes){doUpload(file,file.name);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,sc=1;var tryIt=function(){canvas.width=w*sc;canvas.height=h*sc;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){doUpload(blob,file.name.replace(/\.[^.]+$/,'.jpg'));}else{q-=0.1;if(q<0.5)sc*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}input.value='';}"></label>
+                          <div class="upload-status"></div>
+                        </div>
                         <div class="edit-actions">
                           <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
@@ -200,6 +253,22 @@ views:
                   font-style: italic;
                   text-align: right;
                 }
+                .note-image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; margin: 10px 0; }
+                .note-image-thumb { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; cursor: pointer; background: var(--secondary-background-color); }
+                .note-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                .note-image-thumb:hover { opacity: 0.9; }
+                .note-image-thumb .img-del { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.2s; line-height: 1; padding: 0; }
+                .note-image-thumb:hover .img-del { opacity: 1; }
+                .image-count { display: inline-block; padding: 1px 6px; background: var(--primary-color); color: white; border-radius: 8px; font-size: 0.7em; margin-left: 6px; vertical-align: middle; }
+                .edit-images { margin: 10px 0; padding: 10px; background: var(--card-background-color); border-radius: 6px; }
+                .edit-images h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
+                .edit-upload-label { display: inline-block; padding: 6px 12px; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+                .edit-upload-label input { display: none; }
+                .upload-status { font-size: 0.8em; color: var(--primary-color); margin-top: 6px; min-height: 16px; }
+                .create-img-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+                .create-img-preview .preview-thumb { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; }
+                .create-img-preview .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                .create-img-preview .preview-thumb button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; }
                 .note-send-section, .note-edit-section {
                   margin-top: 12px;
                   padding: 12px;
@@ -231,16 +300,28 @@ views:
                   {% set ns.count = ns.count + 1 %}
                   {% if ns.count is even %}
                     {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    {% set images = state_attr(state.entity_id, 'images') or [] %}
+                    {% set img_count = images | length %}
                     <div class="note-card">
                       <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}</div>
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}</div>
                         <div style="display:flex;gap:4px;">
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
-                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
                       <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      {% if img_count > 0 %}
+                      <div class="note-image-gallery">
+                        {% for img in images %}
+                        <div class="note-image-thumb" onclick="var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display=&quot;none&quot;;};document.body.appendChild(lb);}lb.querySelector('img').src='{{ img.url }}';lb.style.display='flex';">
+                          <img src="{{ img.url }}" loading="lazy" alt="">
+                          <button class="img-del" onclick="event.stopPropagation();if(confirm('Delete image?')){var btn=this,thumb=btn.closest('.note-image-thumb'),card=btn.closest('.note-card'),token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/delete-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({note_id:'{{ note_id }}',image_id:'{{ img.id }}'})}).then(function(r){return r.json();}).then(function(d){if(d.success){thumb.remove();var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;if(n<=1){badge.remove();}else{badge.textContent='📷'+(n-1);}}}else{alert(d.error||'Error');}});}">×</button>
+                        </div>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
                       <div class="note-timestamp">
                         Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
                       </div>
@@ -251,12 +332,27 @@ views:
                           <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
-                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
                       </div>
                       <div class="note-edit-section">
                         <h4>Edit Note</h4>
-                        <input type="text" class="edit-title" value="{{ state.state }}" placeholder="Title">
-                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') }}</textarea>
+                        <input type="text" class="edit-title" value="{{ state.state | e }}" placeholder="Title">
+                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') | e }}</textarea>
+                        <div class="edit-images">
+                          <h5>Images</h5>
+                          {% if img_count > 0 %}
+                          <div class="note-image-gallery">
+                            {% for img in images %}
+                            <div class="note-image-thumb" onclick="var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display=&quot;none&quot;;};document.body.appendChild(lb);}lb.querySelector('img').src='{{ img.url }}';lb.style.display='flex';">
+                              <img src="{{ img.url }}" loading="lazy" alt="">
+                              <button class="img-del" onclick="event.stopPropagation();if(confirm('Delete image?')){var btn=this,thumb=btn.closest('.note-image-thumb'),card=btn.closest('.note-card'),token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/delete-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({note_id:'{{ note_id }}',image_id:'{{ img.id }}'})}).then(function(r){return r.json();}).then(function(d){if(d.success){thumb.remove();var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;if(n<=1){badge.remove();}else{badge.textContent='📷'+(n-1);}}}else{alert(d.error||'Error');}});}">×</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          {% endif %}
+                          <label class="edit-upload-label">📤 Add Image<input type="file" accept="image/*" onchange="var input=this,card=input.closest('.note-card'),editImages=input.closest('.edit-images'),status=editImages.querySelector('.upload-status'),maxBytes=15*1024*1024;if(input.files[0]){status.textContent='Processing...';var file=input.files[0];var doUpload=function(blob,fname){status.textContent='Uploading...';var fd=new FormData();fd.append('note_id','{{ note_id }}');fd.append('file',blob,fname);var token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd}).then(function(r){return r.json();}).then(function(d){if(d.success){status.textContent='Done!';var gallery=editImages.querySelector('.note-image-gallery');if(!gallery){gallery=document.createElement('div');gallery.className='note-image-gallery';editImages.insertBefore(gallery,editImages.querySelector('.edit-upload-label'));}var thumb=document.createElement('div');thumb.className='note-image-thumb';var timg=document.createElement('img');timg.src=d.image.url;timg.loading='lazy';thumb.appendChild(timg);thumb.onclick=function(){var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display='none';};document.body.appendChild(lb);}lb.querySelector('img').src=d.image.url;lb.style.display='flex';};gallery.appendChild(thumb);var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;badge.textContent='📷'+(n+1);}else{badge=document.createElement('span');badge.className='image-count';badge.textContent='📷1';card.querySelector('.note-title').appendChild(badge);}setTimeout(function(){status.textContent='';},1500);}else{status.textContent='Error: '+(d.error||'Unknown');}}).catch(function(e){status.textContent='Error';});};if(file.size<=maxBytes){doUpload(file,file.name);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,sc=1;var tryIt=function(){canvas.width=w*sc;canvas.height=h*sc;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){doUpload(blob,file.name.replace(/\.[^.]+$/,'.jpg'));}else{q-=0.1;if(q<0.5)sc*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}input.value='';}"></label>
+                          <div class="upload-status"></div>
+                        </div>
                         <div class="edit-actions">
                           <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
@@ -502,7 +598,7 @@ views:
                       <div class="add-item-section">
                         <input type="text" class="add-item-input" placeholder="Add new item...">
                         <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -794,7 +890,7 @@ views:
                       <div class="add-item-section">
                         <input type="text" class="add-item-input" placeholder="Add new item...">
                         <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -1229,7 +1325,7 @@ views:
                         </select>
                         <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
                         <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
-                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -1239,9 +1335,9 @@ views:
                               <div class="status-color" style="background:{{ status.color if status.color else 'var(--secondary-text-color)' }};"></div>
                               <span class="status-name">{{ status.name }}</span>
                               <span class="status-id">({{ status.id }})</span>
-                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
+                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name | replace('"', '&quot;') | replace("'", "\\'") }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
                               {% if statuses | length > 1 %}
-                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
+                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
                               {% endif %}
                             </div>
                           {% endfor %}
@@ -1507,7 +1603,7 @@ views:
                         </select>
                         <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
                         <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Task Categories</button>
-                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -1517,9 +1613,9 @@ views:
                               <div class="status-color" style="background:{{ status.color if status.color else 'var(--secondary-text-color)' }};"></div>
                               <span class="status-name">{{ status.name }}</span>
                               <span class="status-id">({{ status.id }})</span>
-                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
+                              <button style="padding:2px 6px;background:var(--warning-color, #ff9800);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="(function(btn){const newLabel=prompt('New label:','{{ status.name | replace('"', '&quot;') | replace("'", "\\'") }}');if(newLabel&&newLabel.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'update_status|||{{ task_id }}|||{{ status.id }}|||'+newLabel.trim()});}}})(this);">Edit</button>
                               {% if statuses | length > 1 %}
-                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
+                              <button style="padding:2px 6px;background:var(--error-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.75em;" onclick="if(confirm('Delete {{ status.name | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_kanban_action_data',value:'delete_status|||{{ task_id }}|||{{ status.id }}'});}}">Delete
                               {% endif %}
                             </div>
                           {% endfor %}

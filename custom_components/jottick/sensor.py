@@ -170,13 +170,23 @@ class JotTickNoteSensor(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         note = self._get_note()
         if note:
+            images = note.get("images", [])
             return {
                 "note_id": self.note_id,
                 "content": note.get("content", ""),
+                "images": images,
+                "image_count": len(images),
+                "has_images": len(images) > 0,
                 "updated": note.get("updatedAt", ""),
                 "created": note.get("createdAt", ""),
             }
-        return {"note_id": self.note_id, "content": ""}
+        return {
+            "note_id": self.note_id,
+            "content": "",
+            "images": [],
+            "image_count": 0,
+            "has_images": False,
+        }
 
     @property
     def available(self):

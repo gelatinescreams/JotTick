@@ -1,0 +1,33 @@
+language: "en"
+intents:
+  JotTickAddToList:
+    data:
+      - sentences:
+          - "add {item} to [the] {list_name} [list]"
+          - "put {item} on [the] {list_name} [list]"
+          - "{list_name} to {item}"
+
+  JotTickThought:
+    data:
+      - sentences:
+          - "thought {content}"
+
+  JotTickCreateNote:
+    data:
+      - sentences:
+          - "make [a] [new] note [called] {title} content {content}"
+          - "create [a] [new] note [called] {title} content {content}"
+          - "new note [called] {title} content {content}"
+          - "make [a] [new] note [called] {title}"
+          - "create [a] [new] note [called] {title}"
+          - "new note [called] {title}"
+
+lists:
+  list_name:
+    wildcard: true
+  item:
+    wildcard: true
+  title:
+    wildcard: true
+  content:
+    wildcard: true

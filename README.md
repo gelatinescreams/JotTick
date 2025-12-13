@@ -20,10 +20,22 @@ A notes, checklists, and task management integration for Home Assistant. Include
 </p>
 
 
+### New  12/13/25
+- **Version 1.1**
+- Added full assist integration [read more here @ assist_README.md](assist_README.md)
+- Added image uploads to notes
+- Added image viewer to notes
+- Added extra character sanitization to inputs
+- Notes now accept simple html
+- *markdown as additional notes option is coming in the next update. currently testing*
+- Changed list notification to send unchecked/not completed items in the device notification
+- Various dashboard fixes
+
 ### Notes
-- Create, edit, and delete notes
+- Create, edit, and delete notes with images
 - Dual column layout mimics popular masonry grids
 - Send notes directly to mobile devices as notifications at any time
+- Lightbox image viewer per note
 
 ### Checklists
 - Create, edit, and delete checklists

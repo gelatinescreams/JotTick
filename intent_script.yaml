@@ -1,0 +1,42 @@
+JotTickThought:
+  action:
+    - service: jottick.create_note
+      data:
+        title: "thought-{{ now().strftime('%Y-%m-%d %I:%M %p') }}"
+        content: "{{ content }}"
+  speech:
+    text: "Thought saved"
+
+JotTickAddToList:
+  action:
+    - variables:
+        search_name: "{{ list_name | lower | trim }}"
+        found_id: >
+          {% set ns = namespace(found='') %}
+          {% for state in states.sensor %}
+            {% set title = state_attr(state.entity_id, 'title') | default('') | lower %}
+            {% set cid = state_attr(state.entity_id, 'checklist_id') | default('') %}
+            {% if cid and (title == search_name or search_name in title) %}
+              {% set ns.found = cid %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.found }}
+    - if: "{{ found_id != '' }}"
+      then:
+        - service: jottick.add_checklist_item
+          data:
+            checklist_id: "{{ found_id }}"
+            text: "{{ item }}"
+      else:
+        - stop: "Sorry, I could not find a list called {{ list_name }}"
+  speech:
+    text: "Added {{ item }} to {{ list_name }}"
+
+JotTickCreateNote:
+  action:
+    - service: jottick.create_note
+      data:
+        title: "{{ title }}"
+        content: "{{ content | default('') }}"
+  speech:
+    text: "Created note {{ title }}"

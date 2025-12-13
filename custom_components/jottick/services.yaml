@@ -13,6 +13,12 @@ create_note:
       selector:
         text:
           multiline: true
+    note_id:
+      name: Note ID
+      description: Optional - provide your own ID for the note
+      required: false
+      selector:
+        text:
 
 update_note:
   name: Update Note
@@ -41,6 +47,116 @@ delete_note:
   fields:
     note_id:
       name: Note ID
+      required: true
+      selector:
+        text:
+
+add_note_image:
+  name: Add Note Image
+  description: Add an image to a note from base64 data
+  fields:
+    note_id:
+      name: Note ID
+      description: The ID of the note to add the image to
+      required: true
+      selector:
+        text:
+    image_data:
+      name: Image Data
+      description: Base64 encoded image data (with or without data URL prefix)
+      required: true
+      selector:
+        text:
+          multiline: true
+    filename:
+      name: Filename
+      description: Optional original filename (used to determine file extension)
+      required: false
+      selector:
+        text:
+    caption:
+      name: Caption
+      description: Optional caption for the image
+      required: false
+      selector:
+        text:
+
+add_note_image_from_path:
+  name: Add Note Image from Path
+  description: Add an image to a note from a local file path
+  fields:
+    note_id:
+      name: Note ID
+      description: The ID of the note to add the image to
+      required: true
+      selector:
+        text:
+    source_path:
+      name: Source Path
+      description: Full path to the image file
+      required: true
+      selector:
+        text:
+    caption:
+      name: Caption
+      description: Optional caption for the image
+      required: false
+      selector:
+        text:
+
+delete_note_image:
+  name: Delete Note Image
+  description: Delete a specific image from a note
+  fields:
+    note_id:
+      name: Note ID
+      description: The ID of the note containing the image
+      required: true
+      selector:
+        text:
+    image_id:
+      name: Image ID
+      description: The ID of the image to delete
+      required: true
+      selector:
+        text:
+
+update_note_image_caption:
+  name: Update Note Image Caption
+  description: Update the caption of an image
+  fields:
+    note_id:
+      name: Note ID
+      description: The ID of the note containing the image
+      required: true
+      selector:
+        text:
+    image_id:
+      name: Image ID
+      description: The ID of the image to update
+      required: true
+      selector:
+        text:
+    caption:
+      name: Caption
+      description: New caption for the image
+      required: true
+      selector:
+        text:
+
+reorder_note_images:
+  name: Reorder Note Images
+  description: Reorder images in a note
+  fields:
+    note_id:
+      name: Note ID
+      description: The ID of the note
+      required: true
+      selector:
+        text:
+    image_ids:
+      name: Image IDs
+      description: Comma-separated list of image IDs in desired order
       required: true
       selector:
         text:

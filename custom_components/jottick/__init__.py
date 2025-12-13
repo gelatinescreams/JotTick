@@ -1,8 +1,14 @@
 import logging
 import uuid
+import os
+import base64
+import shutil
+import json
 from datetime import datetime, timedelta
 from typing import Any
 
+from aiohttp import web
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -15,6 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
 
+IMAGES_DIR = "www/jottick/images"
+
 
 def generate_id() -> str:
     return str(uuid.uuid4())
@@ -22,6 +30,130 @@ def generate_id() -> str:
 
 def now_iso() -> str:
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
+class JotTickUploadView(HomeAssistantView):
+    """Handle direct image uploads to JotTick."""
+    
+    url = "/api/jottick/upload"
+    name = "api:jottick:upload"
+    requires_auth = True
+    
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+    
+    async def post(self, request):
+        """Handle image upload."""
+        try:
+            data = await request.post()
+            
+            note_id = data.get('note_id')
+            if not note_id:
+                return web.json_response({"success": False, "error": "note_id required"}, status=400)
+            
+            file_field = data.get('file')
+            if not file_field:
+                return web.json_response({"success": False, "error": "file required"}, status=400)
+            
+            filename = file_field.filename
+            content = file_field.file.read()
+            
+            ext = os.path.splitext(filename)[1].lower() or '.jpg'
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+            if ext not in allowed_extensions:
+                return web.json_response({"success": False, "error": "Invalid file type"}, status=400)
+            
+            image_id = generate_id()[:8]
+            safe_filename = f"{note_id}_{image_id}{ext}"
+            
+            images_path = self.coordinator.hass.config.path(IMAGES_DIR)
+            if not os.path.exists(images_path):
+                os.makedirs(images_path, exist_ok=True)
+            
+            file_path = os.path.join(images_path, safe_filename)
+            
+            def write_file():
+                with open(file_path, 'wb') as f:
+                    f.write(content)
+            
+            await self.coordinator.hass.async_add_executor_job(write_file)
+            
+            image_url = f"/local/jottick/images/{safe_filename}"
+            image_record = {
+                "id": image_id,
+                "filename": safe_filename,
+                "url": image_url,
+                "caption": "",
+                "addedAt": now_iso()
+            }
+            
+            for note in self.coordinator._data["notes"]:
+                if note["id"] == note_id:
+                    if "images" not in note:
+                        note["images"] = []
+                    note["images"].append(image_record)
+                    note["updated"] = now_iso()
+                    break
+            
+            await self.coordinator.async_save()
+            await self.coordinator.async_request_refresh()
+            
+            return web.json_response({
+                "success": True,
+                "image": image_record
+            })
+            
+        except Exception as e:
+            _LOGGER.error(f"Upload error: {e}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+
+class JotTickDeleteImageView(HomeAssistantView):
+    """Handle image deletion."""
+    
+    url = "/api/jottick/delete-image"
+    name = "api:jottick:delete_image"
+    requires_auth = True
+    
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+    
+    async def post(self, request):
+        """Handle image deletion."""
+        try:
+            data = await request.json()
+            note_id = data.get('note_id')
+            image_id = data.get('image_id')
+            
+            if not note_id or not image_id:
+                return web.json_response({"success": False, "error": "note_id and image_id required"}, status=400)
+            
+            for note in self.coordinator._data["notes"]:
+                if note["id"] == note_id:
+                    if "images" not in note:
+                        return web.json_response({"success": False, "error": "No images"}, status=404)
+                    
+                    for img in note["images"]:
+                        if img["id"] == image_id:
+                            file_path = self.coordinator.hass.config.path(IMAGES_DIR, img["filename"])
+                            if os.path.exists(file_path):
+                                await self.coordinator.hass.async_add_executor_job(os.remove, file_path)
+                            
+                            note["images"].remove(img)
+                            note["updated"] = now_iso()
+                            
+                            await self.coordinator.async_save()
+                            await self.coordinator.async_request_refresh()
+                            
+                            return web.json_response({"success": True})
+                    
+                    return web.json_response({"success": False, "error": "Image not found"}, status=404)
+            
+            return web.json_response({"success": False, "error": "Note not found"}, status=404)
+            
+        except Exception as e:
+            _LOGGER.error(f"Delete image error: {e}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -32,6 +164,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         stored_data = {"notes": [], "checklists": [], "tasks": []}
         await store.async_save(stored_data)
     
+    images_path = hass.config.path(IMAGES_DIR)
+    if not os.path.exists(images_path):
+        os.makedirs(images_path, exist_ok=True)
+    
     coordinator = JotTickCoordinator(hass, store, stored_data)
     
     hass.data.setdefault(DOMAIN, {})
@@ -39,6 +175,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "store": store,
         "coordinator": coordinator,
     }
+    
+    hass.http.register_view(JotTickUploadView(coordinator))
+    hass.http.register_view(JotTickDeleteImageView(coordinator))
     
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_services(hass, entry.entry_id)
@@ -76,11 +215,12 @@ class JotTickCoordinator(DataUpdateCoordinator):
         self.data = self._format_data()
         self.async_set_updated_data(self.data)
     
-    async def create_note(self, title: str, content: str = "") -> dict:
+    async def create_note(self, title: str, content: str = "", note_id: str = None) -> dict:
         note = {
-            "id": generate_id(),
+            "id": note_id if note_id else generate_id(),
             "title": title,
             "content": content,
+            "images": [],
             "createdAt": now_iso(),
             "updatedAt": now_iso(),
         }
@@ -103,9 +243,205 @@ class JotTickCoordinator(DataUpdateCoordinator):
     async def delete_note(self, note_id: str) -> bool:
         for i, note in enumerate(self._data["notes"]):
             if note["id"] == note_id:
+                images = note.get("images", [])
+                images_path = self.hass.config.path(IMAGES_DIR)
+                for img in images:
+                    img_file = os.path.join(images_path, img.get("filename", ""))
+                    if os.path.exists(img_file):
+                        try:
+                            os.remove(img_file)
+                        except Exception as e:
+                            _LOGGER.error(f"Failed to delete image {img_file}: {e}")
+                
                 del self._data["notes"][i]
                 await self.async_save()
                 return True
+        raise ValueError(f"Note {note_id} not found")
+
+    async def add_note_image(self, note_id: str, image_data: str, filename: str = None, caption: str = "") -> dict:
+        """Add an image to a note from base64 data."""
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                if "images" not in note:
+                    note["images"] = []
+                
+                image_id = generate_id()[:8]
+                
+                ext = ".jpg"
+                if image_data.startswith("data:"):
+                    mime_part = image_data.split(";")[0]  
+                    if "/" in mime_part:
+                        mime_type = mime_part.split("/")[1]
+                        ext_map = {
+                            "jpeg": ".jpg",
+                            "jpg": ".jpg",
+                            "png": ".png",
+                            "gif": ".gif",
+                            "webp": ".webp",
+                            "bmp": ".bmp",
+                        }
+                        ext = ext_map.get(mime_type.lower(), ".jpg")
+                elif filename:
+                    _, file_ext = os.path.splitext(filename)
+                    if file_ext:
+                        ext = file_ext.lower()
+                
+                safe_filename = f"{note_id}_{image_id}{ext}"
+                
+                images_path = self.hass.config.path(IMAGES_DIR)
+                if not os.path.exists(images_path):
+                    os.makedirs(images_path, exist_ok=True)
+                
+                file_path = os.path.join(images_path, safe_filename)
+                
+                try:
+                    base64_data = image_data
+                    if "," in base64_data:
+                        base64_data = base64_data.split(",")[1]
+                    
+                    padding = 4 - len(base64_data) % 4
+                    if padding != 4:
+                        base64_data += "=" * padding
+                    
+                    image_bytes = base64.b64decode(base64_data)
+                    
+                    def write_file():
+                        with open(file_path, "wb") as f:
+                            f.write(image_bytes)
+                    
+                    await self.hass.async_add_executor_job(write_file)
+                    
+                except Exception as e:
+                    _LOGGER.error(f"Failed to save image: {e}")
+                    raise ValueError(f"Failed to save image: {e}")
+                
+                image_record = {
+                    "id": image_id,
+                    "filename": safe_filename,
+                    "url": f"/local/jottick/images/{safe_filename}",
+                    "caption": caption,
+                    "addedAt": now_iso(),
+                }
+                
+                note["images"].append(image_record)
+                note["updatedAt"] = now_iso()
+                await self.async_save()
+                return image_record
+        
+        raise ValueError(f"Note {note_id} not found")
+
+    async def add_note_image_from_path(self, note_id: str, source_path: str, caption: str = "") -> dict:
+        """Add an image to a note from a file path."""
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                if "images" not in note:
+                    note["images"] = []
+                
+                if not os.path.exists(source_path):
+                    raise ValueError(f"Source file not found: {source_path}")
+                
+                image_id = generate_id()[:8]
+                _, ext = os.path.splitext(source_path)
+                if not ext:
+                    ext = ".jpg"
+                
+                safe_filename = f"{note_id}_{image_id}{ext}"
+                
+                images_path = self.hass.config.path(IMAGES_DIR)
+                if not os.path.exists(images_path):
+                    os.makedirs(images_path, exist_ok=True)
+                
+                dest_path = os.path.join(images_path, safe_filename)
+                
+                try:
+                    def copy_file():
+                        shutil.copy2(source_path, dest_path)
+                    
+                    await self.hass.async_add_executor_job(copy_file)
+                    
+                except Exception as e:
+                    _LOGGER.error(f"Failed to copy image: {e}")
+                    raise ValueError(f"Failed to copy image: {e}")
+                
+                image_record = {
+                    "id": image_id,
+                    "filename": safe_filename,
+                    "url": f"/local/jottick/images/{safe_filename}",
+                    "caption": caption,
+                    "addedAt": now_iso(),
+                }
+                
+                note["images"].append(image_record)
+                note["updatedAt"] = now_iso()
+                await self.async_save()
+                return image_record
+        
+        raise ValueError(f"Note {note_id} not found")
+
+    async def delete_note_image(self, note_id: str, image_id: str) -> bool:
+        """Delete a specific image from a note."""
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                images = note.get("images", [])
+                for i, img in enumerate(images):
+                    if img["id"] == image_id:
+                        images_path = self.hass.config.path(IMAGES_DIR)
+                        img_file = os.path.join(images_path, img["filename"])
+                        if os.path.exists(img_file):
+                            try:
+                                def delete_file():
+                                    os.remove(img_file)
+                                await self.hass.async_add_executor_job(delete_file)
+                            except Exception as e:
+                                _LOGGER.error(f"Failed to delete image file: {e}")
+                        
+                        del images[i]
+                        note["updatedAt"] = now_iso()
+                        await self.async_save()
+                        return True
+                
+                raise ValueError(f"Image {image_id} not found in note")
+        
+        raise ValueError(f"Note {note_id} not found")
+
+    async def update_note_image_caption(self, note_id: str, image_id: str, caption: str) -> dict:
+        """Update the caption of an image."""
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                images = note.get("images", [])
+                for img in images:
+                    if img["id"] == image_id:
+                        img["caption"] = caption
+                        note["updatedAt"] = now_iso()
+                        await self.async_save()
+                        return img
+                
+                raise ValueError(f"Image {image_id} not found in note")
+        
+        raise ValueError(f"Note {note_id} not found")
+
+    async def reorder_note_images(self, note_id: str, image_ids: list) -> bool:
+        """Reorder images in a note based on provided order of image IDs."""
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                images = note.get("images", [])
+                
+                img_lookup = {img["id"]: img for img in images}
+                
+                new_order = []
+                for img_id in image_ids:
+                    if img_id in img_lookup:
+                        new_order.append(img_lookup[img_id])
+                
+                for img in images:
+                    if img["id"] not in image_ids:
+                        new_order.append(img)
+                
+                note["images"] = new_order
+                note["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        
         raise ValueError(f"Note {note_id} not found")
     
     async def create_checklist(self, title: str, list_type: str = "simple") -> dict:
@@ -332,6 +668,7 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
         await coordinator.create_note(
             title=call.data.get("title"),
             content=call.data.get("content", ""),
+            note_id=call.data.get("note_id"),
         )
 
     async def handle_update_note(call: ServiceCall):
@@ -345,6 +682,48 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     async def handle_delete_note(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.delete_note(note_id=call.data.get("note_id"))
+
+    async def handle_add_note_image(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.add_note_image(
+            note_id=call.data.get("note_id"),
+            image_data=call.data.get("image_data"),
+            filename=call.data.get("filename"),
+            caption=call.data.get("caption", ""),
+        )
+
+    async def handle_add_note_image_from_path(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.add_note_image_from_path(
+            note_id=call.data.get("note_id"),
+            source_path=call.data.get("source_path"),
+            caption=call.data.get("caption", ""),
+        )
+
+    async def handle_delete_note_image(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.delete_note_image(
+            note_id=call.data.get("note_id"),
+            image_id=call.data.get("image_id"),
+        )
+
+    async def handle_update_note_image_caption(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_note_image_caption(
+            note_id=call.data.get("note_id"),
+            image_id=call.data.get("image_id"),
+            caption=call.data.get("caption", ""),
+        )
+
+    async def handle_reorder_note_images(call: ServiceCall):
+        coordinator = get_coordinator()
+        image_ids = call.data.get("image_ids", [])
+        if isinstance(image_ids, str):
+            image_ids = [x.strip() for x in image_ids.split(",")]
+        await coordinator.reorder_note_images(
+            note_id=call.data.get("note_id"),
+            image_ids=image_ids,
+        )
   
     async def handle_create_checklist(call: ServiceCall):
         coordinator = get_coordinator()
@@ -463,6 +842,12 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     hass.services.async_register(DOMAIN, "create_note", handle_create_note)
     hass.services.async_register(DOMAIN, "update_note", handle_update_note)
     hass.services.async_register(DOMAIN, "delete_note", handle_delete_note)
+    
+    hass.services.async_register(DOMAIN, "add_note_image", handle_add_note_image)
+    hass.services.async_register(DOMAIN, "add_note_image_from_path", handle_add_note_image_from_path)
+    hass.services.async_register(DOMAIN, "delete_note_image", handle_delete_note_image)
+    hass.services.async_register(DOMAIN, "update_note_image_caption", handle_update_note_image_caption)
+    hass.services.async_register(DOMAIN, "reorder_note_images", handle_reorder_note_images)
     
     hass.services.async_register(DOMAIN, "create_checklist", handle_create_checklist)
     hass.services.async_register(DOMAIN, "update_checklist", handle_update_checklist)
