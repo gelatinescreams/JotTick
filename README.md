@@ -19,6 +19,8 @@ A notes, checklists, and task management integration for Home Assistant. Include
   <img src="assets/tasks-preview.gif"> 
 </p>
 
+### Demo
+[Test drive the features at JotTick.com](https://jottick.com)
 
 ### New 12/15/25
 - **Version 1.2** Note Enhancements
