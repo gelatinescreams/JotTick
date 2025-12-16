@@ -28,8 +28,9 @@ A notes, checklists, and task management integration for Home Assistant. Include
 - **Markdown Support**: Toggle between HTML and Markdown when creating notes
   - Renders bold, italic, headers, lists, blockquotes, code, links, horizontal rules
   - "MD" badge for markdown notes
-- **Password-Protected Notes**: Encrypt notes with AES/256/GCM
+- **Password Protected Notes**: Encrypt notes with AES-256-GCM
   - Browser side encryption/decryption via Web Crypto API
+  - Supported by all modern browsers
   - Server never sees plaintext content
 - Upgrade information and more changes available via [changelog.md](changelog.md)
 
