@@ -1311,3 +1311,147 @@ jottick_reset_task:
               task_id: "{{ task_id }}"
               item_index: "{{ repeat.item.index_path }}"
               status: "todo"
+
+# added 1.2 12/15/25
+jottick_schedule_note:
+  alias: "JotTick: Schedule Note"
+  fields:
+    note_id:
+      description: "Note ID"
+    title:
+      description: "Note title"
+    message:
+      description: "Note content"
+    targets:
+      description: "Comma-separated notify service targets"
+    scheduled_time:
+      description: "ISO datetime string for when to send"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        schedule_id: "{{ (now().timestamp() * 1000) | int | string ~ '_' ~ (range(1000, 9999) | random | string) }}"
+        new_schedule:
+          note_id: "{{ note_id }}"
+          title: "{{ title }}"
+          message: "{{ message }}"
+          targets: "{{ targets }}"
+          scheduled_time: "{{ scheduled_time }}"
+          created: "{{ now().isoformat() }}"
+        safe_schedules: "{{ schedules if schedules is mapping else {} }}"
+        updated_schedules: "{{ dict(safe_schedules, **{schedule_id: new_schedule}) }}"
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"
+    - service: persistent_notification.create
+      data:
+        title: "Note Scheduled"
+        message: "{{ title }} scheduled for {{ as_timestamp(scheduled_time) | timestamp_custom('%b %d at %I:%M %p') }}"
+        notification_id: jottick_note_scheduled
+
+jottick_cancel_scheduled_note:
+  alias: "JotTick: Cancel Scheduled Note"
+  fields:
+    schedule_id:
+      description: "Schedule ID to cancel"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+    - condition: template
+      value_template: "{{ schedules is mapping and schedule_id in schedules }}"
+    - variables:
+        updated_schedules: >
+          {% set safe_schedules = schedules if schedules is mapping else {} %}
+          {% set ns = namespace(result={}) %}
+          {% for key, val in safe_schedules.items() %}
+            {% if key != schedule_id %}
+              {% set ns.result = dict(ns.result, **{key: val}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"
+    - service: persistent_notification.create
+      data:
+        title: "Scheduled Note Cancelled"
+        message: "The scheduled note has been cancelled"
+        notification_id: jottick_note_cancelled
+
+jottick_send_scheduled_note:
+  alias: "JotTick: Send Scheduled Note"
+  fields:
+    schedule_id:
+      description: "Schedule ID"
+    title:
+      description: "Note title"
+    message:
+      description: "Note content"
+    targets:
+      description: "Comma-separated notify service targets"
+  sequence:
+    - variables:
+        target_list: "{{ targets.split(',') }}"
+    - repeat:
+        count: "{{ target_list | length }}"
+        sequence:
+          - service: "{{ target_list[repeat.index - 1] }}"
+            data:
+              title: "{{ title }}"
+              message: "{{ message }}"
+              data:
+                tag: "jottick_scheduled_{{ schedule_id }}"
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        updated_schedules: >
+          {% set safe_schedules = schedules if schedules is mapping else {} %}
+          {% set ns = namespace(result={}) %}
+          {% for key, val in safe_schedules.items() %}
+            {% if key != schedule_id %}
+              {% set ns.result = dict(ns.result, **{key: val}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"        
+        
+jottick_debug_scheduled_notes:
+  alias: "JotTick: Debug Scheduled Notes"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        schedules_count: "{{ schedules | length if schedules is mapping else 'NOT A MAPPING' }}"
+        schedules_keys: "{{ schedules | list if schedules is mapping else [] }}"
+        current_ts: "{{ now().timestamp() }}"
+    - service: persistent_notification.create
+      data:
+        title: "Scheduled Notes Debug"
+        message: >
+          Schedules count: {{ schedules_count }}
+          
+          Keys: {{ schedules_keys }}
+          
+          Current timestamp: {{ current_ts }}
+          
+          Raw schedules: {{ schedules }}
+        notification_id: jottick_debug
+
+jottick_force_send_scheduled:
+  alias: "JotTick: Force Send All Scheduled"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+    - condition: template
+      value_template: "{{ schedules is mapping and schedules | length > 0 }}"
+    - repeat:
+        for_each: "{{ schedules | list }}"
+        sequence:
+          - variables:
+              schedule_id: "{{ repeat.item }}"
+              schedule: "{{ schedules[repeat.item] }}"
+          - service: script.jottick_send_scheduled_note
+            data:
+              schedule_id: "{{ schedule_id }}"
+              title: "{{ schedule.title | default('Note') }}"
+              message: "{{ schedule.message | default('') }}"
+              targets: "{{ schedule.targets | default('') }}" 

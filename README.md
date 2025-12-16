@@ -20,16 +20,18 @@ A notes, checklists, and task management integration for Home Assistant. Include
 </p>
 
 
-### New  12/13/25
-- **Version 1.1**
-- Added full assist integration [read more here @ assist_README.md](assist_README.md)
-- Added image uploads to notes
-- Added image viewer to notes
-- Added extra character sanitization to inputs
-- Notes now accept simple html
-- *markdown as additional notes option is coming in the next update. currently testing*
-- Changed list notification to send unchecked/not completed items in the device notification
-- Various dashboard fixes
+### New 12/15/25
+- **Version 1.2** Note Enhancements
+- **Scheduled Note Sending**: Schedule notes to send to devices
+  - Easy Datetime picker
+  - Per note badge shows pending schedule count(s)
+- **Markdown Support**: Toggle between HTML and Markdown when creating notes
+  - Renders bold, italic, headers, lists, blockquotes, code, links, horizontal rules
+  - "MD" badge for markdown notes
+- **Password-Protected Notes**: Encrypt notes with AES/256/GCM
+  - Browser side encryption/decryption via Web Crypto API
+  - Server never sees plaintext content
+- Upgrade information and more changes available via [changelog.md](changelog.md)
 
 ### Notes
 - Create, edit, and delete notes with images
@@ -216,6 +218,13 @@ When you mark a task as "Completed", all its direct subtasks are also marked com
 | `jottick.create_note` | Create a new note |
 | `jottick.update_note` | Update note title/content |
 | `jottick.delete_note` | Delete a note |
+| `jottick.create_note` | Create a new note |
+| `jottick.update_note` | Update note title/content |
+| `jottick.delete_note` | Delete a note |
+| `jottick_send_note_to_devices` | Send note to selected devices |
+| `jottick_schedule_note` | Schedule note for future delivery |
+| `jottick_cancel_scheduled_note` | Cancel a scheduled send |
+| `jottick_send_scheduled_note` | Execute scheduled send (called by automation) |
 
 ### Checklists
 | Service | Description |
@@ -266,6 +275,7 @@ JotTick creates sensors for each item:
 | `sensor.jottick_total_notes` | Count | — |
 | `sensor.jottick_total_checklists` | Count | — |
 | `sensor.jottick_total_tasks` | Count | — |
+| `sensor.jottick_scheduled_notes` | Count | schedules (dict of pending sends) |
 
 ---
 

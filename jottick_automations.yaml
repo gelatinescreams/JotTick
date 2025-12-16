@@ -841,3 +841,33 @@
                   - service: script.jottick_reset_checklist
                     data:
                       checklist_id: "{{ item_id }}"
+
+# added 1.2 12/15/25
+- id: jottick_process_scheduled_notes
+  alias: "JotTick: Process Scheduled Notes"
+  trigger:
+    - platform: time_pattern
+      minutes: "/1"
+  action:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        current_ts: "{{ now().timestamp() | int }}"
+    - condition: template
+      value_template: "{{ schedules is mapping and schedules | length > 0 }}"
+    - repeat:
+        for_each: "{{ schedules.keys() | list if schedules is mapping else [] }}"
+        sequence:
+          - variables:
+              schedule_id: "{{ repeat.item }}"
+              schedule: "{{ schedules[schedule_id] if schedules[schedule_id] is defined else {} }}"
+              scheduled_time: "{{ schedule.scheduled_time | default('') }}"
+              scheduled_ts: "{{ as_timestamp(scheduled_time) | int if scheduled_time else 0 }}"
+              is_due: "{{ scheduled_ts > 0 and current_ts >= scheduled_ts }}"
+          - condition: template
+            value_template: "{{ is_due }}"
+          - service: script.jottick_send_scheduled_note
+            data:
+              schedule_id: "{{ schedule_id }}"
+              title: "{{ schedule.title | default('Note') }}"
+              message: "{{ schedule.message | default('') }}"
+              targets: "{{ schedule.targets | default('') }}"                      

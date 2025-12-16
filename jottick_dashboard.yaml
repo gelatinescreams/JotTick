@@ -23,15 +23,27 @@ views:
                 .create-img-preview .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
                 .create-img-preview .preview-thumb button { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; padding: 0; }
                 .create-status { font-size: 0.85em; color: var(--primary-color); margin-top: 8px; min-height: 20px; }
+                .format-toggle { display: flex; gap: 0; margin-bottom: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--divider-color); width: fit-content; }
+                .format-toggle button { padding: 6px 14px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+                .format-toggle button.active { background: var(--primary-color); color: white; }
+                .format-toggle button:hover:not(.active) { background: var(--divider-color); }
               </style>
               <div class="create-note-form">
                 <h3>New Note</h3>
                 <input type="text" class="new-note-title" placeholder="Title">
-                <textarea class="new-note-content" placeholder="Content (html tags accepted)"></textarea>
+                <div class="format-toggle">
+                  <button type="button" class="format-btn active" data-format="html" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active');this.closest('.create-note-form').querySelector('.new-note-content').placeholder='Content (HTML tags accepted)';">HTML</button>
+                  <button type="button" class="format-btn" data-format="md" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active');this.closest('.create-note-form').querySelector('.new-note-content').placeholder='Content (Markdown supported)';">Markdown</button>
+                </div>
+                <textarea class="new-note-content" placeholder="Content (HTML tags accepted)"></textarea>
+                <div class="lock-option" style="margin:10px 0;padding:10px;background:var(--secondary-background-color);border-radius:6px;">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9em;"><input type="checkbox" class="lock-checkbox" onchange="this.closest('.lock-option').querySelector('.lock-password').style.display=this.checked?'block':'none';"> 🔒 Password protect this note</label>
+                  <input type="password" class="lock-password" placeholder="Enter password to lock note" style="display:none;width:100%;padding:8px;margin-top:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);box-sizing:border-box;">
+                </div>
                 <div class="create-img-preview"></div>
                 <div class="btn-row">
-                  <label class="add-img-label" style="display:inline-block;padding:10px 16px;background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:6px;cursor:pointer;font-size:1em;">📷 Add Images<input type="file" accept="image/*" multiple style="display:none;" onchange="var input=this,form=input.closest('.create-note-form'),preview=form.querySelector('.create-img-preview'),maxBytes=15*1024*1024;for(var i=0;i<input.files.length;i++){(function(file){var addThumb=function(dataUrl,name){var div=document.createElement('div');div.className='preview-thumb';div.dataset.name=name;div.dataset.type='image/jpeg';div.dataset.data=dataUrl;var img=document.createElement('img');img.src=dataUrl;div.appendChild(img);var btn=document.createElement('button');btn.textContent='×';btn.onclick=function(){div.remove();};div.appendChild(btn);preview.appendChild(div);};if(file.size<=maxBytes){var reader=new FileReader();reader.onload=function(e){addThumb(e.target.result,file.name);};reader.readAsDataURL(file);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,s=1;var tryIt=function(){canvas.width=w*s;canvas.height=h*s;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){var r2=new FileReader();r2.onload=function(e2){addThumb(e2.target.result,file.name.replace(/\.[^.]+$/,'.jpg'));};r2.readAsDataURL(blob);}else{q-=0.1;if(q<0.5)s*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}})(input.files[i]);}input.value='';"></label>
-                  <button onclick="var btn=this,form=btn.closest('.create-note-form'),title=form.querySelector('.new-note-title').value,content=form.querySelector('.new-note-content').value,status=form.querySelector('.create-status'),preview=form.querySelector('.create-img-preview'),thumbs=preview.querySelectorAll('.preview-thumb');if(!title.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Creating...';var noteId='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c=='x'?r:(r&0x3|0x8)).toString(16);});var ha=document.querySelector('home-assistant'),token=ha.hass.auth.data.access_token;ha.hass.callService('jottick','create_note',{title:title,content:content,note_id:noteId});if(thumbs.length>0){status.textContent='Uploading images...';var done=0,total=thumbs.length;thumbs.forEach(function(thumb){fetch(thumb.dataset.data).then(function(r){return r.blob();}).then(function(blob){var fd=new FormData();fd.append('note_id',noteId);fd.append('file',blob,thumb.dataset.name);return fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});}).then(function(){done++;status.textContent='Uploaded '+done+'/'+total;if(done>=total){status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}}).catch(function(e){status.textContent='Error: '+e;});});}else{status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}form.querySelector('.new-note-title').value='';form.querySelector('.new-note-content').value='';preview.innerHTML='';">Create</button>
+                  <label class="add-img-label" style="display:inline-block;padding:10px 16px;background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:6px;cursor:pointer;font-size:1em;">📷 Add Images<input type="file" accept="image/*" multiple style="display:none;" onchange="var input=this,form=input.closest('.create-note-form'),preview=form.querySelector('.create-img-preview'),maxBytes=15*1024*1024;for(var i=0;i<input.files.length;i++){(function(file){var addThumb=function(dataUrl,name){var div=document.createElement('div');div.className='preview-thumb';div.dataset.name=name;div.dataset.data=dataUrl;var img=document.createElement('img');img.src=dataUrl;div.appendChild(img);var btn=document.createElement('button');btn.textContent='×';btn.onclick=function(){div.remove();};div.appendChild(btn);preview.appendChild(div);};if(file.size<=maxBytes){var reader=new FileReader();reader.onload=function(e){addThumb(e.target.result,file.name);};reader.readAsDataURL(file);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,s=1;var tryIt=function(){canvas.width=w*s;canvas.height=h*s;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){var r2=new FileReader();r2.onload=function(e2){addThumb(e2.target.result,file.name.replace(/\.[^.]+$/,'.jpg'));};r2.readAsDataURL(blob);}else{q-=0.1;if(q<0.5)s*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}})(input.files[i]);}input.value='';"></label>
+                  <button type="button" class="create-btn" onclick="(function(btn){var form=btn.closest('.create-note-form'),titleEl=form.querySelector('.new-note-title'),contentEl=form.querySelector('.new-note-content'),title=titleEl.value,content=contentEl.value,status=form.querySelector('.create-status'),preview=form.querySelector('.create-img-preview'),thumbs=preview.querySelectorAll('.preview-thumb'),mdBtn=form.querySelector('.format-btn[data-format=md]'),isMd=mdBtn.classList.contains('active'),lockCb=form.querySelector('.lock-checkbox'),lockPw=form.querySelector('.lock-password'),shouldLock=lockCb.checked,password=lockPw.value;if(!title.trim()){alert('Title is required');return;}if(shouldLock&amp;&amp;!password){alert('Please enter a password');return;}if(isMd){content=String.fromCharCode(60)+'!--MD--'+String.fromCharCode(62)+content;}var doCreate=function(finalContent){btn.disabled=true;btn.textContent='Creating...';var noteId='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r%4+8)).toString(16);});var ha=document.querySelector('home-assistant'),token=ha.hass.auth.data.access_token;ha.hass.callService('jottick','create_note',{title:title,content:finalContent,note_id:noteId});if(thumbs.length>0){status.textContent='Uploading images...';var done=0,total=thumbs.length;thumbs.forEach(function(thumb){fetch(thumb.dataset.data).then(function(r){return r.blob();}).then(function(blob){var fd=new FormData();fd.append('note_id',noteId);fd.append('file',blob,thumb.dataset.name);return fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});}).then(function(){done++;status.textContent='Uploaded '+done+'/'+total;if(done>=total){status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}}).catch(function(e){status.textContent='Error: '+e;});});}else{status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}titleEl.value='';contentEl.value='';preview.innerHTML='';lockCb.checked=false;lockPw.value='';lockPw.style.display='none';form.querySelector('.format-btn[data-format=html]').classList.add('active');mdBtn.classList.remove('active');contentEl.placeholder='Content (HTML tags accepted)';};if(shouldLock){status.textContent='Encrypting...';var enc=new TextEncoder();var salt=crypto.getRandomValues(new Uint8Array(16));var iv=crypto.getRandomValues(new Uint8Array(12));crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits','deriveKey']).then(function(keyMaterial){return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt']);}).then(function(key){return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,enc.encode(content));}).then(function(encrypted){var b64=function(arr){return btoa(String.fromCharCode.apply(null,new Uint8Array(arr)));};var final=String.fromCharCode(60)+'!--ENC:'+b64(salt)+':'+b64(iv)+'--'+String.fromCharCode(62)+b64(encrypted);doCreate(final);}).catch(function(e){status.textContent='Encryption error: '+e;btn.disabled=false;});}else{doCreate(content);}})(this);">Create</button>
                 </div>
                 <div class="create-status"></div>
               </div>
@@ -42,7 +54,7 @@ views:
         cards:
           - type: custom:html-template-card
             ignore_line_breaks: true
-            content: |
+            content: >
               <style>
                 @keyframes slideDown { from {top:40px;opacity:0;} to {top:60px;opacity:1;} }
                 #jottick-loading {
@@ -82,10 +94,25 @@ views:
                 .note-content {
                   color: var(--primary-text-color);
                   margin-bottom: 12px;
-                  white-space: pre-wrap;
+                  white-space: inherit;
                   line-height: 1.6;
                   font-size: 1em;
                 }
+                .note-content.markdown { white-space: normal; }
+                .note-content.markdown h1 { font-size: 1.6em; margin: 0.5em 0; border-bottom: 1px solid var(--divider-color); padding-bottom: 0.3em; }
+                .note-content.markdown h2 { font-size: 1.4em; margin: 0.5em 0; }
+                .note-content.markdown h3 { font-size: 1.2em; margin: 0.5em 0; }
+                .note-content.markdown p { margin: 0.5em 0; }
+                .note-content.markdown ul, .note-content.markdown ol { margin: 0.5em 0; padding-left: 1.5em; }
+                .note-content.markdown li { margin: 0.25em 0; }
+                .note-content.markdown code { background: var(--secondary-background-color); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+                .note-content.markdown pre { background: var(--secondary-background-color); padding: 12px; border-radius: 6px; overflow-x: auto; }
+                .note-content.markdown pre code { background: none; padding: 0; }
+                .note-content.markdown blockquote { border-left: 3px solid var(--primary-color); margin: 0.5em 0; padding-left: 1em; color: var(--secondary-text-color); }
+                .note-content.markdown a { color: var(--primary-color); }
+                .note-content.markdown strong { font-weight: 600; }
+                .note-content.markdown em { font-style: italic; }
+                .note-content.markdown hr { border: none; border-top: 1px solid var(--divider-color); margin: 1em 0; }
                 .note-timestamp {
                   font-size: 0.85em;
                   color: var(--secondary-text-color);
@@ -99,6 +126,7 @@ views:
                 .note-image-thumb .img-del { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.2s; line-height: 1; padding: 0; }
                 .note-image-thumb:hover .img-del { opacity: 1; }
                 .image-count { display: inline-block; padding: 1px 6px; background: var(--primary-color); color: white; border-radius: 8px; font-size: 0.7em; margin-left: 6px; vertical-align: middle; }
+                .format-badge { display: inline-block; padding: 1px 6px; background: var(--secondary-background-color); color: var(--secondary-text-color); border-radius: 8px; font-size: 0.65em; margin-left: 6px; vertical-align: middle; text-transform: uppercase; }
                 .edit-images { margin: 10px 0; padding: 10px; background: var(--card-background-color); border-radius: 6px; }
                 .edit-images h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
                 .edit-upload-label { display: inline-block; padding: 6px 12px; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
@@ -121,29 +149,43 @@ views:
                 .send-targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
                 .send-targets label { display: flex; align-items: center; gap: 4px; font-size: 0.9em; cursor: pointer; }
                 .send-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .send-mode-tabs { display: flex; gap: 0; margin-bottom: 12px; border-radius: 6px; overflow: hidden; border: 1px solid var(--divider-color); }
+                .send-mode-tab { flex: 1; padding: 8px 12px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+                .send-mode-tab.active { background: var(--primary-color); color: white; }
+                .send-mode-tab:hover:not(.active) { background: var(--divider-color); }
+                .schedule-picker { display: none; margin: 12px 0; padding: 12px; background: var(--card-background-color); border-radius: 6px; }
+                .schedule-picker.show { display: block; }
+                .schedule-picker label { display: block; font-size: 0.85em; color: var(--secondary-text-color); margin-bottom: 4px; }
+                .schedule-picker input[type="datetime-local"] { width: 100%; padding: 10px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
+                .send-actions { display: flex; gap: 8px; flex-wrap: wrap; }
                 .note-edit-section input[type="text"] { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
                 .note-edit-section textarea { width: 100%; min-height: 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
                 .note-edit-section .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
                 .note-edit-section .edit-save-btn { padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
                 .note-edit-section .edit-cancel-btn { padding: 8px 16px; background: var(--card-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; }
+                .send-btn-wrapper { position: relative; display: inline-block; }
+                .send-badge { position: absolute; top: -6px; right: -6px; background: var(--error-color, #dc2626); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+                .pending-schedules { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }
+                .pending-schedules h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
+                .pending-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--card-background-color); border-radius: 6px; margin-bottom: 6px; font-size: 0.85em; }
+                .pending-item-info { color: var(--primary-text-color); }
+                .pending-item-time { color: var(--secondary-text-color); font-size: 0.9em; }
+                .pending-cancel-btn { padding: 4px 10px; background: var(--error-color, #dc2626); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+                .format-toggle { display: flex; gap: 0; margin-bottom: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--divider-color); width: fit-content; }
+                .format-toggle button { padding: 6px 14px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+                .format-toggle button.active { background: var(--primary-color); color: white; }
+                .format-toggle button:hover:not(.active) { background: var(--divider-color); }
               </style>
-              <div id="jottick-loading">Loading...</div>
-              <script>
-                (function checkLoading(){
-                  var banner=document.getElementById('jottick-loading');
-                  if(banner){
-                    var el=document.querySelector('home-assistant');
-                    if(el&&el.hass&&el.hass.states['input_boolean.jottick_is_loading']){
-                      var state=el.hass.states['input_boolean.jottick_is_loading'].state;
-                      banner.style.display=state==='on'?'block':'none';
-                    }
-                  }
-                  setTimeout(checkLoading,300);
-                })();
-              </script>
+
+              <div id="jottick-loading"
+              style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--primary-color);color:var(--text-primary-color,
+              white);padding:12px 24px;border-radius:8px;box-shadow:0 4px 12px
+              rgba(0,0,0,0.3);font-weight:600;">Loading...</div>
+
               <div class="notes-container">
                 {% set ns = namespace(count=0, notes=[]) %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set all_schedules = state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick Note:') and state.state != 'unavailable' %}
                     {% set ns.notes = ns.notes + [state] %}
@@ -153,18 +195,59 @@ views:
                   {% set ns.count = ns.count + 1 %}
                   {% if ns.count is odd %}
                     {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    {% set raw_content = state_attr(state.entity_id, 'content') | default('') %}
+                    {% set is_markdown = raw_content.startswith('<!--MD-->') %}
+                    {% set is_encrypted = raw_content.startswith('<!--ENC:') %}
+                    {% set edit_content = raw_content.replace('<!--MD-->', '') if is_markdown else raw_content %}
+                    {% set display_content = edit_content %}
+                    {% if is_markdown and not is_encrypted %}
+                      {% set display_content = display_content | regex_replace('\\*\\*(.+?)\\*\\*', '<strong>\\1</strong>') %}
+                      {% set display_content = display_content | regex_replace('(?<![*])\\*([^*]+)\\*(?![*])', '<em>\\1</em>') %}
+                      {% set display_content = display_content | regex_replace('`([^`]+)`', '<code style="background:var(--secondary-background-color);padding:2px 6px;border-radius:4px;font-family:monospace;">\\1</code>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^### (.+)$', '<h3 style="font-size:1.2em;margin:0.5em 0;">\\1</h3>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^## (.+)$', '<h2 style="font-size:1.4em;margin:0.5em 0;">\\1</h2>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^# (.+)$', '<h1 style="font-size:1.6em;margin:0.5em 0;border-bottom:1px solid var(--divider-color);padding-bottom:0.3em;">\\1</h1>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^- (.+)$', '<li style="margin-left:1.5em;">\\1</li>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^> (.+)$', '<blockquote style="border-left:3px solid var(--primary-color);margin:0.5em 0;padding-left:1em;color:var(--secondary-text-color);">\\1</blockquote>') %}
+                      {% set display_content = display_content | regex_replace('\\[([^\\]]+)\\]\\(([^)]+)\\)', '<a href="\\2" style="color:var(--primary-color);">\\1</a>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^---$', '<hr style="border:none;border-top:1px solid var(--divider-color);margin:1em 0;">') %}
+                    {% endif %}
                     {% set images = state_attr(state.entity_id, 'images') or [] %}
                     {% set img_count = images | length %}
-                    <div class="note-card">
+                    {% set note_schedules = namespace(items=[], count=0) %}
+                    {% for sched_id, sched in all_schedules.items() %}
+                      {% if sched.note_id == note_id %}
+                        {% set note_schedules.items = note_schedules.items + [{'id': sched_id, 'time': sched.scheduled_time, 'targets': sched.targets}] %}
+                        {% set note_schedules.count = note_schedules.count + 1 %}
+                      {% endif %}
+                    {% endfor %}
+                    <div class="note-card" data-noteid="{{ note_id }}" data-format="{{ 'md' if is_markdown else 'html' }}" data-encrypted="{{ 'true' if is_encrypted else 'false' }}" data-raw="{{ raw_content | e }}">
                       <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}</div>
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}{% if is_markdown %}<span class="format-badge">MD</span>{% endif %}{% if is_encrypted %}<span class="format-badge" style="background:var(--warning-color,#f59e0b);">🔒</span>{% endif %}</div>
                         <div style="display:flex;gap:4px;">
+                          {% if not is_encrypted %}
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
-                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                          <div class="send-btn-wrapper">
+                            <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                            {% if note_schedules.count > 0 %}<span class="send-badge">{{ note_schedules.count }}</span>{% endif %}
+                          </div>
+                          {% endif %}
                           <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
-                      <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      {% if is_encrypted %}
+                      <div class="note-locked" style="text-align:center;padding:20px;">
+                        <div style="font-size:3em;margin-bottom:10px;">🔒</div>
+                        <div style="color:var(--secondary-text-color);margin-bottom:15px;">This note is encrypted</div>
+                        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                          <input type="password" class="unlock-password" placeholder="Enter password" style="padding:8px 12px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);width:180px;">
+                          <button class="unlock-btn" style="padding:8px 16px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;" onclick="(function(btn){var card=btn.closest('.note-card'),raw=card.dataset.raw,pwInput=card.querySelector('.unlock-password'),pw=pwInput.value,contentDiv=card.querySelector('.note-content'),lockedDiv=card.querySelector('.note-locked');if(!pw){alert('Enter password');return;}btn.disabled=true;btn.textContent='Decrypting...';try{var LT=String.fromCharCode(60),GT=String.fromCharCode(62),AMP=String.fromCharCode(38);var decoded=raw.split(AMP+'lt;').join(LT).split(AMP+'gt;').join(GT).split(AMP+'amp;').join(AMP).split(AMP+'quot;').join(String.fromCharCode(34));var encStart=LT+'!--ENC:';var idx=decoded.indexOf(encStart);if(idx==-1){btn.textContent='Unlock';btn.disabled=false;alert('Invalid format');return;}var rest=decoded.substring(idx+encStart.length);var colonIdx=rest.indexOf(':');var dashIdx=rest.indexOf('--'+GT);if(colonIdx==-1||dashIdx==-1){btn.textContent='Unlock';btn.disabled=false;alert('Invalid format 2');return;}var saltB64=rest.substring(0,colonIdx);var ivB64=rest.substring(colonIdx+1,dashIdx);var cipherB64=rest.substring(dashIdx+3);var b64d=function(s){return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0);});};var salt=b64d(saltB64),iv=b64d(ivB64),ciphertext=b64d(cipherB64);var enc=new TextEncoder();crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits','deriveKey']).then(function(km){return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}).then(function(key){return crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,ciphertext);}).then(function(dec){var text=new TextDecoder().decode(dec);lockedDiv.style.display='none';contentDiv.style.display='block';contentDiv.textContent=text;btn.textContent='Unlock';btn.disabled=false;}).catch(function(e){btn.textContent='Unlock';btn.disabled=false;alert('Wrong password');});}catch(e){btn.textContent='Unlock';btn.disabled=false;alert('Error: '+e);}})(this);">Unlock</button>
+                        </div>
+                      </div>
+                      <div class="note-content" style="display:none;"></div>
+                      {% else %}
+                      <div class="note-content">{{ display_content }}</div>
+                      {% endif %}
                       {% if img_count > 0 %}
                       <div class="note-image-gallery">
                         {% for img in images %}
@@ -179,18 +262,47 @@ views:
                         Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
                       </div>
                       <div class="note-send-section">
-                        <h4>Send Note To :</h4>
+                        <h4>Send Note</h4>
                         <div class="send-targets">
                           {% for n in notifiers %}{% if n != 'Nobody' %}
                           <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
-                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                        <div class="send-mode-tabs">
+                          <button class="send-mode-tab active" onclick="(function(btn){var sec=btn.closest('.note-send-section');sec.querySelectorAll('.send-mode-tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');sec.querySelector('.schedule-picker').classList.remove('show');sec.querySelector('.send-now-btn').style.display='inline-block';sec.querySelector('.schedule-btn').style.display='none';})(this);">Send Now</button>
+                          <button class="send-mode-tab" onclick="(function(btn){var sec=btn.closest('.note-send-section');sec.querySelectorAll('.send-mode-tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');sec.querySelector('.schedule-picker').classList.add('show');sec.querySelector('.send-now-btn').style.display='none';sec.querySelector('.schedule-btn').style.display='inline-block';var picker=sec.querySelector('.schedule-datetime');var now=new Date();now.setMinutes(now.getMinutes()+30);var y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,'0'),d=String(now.getDate()).padStart(2,'0'),h=String(now.getHours()).padStart(2,'0'),mi=String(now.getMinutes()).padStart(2,'0');picker.value=y+'-'+m+'-'+d+'T'+h+':'+mi;})(this);">Schedule</button>
+                        </div>
+                        <div class="schedule-picker">
+                          <label>Send at:</label>
+                          <input type="datetime-local" class="schedule-datetime">
+                        </div>
+                        <div class="send-actions">
+                          <button class="send-btn send-now-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(function(cb){return cb.value;});if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ display_content | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Now';sec.classList.remove('show');},2000);})(this);">Send Now</button>
+                          <button class="send-btn schedule-btn" style="display:none;background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(function(cb){return cb.value;});if(!targets.length){alert('Select at least one device');return;}var dt=sec.querySelector('.schedule-datetime').value;if(!dt){alert('Please select a date and time');return;}var scheduled=new Date(dt);if(scheduled<=new Date()){alert('Please select a future time');return;}btn.disabled=true;btn.textContent='Scheduling...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_schedule_note',{note_id:'{{ note_id }}',title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ display_content | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}',targets:targets.join(','),scheduled_time:scheduled.toISOString()});}setTimeout(function(){btn.disabled=false;btn.textContent='Schedule';sec.classList.remove('show');},2000);})(this);">Schedule</button>
+                        </div>
+                        {% if note_schedules.count > 0 %}
+                        <div class="pending-schedules">
+                          <h5>📅 Pending Scheduled Sends</h5>
+                          {% for sched in note_schedules.items %}
+                          <div class="pending-item">
+                            <div class="pending-item-info">
+                              <div class="pending-item-time">⏰ {{ as_timestamp(sched.time) | timestamp_custom('%b %d at %I:%M %p') }}</div>
+                              <div style="font-size:0.8em;color:var(--secondary-text-color);">📱 {{ sched.targets | replace('notify.mobile_app_', '') }}</div>
+                            </div>
+                            <button class="pending-cancel-btn" onclick="if(confirm('Cancel this scheduled send?')){this.disabled=true;this.textContent='...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_cancel_scheduled_note',{schedule_id:'{{ sched.id }}'});}}">Cancel</button>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="note-edit-section">
                         <h4>Edit Note</h4>
                         <input type="text" class="edit-title" value="{{ state.state | e }}" placeholder="Title">
-                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') | e }}</textarea>
+                        <div class="format-toggle">
+                          <button class="format-btn {{ '' if is_markdown else 'active' }}" data-format="html" onclick="this.parentElement.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">HTML</button>
+                          <button class="format-btn {{ 'active' if is_markdown else '' }}" data-format="md" onclick="this.parentElement.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">Markdown</button>
+                        </div>
+                        <textarea class="edit-content" placeholder="Note content...">{{ edit_content | e }}</textarea>
                         <div class="edit-images">
                           <h5>Images</h5>
                           {% if img_count > 0 %}
@@ -207,7 +319,7 @@ views:
                           <div class="upload-status"></div>
                         </div>
                         <div class="edit-actions">
-                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;var formatBtn=sec.querySelector('.format-btn.active');var isMd=formatBtn&&formatBtn.dataset.format==='md';if(!t.trim()){alert('Title is required');return;}if(isMd){c='<!--MD-->'+c;}else{c=c.replace(/^<!--MD-->/,'');}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
                         </div>
                       </div>
@@ -243,10 +355,25 @@ views:
                 .note-content {
                   color: var(--primary-text-color);
                   margin-bottom: 12px;
-                  white-space: pre-wrap;
+                  white-space: inherit;
                   line-height: 1.6;
                   font-size: 1em;
                 }
+                .note-content.markdown { white-space: normal; }
+                .note-content.markdown h1 { font-size: 1.6em; margin: 0.5em 0; border-bottom: 1px solid var(--divider-color); padding-bottom: 0.3em; }
+                .note-content.markdown h2 { font-size: 1.4em; margin: 0.5em 0; }
+                .note-content.markdown h3 { font-size: 1.2em; margin: 0.5em 0; }
+                .note-content.markdown p { margin: 0.5em 0; }
+                .note-content.markdown ul, .note-content.markdown ol { margin: 0.5em 0; padding-left: 1.5em; }
+                .note-content.markdown li { margin: 0.25em 0; }
+                .note-content.markdown code { background: var(--secondary-background-color); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+                .note-content.markdown pre { background: var(--secondary-background-color); padding: 12px; border-radius: 6px; overflow-x: auto; }
+                .note-content.markdown pre code { background: none; padding: 0; }
+                .note-content.markdown blockquote { border-left: 3px solid var(--primary-color); margin: 0.5em 0; padding-left: 1em; color: var(--secondary-text-color); }
+                .note-content.markdown a { color: var(--primary-color); }
+                .note-content.markdown strong { font-weight: 600; }
+                .note-content.markdown em { font-style: italic; }
+                .note-content.markdown hr { border: none; border-top: 1px solid var(--divider-color); margin: 1em 0; }
                 .note-timestamp {
                   font-size: 0.85em;
                   color: var(--secondary-text-color);
@@ -260,6 +387,7 @@ views:
                 .note-image-thumb .img-del { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(220,38,38,0.9); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.2s; line-height: 1; padding: 0; }
                 .note-image-thumb:hover .img-del { opacity: 1; }
                 .image-count { display: inline-block; padding: 1px 6px; background: var(--primary-color); color: white; border-radius: 8px; font-size: 0.7em; margin-left: 6px; vertical-align: middle; }
+                .format-badge { display: inline-block; padding: 1px 6px; background: var(--secondary-background-color); color: var(--secondary-text-color); border-radius: 8px; font-size: 0.65em; margin-left: 6px; vertical-align: middle; text-transform: uppercase; }
                 .edit-images { margin: 10px 0; padding: 10px; background: var(--card-background-color); border-radius: 6px; }
                 .edit-images h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
                 .edit-upload-label { display: inline-block; padding: 6px 12px; background: var(--primary-color); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
@@ -282,15 +410,37 @@ views:
                 .send-targets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
                 .send-targets label { display: flex; align-items: center; gap: 4px; font-size: 0.9em; cursor: pointer; }
                 .send-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+                .send-mode-tabs { display: flex; gap: 0; margin-bottom: 12px; border-radius: 6px; overflow: hidden; border: 1px solid var(--divider-color); }
+                .send-mode-tab { flex: 1; padding: 8px 12px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+                .send-mode-tab.active { background: var(--primary-color); color: white; }
+                .send-mode-tab:hover:not(.active) { background: var(--divider-color); }
+                .schedule-picker { display: none; margin: 12px 0; padding: 12px; background: var(--card-background-color); border-radius: 6px; }
+                .schedule-picker.show { display: block; }
+                .schedule-picker label { display: block; font-size: 0.85em; color: var(--secondary-text-color); margin-bottom: 4px; }
+                .schedule-picker input[type="datetime-local"] { width: 100%; padding: 10px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
+                .send-actions { display: flex; gap: 8px; flex-wrap: wrap; }
                 .note-edit-section input[type="text"] { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
                 .note-edit-section textarea { width: 100%; min-height: 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; resize: vertical; font-family: inherit; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; }
                 .note-edit-section .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
                 .note-edit-section .edit-save-btn { padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
                 .note-edit-section .edit-cancel-btn { padding: 8px 16px; background: var(--card-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; }
+                .send-btn-wrapper { position: relative; display: inline-block; }
+                .send-badge { position: absolute; top: -6px; right: -6px; background: var(--error-color, #dc2626); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+                .pending-schedules { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }
+                .pending-schedules h5 { margin: 0 0 8px 0; font-size: 0.9em; color: var(--secondary-text-color); }
+                .pending-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--card-background-color); border-radius: 6px; margin-bottom: 6px; font-size: 0.85em; }
+                .pending-item-info { color: var(--primary-text-color); }
+                .pending-item-time { color: var(--secondary-text-color); font-size: 0.9em; }
+                .pending-cancel-btn { padding: 4px 10px; background: var(--error-color, #dc2626); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+                .format-toggle { display: flex; gap: 0; margin-bottom: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--divider-color); width: fit-content; }
+                .format-toggle button { padding: 6px 14px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+                .format-toggle button.active { background: var(--primary-color); color: white; }
+                .format-toggle button:hover:not(.active) { background: var(--divider-color); }
               </style>
               <div class="notes-container">
                 {% set ns = namespace(count=0, notes=[]) %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set all_schedules = state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick Note:') and state.state != 'unavailable' %}
                     {% set ns.notes = ns.notes + [state] %}
@@ -300,18 +450,59 @@ views:
                   {% set ns.count = ns.count + 1 %}
                   {% if ns.count is even %}
                     {% set note_id = state_attr(state.entity_id, 'note_id') %}
+                    {% set raw_content = state_attr(state.entity_id, 'content') | default('') %}
+                    {% set is_markdown = raw_content.startswith('<!--MD-->') %}
+                    {% set is_encrypted = raw_content.startswith('<!--ENC:') %}
+                    {% set edit_content = raw_content.replace('<!--MD-->', '') if is_markdown else raw_content %}
+                    {% set display_content = edit_content %}
+                    {% if is_markdown and not is_encrypted %}
+                      {% set display_content = display_content | regex_replace('\\*\\*(.+?)\\*\\*', '<strong>\\1</strong>') %}
+                      {% set display_content = display_content | regex_replace('(?<![*])\\*([^*]+)\\*(?![*])', '<em>\\1</em>') %}
+                      {% set display_content = display_content | regex_replace('`([^`]+)`', '<code style="background:var(--secondary-background-color);padding:2px 6px;border-radius:4px;font-family:monospace;">\\1</code>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^### (.+)$', '<h3 style="font-size:1.2em;margin:0.5em 0;">\\1</h3>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^## (.+)$', '<h2 style="font-size:1.4em;margin:0.5em 0;">\\1</h2>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^# (.+)$', '<h1 style="font-size:1.6em;margin:0.5em 0;border-bottom:1px solid var(--divider-color);padding-bottom:0.3em;">\\1</h1>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^- (.+)$', '<li style="margin-left:1.5em;">\\1</li>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^> (.+)$', '<blockquote style="border-left:3px solid var(--primary-color);margin:0.5em 0;padding-left:1em;color:var(--secondary-text-color);">\\1</blockquote>') %}
+                      {% set display_content = display_content | regex_replace('\\[([^\\]]+)\\]\\(([^)]+)\\)', '<a href="\\2" style="color:var(--primary-color);">\\1</a>') %}
+                      {% set display_content = display_content | regex_replace('(?m)^---$', '<hr style="border:none;border-top:1px solid var(--divider-color);margin:1em 0;">') %}
+                    {% endif %}
                     {% set images = state_attr(state.entity_id, 'images') or [] %}
                     {% set img_count = images | length %}
-                    <div class="note-card">
+                    {% set note_schedules = namespace(items=[], count=0) %}
+                    {% for sched_id, sched in all_schedules.items() %}
+                      {% if sched.note_id == note_id %}
+                        {% set note_schedules.items = note_schedules.items + [{'id': sched_id, 'time': sched.scheduled_time, 'targets': sched.targets}] %}
+                        {% set note_schedules.count = note_schedules.count + 1 %}
+                      {% endif %}
+                    {% endfor %}
+                    <div class="note-card" data-noteid="{{ note_id }}" data-format="{{ 'md' if is_markdown else 'html' }}" data-encrypted="{{ 'true' if is_encrypted else 'false' }}" data-raw="{{ raw_content | e }}">
                       <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}</div>
+                        <div class="note-title" style="flex-grow:1; margin-bottom:0; padding-bottom:8px; border-bottom:none;">{{ state.state }}{% if img_count > 0 %}<span class="image-count">📷{{ img_count }}</span>{% endif %}{% if is_markdown %}<span class="format-badge">MD</span>{% endif %}{% if is_encrypted %}<span class="format-badge" style="background:var(--warning-color,#f59e0b);">🔒</span>{% endif %}</div>
                         <div style="display:flex;gap:4px;">
+                          {% if not is_encrypted %}
                           <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-edit-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-send-section');if(sec)sec.classList.remove('show');}})(this);" title="Edit note">Edit</button>
-                          <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                          <div class="send-btn-wrapper">
+                            <button style="padding:4px 12px; background:var(--primary-color); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="(function(btn){var panel=btn.closest('.note-card').querySelector('.note-send-section');if(panel){panel.classList.toggle('show');var sec=btn.closest('.note-card').querySelector('.note-edit-section');if(sec)sec.classList.remove('show');}})(this);" title="Send to device">Send</button>
+                            {% if note_schedules.count > 0 %}<span class="send-badge">{{ note_schedules.count }}</span>{% endif %}
+                          </div>
+                          {% endif %}
                           <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
-                      <div class="note-content">{{ state_attr(state.entity_id, 'content') }}</div>
+                      {% if is_encrypted %}
+                      <div class="note-locked" style="text-align:center;padding:20px;">
+                        <div style="font-size:3em;margin-bottom:10px;">🔒</div>
+                        <div style="color:var(--secondary-text-color);margin-bottom:15px;">This note is encrypted</div>
+                        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                          <input type="password" class="unlock-password" placeholder="Enter password" style="padding:8px 12px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);width:180px;">
+                          <button class="unlock-btn" style="padding:8px 16px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;" onclick="(function(btn){var card=btn.closest('.note-card'),raw=card.dataset.raw,pwInput=card.querySelector('.unlock-password'),pw=pwInput.value,contentDiv=card.querySelector('.note-content'),lockedDiv=card.querySelector('.note-locked');if(!pw){alert('Enter password');return;}btn.disabled=true;btn.textContent='Decrypting...';try{var LT=String.fromCharCode(60),GT=String.fromCharCode(62),AMP=String.fromCharCode(38);var decoded=raw.split(AMP+'lt;').join(LT).split(AMP+'gt;').join(GT).split(AMP+'amp;').join(AMP).split(AMP+'quot;').join(String.fromCharCode(34));var encStart=LT+'!--ENC:';var idx=decoded.indexOf(encStart);if(idx==-1){btn.textContent='Unlock';btn.disabled=false;alert('Invalid format');return;}var rest=decoded.substring(idx+encStart.length);var colonIdx=rest.indexOf(':');var dashIdx=rest.indexOf('--'+GT);if(colonIdx==-1||dashIdx==-1){btn.textContent='Unlock';btn.disabled=false;alert('Invalid format 2');return;}var saltB64=rest.substring(0,colonIdx);var ivB64=rest.substring(colonIdx+1,dashIdx);var cipherB64=rest.substring(dashIdx+3);var b64d=function(s){return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0);});};var salt=b64d(saltB64),iv=b64d(ivB64),ciphertext=b64d(cipherB64);var enc=new TextEncoder();crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits','deriveKey']).then(function(km){return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}).then(function(key){return crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,ciphertext);}).then(function(dec){var text=new TextDecoder().decode(dec);lockedDiv.style.display='none';contentDiv.style.display='block';contentDiv.textContent=text;btn.textContent='Unlock';btn.disabled=false;}).catch(function(e){btn.textContent='Unlock';btn.disabled=false;alert('Wrong password');});}catch(e){btn.textContent='Unlock';btn.disabled=false;alert('Error: '+e);}})(this);">Unlock</button>
+                        </div>
+                      </div>
+                      <div class="note-content" style="display:none;"></div>
+                      {% else %}
+                      <div class="note-content">{{ display_content }}</div>
+                      {% endif %}
                       {% if img_count > 0 %}
                       <div class="note-image-gallery">
                         {% for img in images %}
@@ -326,18 +517,47 @@ views:
                         Updated {{ relative_time(strptime(state_attr(state.entity_id, 'updated'), '%Y-%m-%dT%H:%M:%S.%fZ')) }} ago
                       </div>
                       <div class="note-send-section">
-                        <h4>Send Note To :</h4>
+                        <h4>Send Note</h4>
                         <div class="send-targets">
                           {% for n in notifiers %}{% if n != 'Nobody' %}
                           <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
-                        <button class="send-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(cb=>cb.value);if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ state_attr(state.entity_id, "content") | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Note';sec.classList.remove('show');},2000);})(this);">Send Note</button>
+                        <div class="send-mode-tabs">
+                          <button class="send-mode-tab active" onclick="(function(btn){var sec=btn.closest('.note-send-section');sec.querySelectorAll('.send-mode-tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');sec.querySelector('.schedule-picker').classList.remove('show');sec.querySelector('.send-now-btn').style.display='inline-block';sec.querySelector('.schedule-btn').style.display='none';})(this);">Send Now</button>
+                          <button class="send-mode-tab" onclick="(function(btn){var sec=btn.closest('.note-send-section');sec.querySelectorAll('.send-mode-tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');sec.querySelector('.schedule-picker').classList.add('show');sec.querySelector('.send-now-btn').style.display='none';sec.querySelector('.schedule-btn').style.display='inline-block';var picker=sec.querySelector('.schedule-datetime');var now=new Date();now.setMinutes(now.getMinutes()+30);var y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,'0'),d=String(now.getDate()).padStart(2,'0'),h=String(now.getHours()).padStart(2,'0'),mi=String(now.getMinutes()).padStart(2,'0');picker.value=y+'-'+m+'-'+d+'T'+h+':'+mi;})(this);">Schedule</button>
+                        </div>
+                        <div class="schedule-picker">
+                          <label>Send at:</label>
+                          <input type="datetime-local" class="schedule-datetime">
+                        </div>
+                        <div class="send-actions">
+                          <button class="send-btn send-now-btn" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(function(cb){return cb.value;});if(!targets.length){alert('Select at least one device');return;}btn.disabled=true;btn.textContent='Sending...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_send_note_to_devices',{targets:targets.join(','),title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ display_content | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Send Now';sec.classList.remove('show');},2000);})(this);">Send Now</button>
+                          <button class="send-btn schedule-btn" style="display:none;background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.note-send-section');var targets=Array.from(sec.querySelectorAll('.send-target-cb:checked')).map(function(cb){return cb.value;});if(!targets.length){alert('Select at least one device');return;}var dt=sec.querySelector('.schedule-datetime').value;if(!dt){alert('Please select a date and time');return;}var scheduled=new Date(dt);if(scheduled<=new Date()){alert('Please select a future time');return;}btn.disabled=true;btn.textContent='Scheduling...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_schedule_note',{note_id:'{{ note_id }}',title:'{{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}',message:'{{ display_content | replace("\n", " ") | replace('"', '&quot;') | replace("'", "\\'") | truncate(200) }}',targets:targets.join(','),scheduled_time:scheduled.toISOString()});}setTimeout(function(){btn.disabled=false;btn.textContent='Schedule';sec.classList.remove('show');},2000);})(this);">Schedule</button>
+                        </div>
+                        {% if note_schedules.count > 0 %}
+                        <div class="pending-schedules">
+                          <h5>📅 Pending Scheduled Sends</h5>
+                          {% for sched in note_schedules.items %}
+                          <div class="pending-item">
+                            <div class="pending-item-info">
+                              <div class="pending-item-time">⏰ {{ as_timestamp(sched.time) | timestamp_custom('%b %d at %I:%M %p') }}</div>
+                              <div style="font-size:0.8em;color:var(--secondary-text-color);">📱 {{ sched.targets | replace('notify.mobile_app_', '') }}</div>
+                            </div>
+                            <button class="pending-cancel-btn" onclick="if(confirm('Cancel this scheduled send?')){this.disabled=true;this.textContent='...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_cancel_scheduled_note',{schedule_id:'{{ sched.id }}'});}}">Cancel</button>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="note-edit-section">
                         <h4>Edit Note</h4>
                         <input type="text" class="edit-title" value="{{ state.state | e }}" placeholder="Title">
-                        <textarea class="edit-content" placeholder="Note content...">{{ state_attr(state.entity_id, 'content') | default('') | e }}</textarea>
+                        <div class="format-toggle">
+                          <button class="format-btn {{ '' if is_markdown else 'active' }}" data-format="html" onclick="this.parentElement.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">HTML</button>
+                          <button class="format-btn {{ 'active' if is_markdown else '' }}" data-format="md" onclick="this.parentElement.querySelectorAll('.format-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">Markdown</button>
+                        </div>
+                        <textarea class="edit-content" placeholder="Note content...">{{ edit_content | e }}</textarea>
                         <div class="edit-images">
                           <h5>Images</h5>
                           {% if img_count > 0 %}
@@ -354,7 +574,7 @@ views:
                           <div class="upload-status"></div>
                         </div>
                         <div class="edit-actions">
-                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;if(!t.trim()){alert('Title is required');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="edit-save-btn" onclick="(function(btn){var sec=btn.closest('.note-edit-section');var t=sec.querySelector('.edit-title').value;var c=sec.querySelector('.edit-content').value;var formatBtn=sec.querySelector('.format-btn.active');var isMd=formatBtn&&formatBtn.dataset.format==='md';if(!t.trim()){alert('Title is required');return;}if(isMd){c='<!--MD-->'+c;}else{c=c.replace(/^<!--MD-->/,'');}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('jottick','update_note',{note_id:'{{ note_id }}',title:t,content:c});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="edit-cancel-btn" onclick="this.closest('.note-edit-section').classList.remove('show');">Cancel</button>
                         </div>
                       </div>

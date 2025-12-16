@@ -377,3 +377,25 @@ template:
             {% else %}
               {{ this.attributes.configs | default({}) }}
             {% endif %}
+
+# added 1.2 12/15/25
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_scheduled_notes_update
+    sensor:
+      - name: "JotTick Scheduled Notes"
+        unique_id: jottick_scheduled_notes_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event.data.schedules is defined %}
+            {{ trigger.event.data.schedules | length }}
+          {% else %}
+            {{ this.attributes.schedules | default({}) | length }}
+          {% endif %}
+        attributes:
+          schedules: >
+            {% if trigger.platform == 'event' and trigger.event.data.schedules is defined %}
+              {{ trigger.event.data.schedules }}
+            {% else %}
+              {{ this.attributes.schedules | default({}) }}
