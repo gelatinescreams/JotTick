@@ -399,3 +399,4 @@ template:
               {{ trigger.event.data.schedules }}
             {% else %}
               {{ this.attributes.schedules | default({}) }}
+            {% endif %}
