@@ -40,3 +40,39 @@ JotTickCreateNote:
         content: "{{ content | default('') }}"
   speech:
     text: "Created note {{ title }}"
+
+SetReminder:
+  action:
+    - service: script.jottick_set_reminder
+      data:
+        task: "{{ task }}"
+        target: "{{ target | default('me') }}"
+        user_id: "{{ context.user_id }}"
+        time_type: "{{ time_type }}"
+        minutes: "{{ minutes | default(0) }}"
+        hours: "{{ hours | default(0) }}"
+        time_hour: "{{ time_hour | default(0) }}"
+        time_minute: "{{ time_minute | default(0) }}"
+        ampm: "{{ ampm | default('') }}"
+  speech:
+    text: >-
+      {% set clean_task = task | replace("_", " ") %}
+      {% set clean_target = target | default('me') | replace("_", " ") %}
+      {% if clean_target == 'me' %}
+        {% set who = "you" %}
+      {% else %}
+        {% set who = clean_target %}
+      {% endif %}
+      {% if time_type == 'relative_minutes' %}
+        OK, I'll remind {{ who }} to {{ clean_task }} in {{ minutes }} minutes
+      {% elif time_type == 'relative_hours' %}
+        OK, I'll remind {{ who }} to {{ clean_task }} in {{ hours }} hour{{ 's' if hours | int > 1 else '' }}
+      {% elif time_type == 'relative_hours_minutes' %}
+        OK, I'll remind {{ who }} to {{ clean_task }} in {{ hours }} hour{{ 's' if hours | int > 1 else '' }} and {{ minutes }} minutes
+      {% elif time_type in ['absolute', 'absolute_hour_only'] %}
+        OK, I'll remind {{ who }} to {{ clean_task }} at {{ time_hour }}:{{ '%02d' | format(time_minute | int) }}{{ ' ' + ampm if ampm else '' }}
+      {% elif time_type in ['tomorrow', 'tomorrow_hour_only'] %}
+        OK, I'll remind {{ who }} to {{ clean_task }} tomorrow at {{ time_hour }}:{{ '%02d' | format(time_minute | int) }}{{ ' ' + ampm if ampm else '' }}
+      {% else %}
+        OK, reminder set for {{ clean_task }}
+      {% endif %}

@@ -1,8 +1,37 @@
-# JotTick Voice Assistant Integration
+## JotTick Voice Assistant Integration ReadMe
+**Set reminders (me or family)**
 
-Add items to lists, create notes, and manage tasks using Home Assistant Assist.
+**Relative time**
+- "Remind me to take my medicine in 5 minutes"
+- "Remind mom in 10 minutes to take her medicine"
+- "Remind anna to take her medicine in half an hour"
+- "Remind dad to take his medicine in an hour"
+- "Remind grandma to take her medicine in 2 hours"
 
-## Voice Commands
+**Hours and minutes**
+- "Remind me to take my medicine in 1 hour and 15 minutes"
+- "Remind mom to take her medicine in 2 hours 30 minutes"
+
+**Exact time**
+- "Remind me to take my medicine at 9:30"
+- "Remind mom at 8:15 to take her medicine"
+- "Remind anna to take her medicine at 7:45 pm"
+- "Remind tom at 10 am to take his medicine"
+
+**Hour only**
+- "Remind me to take my medicine at 9"
+- "Remind dad to take his medicine at 6 pm"
+
+**Today**
+- "Remind me to take my medicine this morning"
+- "Remind mom to take her medicine this afternoon"
+- "Remind dad to take his medicine tonight"
+
+**Tomorrow**
+- "Remind me to take my medicine tomorrow at 9:30"
+- "Remind mom tomorrow at 8 pm to take her medicine"
+- "Remind anna to take her medicine tomorrow morning"
+- "Remind grandma to take her medicine tomorrow night"
 
 **Add to list:**
 - "Add milk to the shopping list"

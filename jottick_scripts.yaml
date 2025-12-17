@@ -1312,7 +1312,6 @@ jottick_reset_task:
               item_index: "{{ repeat.item.index_path }}"
               status: "todo"
 
-# added 1.2 12/15/25
 jottick_schedule_note:
   alias: "JotTick: Schedule Note"
   fields:
@@ -1337,6 +1336,7 @@ jottick_schedule_note:
           targets: "{{ targets }}"
           scheduled_time: "{{ scheduled_time }}"
           created: "{{ now().isoformat() }}"
+          auto_delete: false
         safe_schedules: "{{ schedules if schedules is mapping else {} }}"
         updated_schedules: "{{ dict(safe_schedules, **{schedule_id: new_schedule}) }}"
     - event: jottick_scheduled_notes_update
@@ -1356,8 +1356,63 @@ jottick_cancel_scheduled_note:
   sequence:
     - variables:
         schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
-    - condition: template
-      value_template: "{{ schedules is mapping and schedule_id in schedules }}"
+        sched_data: "{{ schedules.get(schedule_id, {}) if schedules is mapping else {} }}"
+        should_delete_note: "{{ sched_data.get('auto_delete', false) }}"
+        note_id: "{{ sched_data.get('note_id', '') }}"
+        updated_schedules: >
+          {% set safe_schedules = schedules if schedules is mapping else {} %}
+          {% set ns = namespace(result={}) %}
+          {% for key, val in safe_schedules.items() %}
+            {% if key != schedule_id %}
+              {% set ns.result = dict(ns.result, **{key: val}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"
+    - if:
+        - condition: template
+          value_template: "{{ should_delete_note and note_id != '' }}"
+      then:
+        - service: jottick.delete_note
+          data:
+            note_id: "{{ note_id }}"
+    - service: persistent_notification.create
+      data:
+        title: "Schedule Cancelled"
+        message: "Scheduled notification cancelled"
+        notification_id: jottick_schedule_cancelled
+
+jottick_send_scheduled_note:
+  alias: "JotTick: Send Scheduled Note"
+  fields:
+    schedule_id:
+      description: "Schedule ID"
+    title:
+      description: "Note title"
+    message:
+      description: "Note content"
+    targets:
+      description: "Comma-separated notify service targets"
+    auto_delete:
+      description: "Whether to delete the note after sending"
+  sequence:
+    - variables:
+        target_list: "{{ targets.split(',') if ',' in targets else [targets] }}"
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        sched_data: "{{ schedules.get(schedule_id, {}) if schedules is mapping else {} }}"
+        should_delete: "{{ auto_delete | default(sched_data.get('auto_delete', false)) }}"
+        note_id: "{{ sched_data.get('note_id', '') }}"
+    - repeat:
+        count: "{{ target_list | length }}"
+        sequence:
+          - service: "{{ target_list[repeat.index - 1] | trim }}"
+            data:
+              title: "{{ title }}"
+              message: "{{ message }}"
+              data:
+                tag: "jottick_scheduled_{{ schedule_id }}"
     - variables:
         updated_schedules: >
           {% set safe_schedules = schedules if schedules is mapping else {} %}
@@ -1371,49 +1426,13 @@ jottick_cancel_scheduled_note:
     - event: jottick_scheduled_notes_update
       event_data:
         schedules: "{{ updated_schedules }}"
-    - service: persistent_notification.create
-      data:
-        title: "Scheduled Note Cancelled"
-        message: "The scheduled note has been cancelled"
-        notification_id: jottick_note_cancelled
-
-jottick_send_scheduled_note:
-  alias: "JotTick: Send Scheduled Note"
-  fields:
-    schedule_id:
-      description: "Schedule ID"
-    title:
-      description: "Note title"
-    message:
-      description: "Note content"
-    targets:
-      description: "Comma-separated notify service targets"
-  sequence:
-    - variables:
-        target_list: "{{ targets.split(',') }}"
-    - repeat:
-        count: "{{ target_list | length }}"
-        sequence:
-          - service: "{{ target_list[repeat.index - 1] }}"
-            data:
-              title: "{{ title }}"
-              message: "{{ message }}"
-              data:
-                tag: "jottick_scheduled_{{ schedule_id }}"
-    - variables:
-        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
-        updated_schedules: >
-          {% set safe_schedules = schedules if schedules is mapping else {} %}
-          {% set ns = namespace(result={}) %}
-          {% for key, val in safe_schedules.items() %}
-            {% if key != schedule_id %}
-              {% set ns.result = dict(ns.result, **{key: val}) %}
-            {% endif %}
-          {% endfor %}
-          {{ ns.result }}
-    - event: jottick_scheduled_notes_update
-      event_data:
-        schedules: "{{ updated_schedules }}"        
+    - if:
+        - condition: template
+          value_template: "{{ should_delete and note_id != '' }}"
+      then:
+        - service: jottick.delete_note
+          data:
+            note_id: "{{ note_id }}"     
         
 jottick_debug_scheduled_notes:
   alias: "JotTick: Debug Scheduled Notes"
@@ -1454,4 +1473,277 @@ jottick_force_send_scheduled:
               schedule_id: "{{ schedule_id }}"
               title: "{{ schedule.title | default('Note') }}"
               message: "{{ schedule.message | default('') }}"
-              targets: "{{ schedule.targets | default('') }}" 
+              targets: "{{ schedule.targets | default('') }}"  
+              
+
+jottick_save_user_device:
+  alias: "JotTick: Save User Device"
+  mode: single
+  fields:
+    user_id:
+      description: "User ID"
+    user_name:
+      description: "User friendly name"
+    device:
+      description: "Notify service"
+  sequence:
+    - event: jottick_user_devices_update
+      event_data:
+        user_devices: >
+          {% set current = state_attr('sensor.jottick_user_devices', 'user_devices') or {} %}
+          {% set new_entry = {user_id: {'name': user_name, 'device': device}} %}
+          {{ dict(current, **new_entry) }}
+
+jottick_delete_user_device:
+  alias: "JotTick: Delete User Device"
+  mode: single
+  fields:
+    user_id:
+      description: "User ID to delete"
+  sequence:
+    - event: jottick_user_devices_update
+      event_data:
+        user_devices: >
+          {% set current = state_attr('sensor.jottick_user_devices', 'user_devices') or {} %}
+          {% set ns = namespace(result={}) %}
+          {% for uid, data in current.items() %}
+            {% if uid != user_id %}
+              {% set ns.result = dict(ns.result, **{uid: data}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+
+jottick_save_alias_direct:
+  alias: "JotTick: Save Alias Direct"
+  mode: single
+  fields:
+    names:
+      description: "Comma-separated names"
+    device:
+      description: "Notify service"
+  sequence:
+    - event: jottick_aliases_update
+      event_data:
+        aliases: >
+          {% set current = state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} %}
+          {% set name_list = names.split(',') %}
+          {% set ns = namespace(result=current) %}
+          {% for name in name_list %}
+            {% set clean_name = name | trim | lower %}
+            {% if clean_name %}
+              {% set ns.result = dict(ns.result, **{clean_name: device}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+
+jottick_delete_alias_group:
+  alias: "JotTick: Delete Alias Group"
+  mode: single
+  fields:
+    device:
+      description: "Device to remove all aliases for"
+  sequence:
+    - event: jottick_aliases_update
+      event_data:
+        aliases: >
+          {% set current = state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} %}
+          {% set ns = namespace(result={}) %}
+          {% for name, dev in current.items() %}
+            {% if dev != device %}
+              {% set ns.result = dict(ns.result, **{name: dev}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+
+jottick_set_reminder:
+  alias: "JotTick: Set Reminder"
+  mode: parallel
+  fields:
+    task:
+      description: "What to remind about"
+    target:
+      description: "Who to remind"
+    user_id:
+      description: "User ID of person speaking"
+    time_type:
+      description: "Type of time specification"
+    minutes:
+      description: "Minutes for relative time"
+    hours:
+      description: "Hours for relative time"
+    time_hour:
+      description: "Hour for absolute time"
+    time_minute:
+      description: "Minute for absolute time"
+    ampm:
+      description: "AM/PM indicator"
+  sequence:
+    - variables:
+        target_lower: "{{ (target | default('me')) | lower | trim | replace('_', ' ') }}"
+        aliases: "{{ state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} }}"
+        user_devices: "{{ state_attr('sensor.jottick_user_devices', 'user_devices') or {} }}"
+        resolved_device: >
+          {% if target_lower in ['me', 'myself', 'i'] %}
+            {% if user_id and user_id in user_devices %}
+              {{ user_devices[user_id].device }}
+            {% else %}
+              unknown
+            {% endif %}
+          {% elif target_lower in aliases %}
+            {{ aliases[target_lower] }}
+          {% elif target_lower | replace(' ', '') in aliases %}
+            {{ aliases[target_lower | replace(' ', '')] }}
+          {% else %}
+            {% set ns = namespace(found='unknown') %}
+            {% for alias_name, device in aliases.items() %}
+              {% if alias_name | lower | replace(' ', '') == target_lower | replace(' ', '') %}
+                {% set ns.found = device %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+          {% endif %}
+        mins_int: "{{ minutes | default(0) | int }}"
+        hrs_int: "{{ hours | default(0) | int }}"
+        hr_int: "{{ time_hour | default(0) | int }}"
+        min_int: "{{ time_minute | default(0) | int }}"
+        scheduled_time: >
+          {% set now_dt = now() %}
+          {% if time_type == 'relative_minutes' %}
+            {{ (now_dt + timedelta(minutes=mins_int)).isoformat() }}
+          {% elif time_type == 'relative_hours' %}
+            {{ (now_dt + timedelta(hours=hrs_int)).isoformat() }}
+          {% elif time_type == 'relative_hours_minutes' %}
+            {{ (now_dt + timedelta(hours=hrs_int, minutes=mins_int)).isoformat() }}
+          {% elif time_type in ['absolute', 'absolute_hour_only'] %}
+            {% set hour = hr_int %}
+            {% set minute = min_int %}
+            {% if ampm | default('') | lower == 'pm' and hour < 12 %}
+              {% set hour = hour + 12 %}
+            {% elif ampm | default('') | lower == 'am' and hour == 12 %}
+              {% set hour = 0 %}
+            {% endif %}
+            {% set target_dt = now_dt.replace(hour=hour, minute=minute, second=0, microsecond=0) %}
+            {% if target_dt < now_dt %}
+              {% set target_dt = target_dt + timedelta(days=1) %}
+            {% endif %}
+            {{ target_dt.isoformat() }}
+          {% elif time_type in ['tomorrow', 'tomorrow_hour_only'] %}
+            {% set hour = hr_int %}
+            {% set minute = min_int %}
+            {% if ampm | default('') | lower == 'pm' and hour < 12 %}
+              {% set hour = hour + 12 %}
+            {% elif ampm | default('') | lower == 'am' and hour == 12 %}
+              {% set hour = 0 %}
+            {% endif %}
+            {% set target_dt = (now_dt + timedelta(days=1)).replace(hour=hour, minute=minute, second=0, microsecond=0) %}
+            {{ target_dt.isoformat() }}
+          {% else %}
+            {{ (now_dt + timedelta(hours=1)).isoformat() }}
+          {% endif %}
+        clean_task: "{{ task | replace('_', ' ') }}"
+        reminder_note_id: "reminder_{{ (now().timestamp() * 1000) | int | string }}"
+        reminder_title: "Reminder ({{ as_timestamp(scheduled_time) | timestamp_custom('%b %d %I:%M %p') }})"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ resolved_device == 'unknown' }}"
+          sequence:
+            - service: persistent_notification.create
+              data:
+                title: "Reminder Setup Needed"
+                message: >
+                  Could not find device for '{{ target }}'. 
+                  {% if target_lower in ['me', 'myself', 'i'] %}
+                  Go to JotTick dashboard > Voice Reminder Settings > Save My Device.
+                  {% else %}
+                  Go to JotTick dashboard > Voice Reminder Settings > Save Alias for '{{ target }}'.
+                  {% endif %}
+      default:
+        - service: jottick.create_note
+          data:
+            note_id: "{{ reminder_note_id }}"
+            title: "{{ reminder_title }}"
+            content: "{{ clean_task }}"
+        - service: script.jottick_schedule_reminder_note
+          data:
+            note_id: "{{ reminder_note_id }}"
+            title: "{{ reminder_title }}"
+            message: "{{ clean_task }}"
+            targets: "{{ resolved_device }}"
+            scheduled_time: "{{ scheduled_time }}" 
+
+jottick_schedule_reminder_note:
+  alias: "JotTick: Schedule Reminder Note"
+  fields:
+    note_id:
+      description: "Note ID"
+    title:
+      description: "Note title"
+    message:
+      description: "Note content"
+    targets:
+      description: "Comma-separated notify service targets"
+    scheduled_time:
+      description: "ISO datetime string for when to send"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        schedule_id: "{{ note_id }}_sched"
+        new_schedule:
+          note_id: "{{ note_id }}"
+          title: "{{ title }}"
+          message: "{{ message }}"
+          targets: "{{ targets }}"
+          scheduled_time: "{{ scheduled_time }}"
+          created: "{{ now().isoformat() }}"
+          auto_delete: true
+        safe_schedules: "{{ schedules if schedules is mapping else {} }}"
+        updated_schedules: "{{ dict(safe_schedules, **{schedule_id: new_schedule}) }}"
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"
+        
+jottick_debug_reminder_setup:
+  alias: "JotTick: Debug Reminder Setup"
+  sequence:
+    - variables:
+        user_devices: "{{ state_attr('sensor.jottick_user_devices', 'user_devices') or {} }}"
+        aliases: "{{ state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} }}"
+        scheduled: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+    - service: persistent_notification.create
+      data:
+        title: "JotTick Reminder Debug"
+        message: >
+          USER DEVICES:
+          {{ user_devices | tojson }}
+          
+          ALIASES:
+          {{ aliases | tojson }}
+          
+          PENDING REMINDERS:
+          {{ scheduled | tojson }}
+        notification_id: jottick_reminder_debug
+        
+jottick_delete_note_with_schedules:
+  alias: "JotTick: Delete Note With Schedules"
+  fields:
+    note_id:
+      description: "Note ID to delete"
+  sequence:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        updated_schedules: >
+          {% set safe_schedules = schedules if schedules is mapping else {} %}
+          {% set ns = namespace(result={}) %}
+          {% for sched_id, sched in safe_schedules.items() %}
+            {% if sched.note_id != note_id %}
+              {% set ns.result = dict(ns.result, **{sched_id: sched}) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.result }}
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: "{{ updated_schedules }}"
+    - service: jottick.delete_note
+      data:
+        note_id: "{{ note_id }}"       

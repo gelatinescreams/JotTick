@@ -50,6 +50,127 @@ views:
             grid_options:
               columns: full
               rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: >
+              <style>
+                .reminder-config{padding:16px;font-family:var(--paper-font-body1_-_font-family);}
+                .reminder-config h3{margin:0 0 8px 0;color:var(--primary-text-color);font-size:1.1em;}
+                .reminder-config .help{font-size:0.85em;color:var(--secondary-text-color);margin-bottom:12px;}
+                .reminder-config .section{background:var(--secondary-background-color);border-radius:8px;padding:12px;margin-bottom:12px;}
+                .reminder-config .section-title{font-weight:600;font-size:0.95em;margin-bottom:8px;color:var(--primary-text-color);}
+                .reminder-config select,.reminder-config input[type=text]{width:100%;padding:10px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:1em;box-sizing:border-box;}
+                .reminder-config button.save-btn{padding:8px 16px;background:var(--primary-color);color:var(--text-primary-color,white);border:none;border-radius:6px;cursor:pointer;font-size:0.9em;margin-right:8px;}
+                .reminder-config button.save-btn:hover{opacity:0.9;}
+                .reminder-config button.save-btn:disabled{opacity:0.5;cursor:not-allowed;}
+                .reminder-config .item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--card-background-color);border-radius:6px;margin:4px 0;font-size:0.9em;}
+                .reminder-config .item .del{padding:4px 10px;background:#ef4444;color:white;font-size:0.8em;margin:0;border:none;border-radius:4px;cursor:pointer;}
+                .reminder-config .status{font-size:0.85em;color:var(--primary-color);margin-top:8px;min-height:18px;}
+                .reminder-config .empty{font-style:italic;color:var(--secondary-text-color);font-size:0.85em;}
+                .reminder-config .pending{padding:6px 10px;background:var(--card-background-color);border-radius:6px;margin:4px 0;font-size:0.85em;}
+                .reminder-config .hint{font-size:0.8em;color:var(--secondary-text-color);margin-top:4px;}
+              </style>
+
+              {% set notifiers =
+              state_attr('sensor.jottick_available_notifiers', 'notifiers') or
+              [] %}
+
+              {% set user_devices = state_attr('sensor.jottick_user_devices',
+              'user_devices') or {} %}
+
+              {% set aliases = state_attr('sensor.jottick_reminder_aliases',
+              'aliases') or {} %}
+
+              {% set schedules = state_attr('sensor.jottick_scheduled_notes',
+              'schedules') or {} %}
+
+              <div class="reminder-config">
+                <h3>Assist Reminder Settings</h3>
+                <p class="help">Say "Remind me to..." or "Remind [name] to..." and notifications go to the right phone!</p>
+                <div class="section" id="user-section">
+                  <div class="section-title">My Device (for "Remind Me")</div>
+                  <select class="user-select">
+                    <option value="">-- Select your HA user --</option>
+                    {% for state in states.person %}
+                      {% if state.attributes.user_id is defined and state.attributes.user_id %}
+                    <option value="{{ state.attributes.user_id }}">{{ state.attributes.friendly_name | default(state.entity_id | replace('person.','')) }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                  <select class="device-select">
+                    <option value="">-- Select device --</option>
+                    {% for n in notifiers %}
+                    <option value="{{ n }}">{{ n | replace('notify.mobile_app_','') | replace('_',' ') | title }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="save-btn" type="button" onclick="(function(btn){var sec=btn.closest('.section');var u=sec.querySelector('.user-select');var d=sec.querySelector('.device-select');var cfg=btn.closest('.reminder-config');var s=cfg.querySelector('.status');if(!u.value){s.textContent='Select your user';return;}if(!d.value){s.textContent='Select your device';return;}var ha=document.querySelector('home-assistant');var uname=u.options[u.selectedIndex].text;ha.hass.callService('script','jottick_save_user_device',{user_id:u.value,user_name:uname,device:d.value});s.textContent='Saved! Refresh page to see changes.';btn.disabled=true;setTimeout(function(){btn.disabled=false;},2000);})(this);">Save My Device</button>
+                  <div class="users-list">
+                    {% if user_devices and user_devices | length > 0 %}
+                      {% for uid, data in user_devices.items() %}
+                    <div class="item">
+                      <span>{{ data.name }} → {{ data.device | replace('notify.mobile_app_','') | replace('_',' ') }}</span>
+                      <button class="del" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_delete_user_device',{user_id:'{{ uid }}'});this.closest('.reminder-config').querySelector('.status').textContent='Deleted. Refresh page.';">×</button>
+                    </div>
+                      {% endfor %}
+                    {% else %}
+                    <div class="empty">No users mapped yet</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="section" id="alias-section">
+                  <div class="section-title">Name Aliases (for "Remind Mom/Tim/Dad")</div>
+                  <input type="text" class="names-input" placeholder="Names separated by commas (e.g. tim, timmy, dad)">
+                  <select class="device-select">
+                    <option value="">-- Select device --</option>
+                    {% for n in notifiers %}
+                    <option value="{{ n }}">{{ n | replace('notify.mobile_app_','') | replace('_',' ') | title }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="save-btn" type="button" onclick="(function(btn){var sec=btn.closest('.section');var n=sec.querySelector('.names-input');var d=sec.querySelector('.device-select');var cfg=btn.closest('.reminder-config');var s=cfg.querySelector('.status');if(!n.value.trim()){s.textContent='Enter at least one name';return;}if(!d.value){s.textContent='Select a device';return;}var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_save_alias_direct',{names:n.value,device:d.value});s.textContent='Saved! Say: remind '+n.value.split(',')[0].trim()+' to... Refresh to see.';n.value='';btn.disabled=true;setTimeout(function(){btn.disabled=false;},2000);})(this);">Save Alias</button>
+                  <div class="aliases-list">
+                    {% set alias_by_device = namespace(devices={}) %}
+                    {% for name, dev in aliases.items() %}
+                      {% if dev not in alias_by_device.devices %}
+                        {% set alias_by_device.devices = dict(alias_by_device.devices, **{dev: [name]}) %}
+                      {% else %}
+                        {% set alias_by_device.devices = dict(alias_by_device.devices, **{dev: alias_by_device.devices[dev] + [name]}) %}
+                      {% endif %}
+                    {% endfor %}
+                    {% if alias_by_device.devices | length > 0 %}
+                      {% for dev, names in alias_by_device.devices.items() %}
+                    <div class="item">
+                      <span>{{ names | join(', ') }} → {{ dev | replace('notify.mobile_app_','') | replace('_',' ') }}</span>
+                      <button class="del" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_delete_alias_group',{device:'{{ dev }}'});this.closest('.reminder-config').querySelector('.status').textContent='Deleted. Refresh page.';">×</button>
+                    </div>
+                      {% endfor %}
+                    {% else %}
+                    <div class="empty">No aliases yet</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="section">
+                  <div class="section-title">Pending Assist Reminders</div>
+                  <div class="pending-list">
+                    {% set reminder_count = namespace(val=0) %}
+                    {% for sched_id, sched in schedules.items() %}
+                      {% if sched.auto_delete | default(false) %}
+                        {% set reminder_count.val = reminder_count.val + 1 %}
+                    <div class="pending">
+                      • {{ sched.message }} @ {{ as_timestamp(sched.scheduled_time) | timestamp_custom('%b %d %I:%M %p') }}
+                      <button style="margin-left:8px;padding:2px 8px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_cancel_scheduled_note',{schedule_id:'{{ sched_id }}'});this.parentElement.remove();">×</button>
+                    </div>
+                      {% endif %}
+                    {% endfor %}
+                    {% if reminder_count.val == 0 %}
+                    <div class="empty">No pending reminders</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="status"></div>
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
       - type: grid
         cards:
           - type: custom:html-template-card
@@ -232,7 +353,7 @@ views:
                             {% if note_schedules.count > 0 %}<span class="send-badge">{{ note_schedules.count }}</span>{% endif %}
                           </div>
                           {% endif %}
-                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('script','jottick_delete_note_with_schedules',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
                       {% if is_encrypted %}
@@ -487,7 +608,7 @@ views:
                             {% if note_schedules.count > 0 %}<span class="send-badge">{{ note_schedules.count }}</span>{% endif %}
                           </div>
                           {% endif %}
-                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('jottick','delete_note',{note_id:'{{ note_id }}'});}}">Delete
+                          <button style="padding:4px 12px; background:var(--error-color, #ff5555); color:var(--text-primary-color, white); border:none; border-radius:4px; cursor:pointer; font-size:0.85em;" onclick="if(confirm('Delete {{ state.state | replace('"', '&quot;') | replace("'", "\\'") }}?')){this.disabled=true; const el=document.querySelector('home-assistant'); if(el&&el.hass){el.hass.callService('script','jottick_delete_note_with_schedules',{note_id:'{{ note_id }}'});}}">Delete
                         </div>
                       </div>
                       {% if is_encrypted %}

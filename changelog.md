@@ -1,5 +1,15 @@
 ### Changelog
 
+### New 12/17/25
+- **Version 1.3** Assist, reminders and aliases oh my
+- **Natural Language Assist Reminders**: No LLM needed
+  - Add aliases (nicknames) for each device "Remind (alias) to X in an hour thirty" and [many more variations here](assist_README.md)
+  - Add "me" for each device : "Remind me to X in 30 minutes" and [many more variations here](assist_README.md)
+- **Easy to Use Dashboard **: Easily link devices and add aliases. [see here](assets/preview-reminders.png) 
+- **Upgrade Information**
+  - No core plugin files were changed in 1.3
+  - Check all the scripts, automations and inputs. Many have changed.
+  
 ### New 12/15/25
 - **Version 1.2**
 - **Scheduled Note Sending**: Schedule notes to send to devices
@@ -12,7 +22,7 @@
   - Browser side encryption/decryption via Web Crypto API
   - Server never sees plaintext content
 - **Upgrade Information**
-  - No core files were changed in 1.2
+  - No core plugin files were changed in 1.2
   - Copy the new jottick_scripts.yaml to your scripts
   - Copy the new jottick_automations.yaml to your automations
   - Copy the new template from jottick_input_helpers to your templates section in configuration 

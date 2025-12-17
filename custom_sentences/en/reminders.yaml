@@ -1,0 +1,363 @@
+language: "en"
+intents:
+  SetReminder:
+    data:
+      - sentences:
+          - "remind me to {task} in {minutes} minute[s]"
+          - "remind me in {minutes} minute[s] to {task}"
+          - "remind me to {task} in {minutes} min[ute][s]"
+          - "set [a] reminder to {task} in {minutes} minute[s]"
+          - "[can you] remind me to {task} in {minutes} minute[s]"
+          - "[please] remind me to {task} in {minutes} minute[s]"
+        slots:
+          time_type: "relative_minutes"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} in {hours} hour[s]"
+          - "remind me in {hours} hour[s] to {task}"
+          - "set [a] reminder to {task} in {hours} hour[s]"
+          - "[can you] remind me to {task} in {hours} hour[s]"
+          - "[please] remind me to {task} in {hours} hour[s]"
+        slots:
+          time_type: "relative_hours"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} in {hours} hour[s] [and] {minutes} minute[s]"
+          - "set [a] reminder to {task} in {hours} hour[s] [and] {minutes} minute[s]"
+        slots:
+          time_type: "relative_hours_minutes"
+          target: "me"
+          
+      - sentences:
+          - "remind me to {task} at {time_hour}:{time_minute}"
+          - "remind me at {time_hour}:{time_minute} to {task}"
+          - "set [a] reminder to {task} at {time_hour}:{time_minute}"
+          - "set [a] reminder for {time_hour}:{time_minute} to {task}"
+          - "[can you] remind me to {task} at {time_hour}:{time_minute}"
+          - "[please] remind me to {task} at {time_hour}:{time_minute}"
+        slots:
+          time_type: "absolute"
+          ampm: ""
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} at {time_hour}:{time_minute} {ampm}"
+          - "remind me at {time_hour}:{time_minute} {ampm} to {task}"
+          - "set [a] reminder to {task} at {time_hour}:{time_minute} {ampm}"
+          - "set [a] reminder for {time_hour}:{time_minute} {ampm} to {task}"
+          - "[can you] remind me to {task} at {time_hour}:{time_minute} {ampm}"
+        slots:
+          time_type: "absolute"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} at {time_hour}"
+          - "remind me at {time_hour} to {task}"
+          - "set [a] reminder to {task} at {time_hour}"
+          - "set [a] reminder for {time_hour} to {task}"
+          - "[can you] remind me to {task} at {time_hour}"
+        slots:
+          time_type: "absolute_hour_only"
+          time_minute: "0"
+          ampm: ""
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} at {time_hour} {ampm}"
+          - "remind me at {time_hour} {ampm} to {task}"
+          - "set [a] reminder to {task} at {time_hour} {ampm}"
+          - "set [a] reminder for {time_hour} {ampm} to {task}"
+          - "[can you] remind me to {task} at {time_hour} {ampm}"
+        slots:
+          time_type: "absolute_hour_only"
+          time_minute: "0"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} in half an hour"
+          - "remind me in half an hour to {task}"
+          - "set [a] reminder to {task} in half an hour"
+          - "remind me to {task} in 30"
+        slots:
+          time_type: "relative_minutes"
+          minutes: "30"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} in an hour"
+          - "remind me in an hour to {task}"
+          - "set [a] reminder to {task} in an hour"
+        slots:
+          time_type: "relative_hours"
+          hours: "1"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} in a couple hours"
+          - "remind me to {task} in a couple of hours"
+        slots:
+          time_type: "relative_hours"
+          hours: "2"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} tomorrow at {time_hour}:{time_minute}"
+          - "remind me to {task} tomorrow at {time_hour}:{time_minute} {ampm}"
+          - "remind me tomorrow at {time_hour}:{time_minute} to {task}"
+        slots:
+          time_type: "tomorrow"
+          ampm: ""
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} tomorrow at {time_hour}"
+          - "remind me to {task} tomorrow at {time_hour} {ampm}"
+          - "remind me tomorrow at {time_hour} to {task}"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_minute: "0"
+          ampm: ""
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} tomorrow morning"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "9"
+          time_minute: "0"
+          ampm: "am"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} tomorrow afternoon"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "2"
+          time_minute: "0"
+          ampm: "pm"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} tomorrow evening"
+          - "remind me to {task} tomorrow night"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "6"
+          time_minute: "0"
+          ampm: "pm"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} this morning"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "9"
+          time_minute: "0"
+          ampm: "am"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} this afternoon"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "2"
+          time_minute: "0"
+          ampm: "pm"
+          target: "me"
+
+      - sentences:
+          - "remind me to {task} this evening"
+          - "remind me to {task} tonight"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "6"
+          time_minute: "0"
+          ampm: "pm"
+          target: "me"
+
+      - sentences:
+          - "remind {target} to {task} in {minutes} minute[s]"
+          - "remind {target} in {minutes} minute[s] to {task}"
+          - "[can you] remind {target} to {task} in {minutes} minute[s]"
+          - "[please] remind {target} to {task} in {minutes} minute[s]"
+        slots:
+          time_type: "relative_minutes"
+
+      - sentences:
+          - "remind {target} to {task} in {hours} hour[s]"
+          - "remind {target} in {hours} hour[s] to {task}"
+          - "[can you] remind {target} to {task} in {hours} hour[s]"
+        slots:
+          time_type: "relative_hours"
+
+      - sentences:
+          - "remind {target} to {task} in {hours} hour[s] [and] {minutes} minute[s]"
+        slots:
+          time_type: "relative_hours_minutes"
+
+      - sentences:
+          - "remind {target} to {task} in half an hour"
+          - "remind {target} in half an hour to {task}"
+        slots:
+          time_type: "relative_minutes"
+          minutes: "30"
+
+      - sentences:
+          - "remind {target} to {task} in an hour"
+          - "remind {target} in an hour to {task}"
+        slots:
+          time_type: "relative_hours"
+          hours: "1"
+
+      - sentences:
+          - "remind {target} to {task} at {time_hour}:{time_minute}"
+          - "remind {target} at {time_hour}:{time_minute} to {task}"
+          - "[can you] remind {target} to {task} at {time_hour}:{time_minute}"
+        slots:
+          time_type: "absolute"
+          ampm: ""
+
+      - sentences:
+          - "remind {target} to {task} at {time_hour}:{time_minute} {ampm}"
+          - "remind {target} at {time_hour}:{time_minute} {ampm} to {task}"
+          - "[can you] remind {target} to {task} at {time_hour}:{time_minute} {ampm}"
+        slots:
+          time_type: "absolute"
+
+      - sentences:
+          - "remind {target} to {task} at {time_hour}"
+          - "remind {target} at {time_hour} to {task}"
+          - "[can you] remind {target} to {task} at {time_hour}"
+        slots:
+          time_type: "absolute_hour_only"
+          time_minute: "0"
+          ampm: ""
+
+      - sentences:
+          - "remind {target} to {task} at {time_hour} {ampm}"
+          - "remind {target} at {time_hour} {ampm} to {task}"
+          - "[can you] remind {target} to {task} at {time_hour} {ampm}"
+        slots:
+          time_type: "absolute_hour_only"
+          time_minute: "0"
+
+      - sentences:
+          - "remind {target} to {task} tomorrow at {time_hour}:{time_minute}"
+          - "remind {target} to {task} tomorrow at {time_hour}:{time_minute} {ampm}"
+          - "remind {target} tomorrow at {time_hour}:{time_minute} to {task}"
+        slots:
+          time_type: "tomorrow"
+          ampm: ""
+
+      - sentences:
+          - "remind {target} to {task} tomorrow at {time_hour}"
+          - "remind {target} to {task} tomorrow at {time_hour} {ampm}"
+          - "remind {target} tomorrow at {time_hour} to {task}"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_minute: "0"
+          ampm: ""
+
+      - sentences:
+          - "remind {target} to {task} tomorrow morning"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "9"
+          time_minute: "0"
+          ampm: "am"
+
+      - sentences:
+          - "remind {target} to {task} tomorrow afternoon"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "2"
+          time_minute: "0"
+          ampm: "pm"
+
+      - sentences:
+          - "remind {target} to {task} tomorrow evening"
+          - "remind {target} to {task} tomorrow night"
+        slots:
+          time_type: "tomorrow_hour_only"
+          time_hour: "6"
+          time_minute: "0"
+          ampm: "pm"
+
+      - sentences:
+          - "remind {target} to {task} this morning"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "9"
+          time_minute: "0"
+          ampm: "am"
+
+      - sentences:
+          - "remind {target} to {task} this afternoon"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "2"
+          time_minute: "0"
+          ampm: "pm"
+
+      - sentences:
+          - "remind {target} to {task} this evening"
+          - "remind {target} to {task} tonight"
+        slots:
+          time_type: "absolute_hour_only"
+          time_hour: "6"
+          time_minute: "0"
+          ampm: "pm"
+
+lists:
+  task:
+    wildcard: true
+
+  target:
+    wildcard: true
+
+  minutes:
+    range:
+      from: 1
+      to: 59
+
+  hours:
+    range:
+      from: 1
+      to: 24
+
+  time_hour:
+    range:
+      from: 1
+      to: 12
+
+  time_minute:
+    range:
+      from: 0
+      to: 59
+
+  ampm:
+    values:
+      - in: "am"
+        out: "am"
+      - in: "a.m."
+        out: "am"
+      - in: "a m"
+        out: "am"
+      - in: "in the morning"
+        out: "am"
+      - in: "pm"
+        out: "pm"
+      - in: "p.m."
+        out: "pm"
+      - in: "p m"
+        out: "pm"
+      - in: "in the afternoon"
+        out: "pm"
+      - in: "in the evening"
+        out: "pm"
+      - in: "tonight"
+        out: "pm"
+      - in: "at night"
+        out: "pm"

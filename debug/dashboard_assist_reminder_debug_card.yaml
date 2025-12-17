@@ -1,0 +1,57 @@
+type: custom:html-template-card
+ignore_line_breaks: true
+content: >
+  <div
+  style="padding:16px;font-family:monospace;font-size:12px;background:#1e1e1e;color:#0f0;border-radius:8px;">
+    <div style="margin-bottom:8px;"><b>JOTTICK DEBUG INFO</b></div>
+    <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
+      <b>Person Entities (for "remind me"):</b><br>
+      {% set person_count = namespace(val=0) %}
+      {% for state in states.person %}
+        {% set person_count.val = person_count.val + 1 %}
+      {{ state.entity_id }}: user_id={{ state.attributes.user_id | default('NONE') }}<br>
+      {% endfor %}
+      {% if person_count.val == 0 %}
+       No person entities found!<br>
+      {% endif %}
+    </div>
+    <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
+      <b>Mobile App Notifiers (from sensor):</b><br>
+      {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or [] %}
+      {% if notifiers | length > 0 %}
+        {% for n in notifiers %}
+      {{ n }}<br>
+        {% endfor %}
+      {% else %}
+       No notifiers in sensor - checking services directly...<br>
+      {% endif %}
+    </div>
+    <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
+      <b>Mobile App Device Trackers:</b><br>
+      {% set tracker_count = namespace(val=0) %}
+      {% for state in states.device_tracker %}
+        {% if 'mobile_app' in state.entity_id or state.attributes.source_type | default('') == 'gps' %}
+          {% set tracker_count.val = tracker_count.val + 1 %}
+      {{ state.entity_id }}: {{ state.name }}<br>
+        {% endif %}
+      {% endfor %}
+      {% if tracker_count.val == 0 %}
+       No mobile_app device trackers found<br>
+      {% endif %}
+    </div>
+    <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
+      <b>JotTick User Devices Sensor:</b><br>
+      State: {{ states('sensor.jottick_user_devices') }}<br>
+      Attrs: {{ state_attr('sensor.jottick_user_devices', 'user_devices') | default('NONE') }}<br>
+    </div>
+    <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
+      <b>JotTick Aliases Sensor:</b><br>
+      State: {{ states('sensor.jottick_reminder_aliases') }}<br>
+      Attrs: {{ state_attr('sensor.jottick_reminder_aliases', 'aliases') | default('NONE') }}<br>
+    </div>
+    <div style="margin-bottom:8px;">
+      <b>JotTick Scheduled Notes Sensor:</b><br>
+      State: {{ states('sensor.jottick_scheduled_notes') }}<br>
+      Attrs: {{ state_attr('sensor.jottick_scheduled_notes', 'schedules') | default('NONE') }}<br>
+    </div>
+  </div>

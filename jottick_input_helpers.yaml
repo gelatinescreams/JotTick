@@ -93,6 +93,7 @@ input_text:
     name: "Loading Item"
     initial: ""
     max: 100
+
   jottick_quick_task_action_data:
     name: Quick Task Action Data
     max: 255
@@ -117,6 +118,7 @@ input_text:
     name: "Task Item Text"
     initial: ""
     max: 255
+
   jottick_new_status_id:
     name: "New Status ID"
     initial: ""
@@ -164,6 +166,7 @@ input_text:
 
 #under input_select  
 input_select:
+#under input_select
   jottick_reminder_target:
     name: "Remind Who"
     options:
@@ -199,6 +202,7 @@ input_select:
       - "-- Select status --"
     initial: "-- Select status --"
     icon: mdi:view-column
+
   jottick_checklist_type:
     name: "Checklist Type"
     options:
@@ -265,6 +269,7 @@ input_select:
 
 #under input_number 
 input_number:
+#under input_number 
   jottick_selected_item_index:
     name: "Selected Item Index"
     min: 0
@@ -272,6 +277,7 @@ input_number:
     step: 1
     initial: 0
     mode: box
+
   jottick_new_status_order:
     name: "New Status Order"
     initial: 0
@@ -279,10 +285,11 @@ input_number:
     max: 20
     step: 1
     mode: box
-    icon: mdi:sort-numeric-ascending    
+    icon: mdi:sort-numeric-ascending  
 
 #under input_boolean    
 input_boolean:
+#under input_boolean  
   jottick_item_completed:
     name: "Item Completed"
     initial: false
@@ -301,9 +308,10 @@ input_boolean:
     name: "Show Reminder Popup"
     initial: false
     icon: mdi:popup
-    
-input_datetime:    
 
+#under input_datetime    
+input_datetime:    
+#under input_datetime 
   jottick_reminder_start:
     name: "From Time"
     has_date: false
@@ -316,6 +324,7 @@ input_datetime:
 
 #at the bottom of config    
 template:
+
   - trigger:
       - platform: homeassistant
         event: start
@@ -325,14 +334,14 @@ template:
       - name: "JotTick Reminders"
         unique_id: jottick_reminders_storage
         state: >
-          {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
             {{ trigger.event.data.configs | length }}
           {% else %}
             {{ this.attributes.configs | default({}) | length }}
           {% endif %}
         attributes:
           configs: >
-            {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
               {{ trigger.event.data.configs }}
             {% else %}
               {{ this.attributes.configs | default({}) }}
@@ -342,19 +351,32 @@ template:
       - platform: homeassistant
         event: start
       - platform: time_pattern
-        hours: "/6"
+        minutes: "/30"
     sensor:
       - name: "JotTick Available Notifiers"
         unique_id: jottick_available_notifiers
         state: "{{ this.attributes.notifiers | default([]) | length }}"
         attributes:
           notifiers: >
-            {% set devices = integration_entities('mobile_app') | select('match','device_tracker') | expand | map(attribute='name') | map('slugify') | list %}
             {% set ns = namespace(services=[]) %}
-            {% for device in devices %}
-              {% set ns.services = ns.services + ['notify.mobile_app_' ~ device] %}
+            {% for state in states.device_tracker %}
+              {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
+                {% set device_name = state.name | slugify %}
+                {% set service_name = 'notify.mobile_app_' ~ device_name %}
+                {% set ns.services = ns.services + [service_name] %}
+              {% endif %}
             {% endfor %}
-            {{ ns.services }}    
+            {% if ns.services | length == 0 %}
+              {% for state in states.device_tracker %}
+                {% set eid = state.entity_id | lower %}
+                {% if 'iphone' in eid or 'phone' in eid or 'pixel' in eid or 'samsung' in eid or 'galaxy' in eid %}
+                  {% set device_name = state.object_id %}
+                  {% set service_name = 'notify.mobile_app_' ~ device_name %}
+                  {% set ns.services = ns.services + [service_name] %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {{ ns.services | unique | list }}
 
   - trigger:
       - platform: homeassistant
@@ -365,20 +387,19 @@ template:
       - name: "JotTick Recurring"
         unique_id: jottick_recurring_storage
         state: >
-          {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
             {{ trigger.event.data.configs | length }}
           {% else %}
             {{ this.attributes.configs | default({}) | length }}
           {% endif %}
         attributes:
           configs: >
-            {% if trigger.platform == 'event' and trigger.event.data.configs is defined %}
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
               {{ trigger.event.data.configs }}
             {% else %}
               {{ this.attributes.configs | default({}) }}
             {% endif %}
 
-# added 1.2 12/15/25
   - trigger:
       - platform: homeassistant
         event: start
@@ -388,15 +409,67 @@ template:
       - name: "JotTick Scheduled Notes"
         unique_id: jottick_scheduled_notes_storage
         state: >
-          {% if trigger.platform == 'event' and trigger.event.data.schedules is defined %}
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.schedules is defined %}
             {{ trigger.event.data.schedules | length }}
           {% else %}
             {{ this.attributes.schedules | default({}) | length }}
           {% endif %}
         attributes:
           schedules: >
-            {% if trigger.platform == 'event' and trigger.event.data.schedules is defined %}
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.schedules is defined %}
               {{ trigger.event.data.schedules }}
             {% else %}
               {{ this.attributes.schedules | default({}) }}
+            {% endif %}          
+            
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_user_devices_update
+    sensor:
+      - name: "JotTick User Devices"
+        unique_id: jottick_user_devices
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_devices is defined %}
+            {{ trigger.event.data.user_devices | length }} users
+          {% elif this.attributes is defined and this.attributes.user_devices is defined %}
+            {{ this.attributes.user_devices | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          user_devices: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_devices is defined %}
+              {{ trigger.event.data.user_devices }}
+            {% elif this.attributes is defined and this.attributes.user_devices is defined %}
+              {{ this.attributes.user_devices }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_aliases_update
+    sensor:
+      - name: "JotTick Reminder Aliases"
+        unique_id: jottick_reminder_aliases
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.aliases is defined %}
+            {{ trigger.event.data.aliases | length }} aliases
+          {% elif this.attributes is defined and this.attributes.aliases is defined %}
+            {{ this.attributes.aliases | length }} aliases
+          {% else %}
+            0 aliases
+          {% endif %}
+        attributes:
+          aliases: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.aliases is defined %}
+              {{ trigger.event.data.aliases }}
+            {% elif this.attributes is defined and this.attributes.aliases is defined %}
+              {{ this.attributes.aliases }}
+            {% else %}
+              {}
             {% endif %}

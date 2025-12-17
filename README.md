@@ -22,18 +22,12 @@ A notes, checklists, and task management integration for Home Assistant. Include
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 12/15/25
-- **Version 1.2** Note Enhancements
-- **Scheduled Note Sending**: Schedule notes to send to devices
-  - Easy Datetime picker
-  - Per note badge shows pending schedule count(s)
-- **Markdown Support**: Toggle between HTML and Markdown when creating notes
-  - Renders bold, italic, headers, lists, blockquotes, code, links, horizontal rules
-  - "MD" badge for markdown notes
-- **Password Protected Notes**: Encrypt notes with AES-256-GCM
-  - Browser side encryption/decryption via Web Crypto API
-  - Supported by all modern browsers
-  - Server never sees plaintext content
+### New 12/17/25
+- **Version 1.3** Assist, reminders and aliases oh my
+- **Natural Language Assist Reminders**: No LLM needed
+  - Add aliases (nicknames) for each device "Remind (alias) to X in an hour thirty" and [many more variations here](assist_README.md)
+  - Add "me" for each device : "Remind me to X in 30 minutes" and [many more variations here](assist_README.md)
+- **Easy to Use Dashboard **: Easily link devices and add aliases. [see here](assets/preview-reminders.png) 
 - Upgrade information and more changes available via [changelog.md](changelog.md)
 
 ### Notes
