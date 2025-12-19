@@ -1,6 +1,7 @@
 # =============================================================================
 # JotTick HOME ASSISTANT INTEGRATION VIA HACS
 # Copy and paste this at the bottom of automations.yaml
+#
 # =============================================================================
 
 - id: jottick_auto_update_note_picker_fixed

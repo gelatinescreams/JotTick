@@ -23,6 +23,7 @@ A notes, checklists, and task management integration for Home Assistant. Include
 [Test drive the features at JotTick.com](https://jottick.com)
 
 ### New 12/17/25
+- **Version 1.4** Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
 - **Version 1.3** Assist, reminders and aliases oh my
 - **Natural Language Assist Reminders**: No LLM needed
   - Add aliases (nicknames) for each device "Remind (alias) to X in an hour thirty" and [many more variations here](assist_README.md)
