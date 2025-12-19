@@ -399,3 +399,173 @@
               message: "{{ sched.message | default('') }}"
               targets: "{{ sched.targets | default('') }}"
               auto_delete: "{{ sched.auto_delete | default(false) }}" 
+              
+- id: jottick_process_quick_delete_item
+  alias: "JotTick: Process Quick Delete Item"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_delete_item_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        list_id: "{{ parts[0] }}"
+        item_index: "{{ parts[1] }}"
+    - service: jottick.delete_checklist_item
+      data:
+        checklist_id: "{{ list_id }}"
+        item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_delete_item_data
+      data:
+        value: ""
+
+- id: jottick_process_quick_task_action
+  alias: "JotTick: Process Quick Task Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_task_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        task_id: "{{ parts[0] }}"
+        action: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'delete' }}"
+          sequence:
+            - service: jottick.delete_task
+              data:
+                task_id: "{{ task_id }}"
+        - conditions: "{{ action == 'add' }}"
+          sequence:
+            - service: jottick.add_task_item
+              data:
+                task_id: "{{ task_id }}"
+                text: "{{ parts[2] }}"
+                status: "{{ parts[3] | default('todo') }}"
+                parent_index: "{{ parts[4] if parts | length > 4 and parts[4] != '' else none }}"
+        - conditions: "{{ parts[2] | default('') == 'status' }}"
+          sequence:
+            - service: jottick.update_task_item_status
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ action }}"
+                status: "{{ parts[3] }}"
+        - conditions: "{{ parts[2] | default('') == 'delete_item' }}"
+          sequence:
+            - service: jottick.delete_task_item
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ action }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_task_action_data
+      data:
+        value: ""
+
+- id: jottick_process_kanban_action
+  alias: "JotTick: Process Kanban Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_kanban_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        action: "{{ parts[0] }}"
+        task_id: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'create_status' }}"
+          sequence:
+            - service: jottick.create_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+                label: "{{ parts[3] }}"
+                color: "{{ parts[4] | default('#6b7280') }}"
+        - conditions: "{{ action == 'update_status' }}"
+          sequence:
+            - service: jottick.update_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+                label: "{{ parts[3] }}"
+        - conditions: "{{ action == 'delete_status' }}"
+          sequence:
+            - service: jottick.delete_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_kanban_action_data
+      data:
+        value: ""
+
+- id: jottick_process_quick_action
+  alias: "JotTick: Process Quick Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        list_id: "{{ parts[0] }}"
+        action: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'delete' }}"
+          sequence:
+            - service: jottick.delete_checklist
+              data:
+                checklist_id: "{{ list_id }}"
+        - conditions: "{{ action == 'add' }}"
+          sequence:
+            - service: jottick.add_checklist_item
+              data:
+                checklist_id: "{{ list_id }}"
+                text: "{{ parts[2] }}"
+        - conditions: "{{ action == 'check' }}"
+          sequence:
+            - service: jottick.check_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+        - conditions: "{{ action == 'uncheck' }}"
+          sequence:
+            - service: jottick.uncheck_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+      default:
+        - variables:
+            item_index: "{{ action }}"
+            check_action: "{{ parts[2] }}"
+        - choose:
+            - conditions: "{{ check_action == 'check' }}"
+              sequence:
+                - service: jottick.check_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
+            - conditions: "{{ check_action == 'uncheck' }}"
+              sequence:
+                - service: jottick.uncheck_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_action_data
+      data:
+        value: ""        
