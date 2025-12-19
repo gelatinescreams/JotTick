@@ -16,6 +16,9 @@ A notes, checklists, and task management integration for Home Assistant. Include
   <img src="assets/lists-preview.gif"> 
 </p>
 <p align="center">
+  <img src="assets/kanban-preview.gif"> 
+</p>
+<p align="center">
   <img src="assets/tasks-preview.gif"> 
 </p>
 
