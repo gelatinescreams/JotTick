@@ -2072,6 +2072,446 @@ views:
                   {% endif %}
                 {% endfor %}
               </div>
+  - title: Kanban
+    path: kanban
+    icon: mdi:view-column
+    sections:
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .kb-container { padding: 8px; }
+                .kb-task-card {
+                  background: var(--ha-card-background);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                .kb-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 16px;
+                  padding-bottom: 12px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .kb-title { font-size: 1.4em; font-weight: 600; color: var(--primary-text-color); }
+                .kb-progress {
+                  font-size: 0.9em;
+                  background: var(--primary-color);
+                  color: white;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                }
+                .kb-layout-btn {
+                  padding: 6px 12px;
+                  background: var(--secondary-background-color);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 0.85em;
+                  color: var(--primary-text-color);
+                  margin-right: 8px;
+                }
+                .kb-layout-btn:hover { background: var(--divider-color); }
+                .kb-board {
+                  display: flex;
+                  gap: 12px;
+                  overflow-x: auto;
+                  padding-bottom: 8px;
+                }
+                .kb-board.vertical { flex-direction: column; }
+                .kb-column {
+                  min-width: 220px;
+                  flex: 1;
+                  background: var(--secondary-background-color);
+                  border-radius: 10px;
+                  padding: 10px;
+                  display: flex;
+                  flex-direction: column;
+                }
+                .kb-board.vertical .kb-column { min-width: auto; }
+                .kb-col-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px;
+                  margin-bottom: 8px;
+                  border-radius: 6px;
+                  font-weight: 600;
+                  font-size: 0.95em;
+                }
+                .kb-col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+                .kb-col-count { margin-left: auto; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+                .kb-dropzone {
+                  flex: 1;
+                  min-height: 60px;
+                  border: 2px dashed transparent;
+                  border-radius: 6px;
+                  padding: 6px;
+                  transition: all 0.2s;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                }
+                .kb-dropzone.drag-over { background: rgba(var(--rgb-primary-color), 0.15); }
+                .kb-card {
+                  background: var(--card-background-color);
+                  border-radius: 6px;
+                  padding: 10px;
+                  cursor: grab;
+                  border-left: 4px solid;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+                }
+                .kb-card:hover { transform: translateY(-2px); box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+                .kb-card.dragging { opacity: 0.4; }
+                .kb-card-text { font-size: 0.9em; color: var(--primary-text-color); word-break: break-word; }
+                .kb-card-children { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--divider-color); font-size: 0.8em; color: var(--secondary-text-color); }
+                .kb-child { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+                .kb-child-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+                .kb-empty { text-align: center; padding: 16px 8px; color: var(--secondary-text-color); font-style: italic; font-size: 0.85em; }
+                .kb-add-row { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider-color); }
+                .kb-add-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.85em; min-width: 0; }
+                .kb-add-row button { padding: 6px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; white-space: nowrap; }
+                .kb-add-row button:disabled { opacity: 0.5; }
+              </style>
+
+              <div class="kb-container">
+                {% set ns = namespace(tasks=[], count=0) %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
+                    {% set ns.tasks = ns.tasks + [state] %}
+                  {% endif %}
+                {% endfor %}
+                
+                {% if ns.tasks | length == 0 %}
+                  <div style="text-align:center;padding:40px;color:var(--secondary-text-color);">
+                    No task lists found. Create one in the Tasks tab.
+                  </div>
+                {% endif %}
+                
+                {% for state in ns.tasks | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is odd %}
+                    {% set task_id = state_attr(state.entity_id, 'task_id') %}
+                    {% set task_title = state_attr(state.entity_id, 'title') %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
+                    {% set statuses = state_attr(state.entity_id, 'statuses') or [{'id':'todo','label':'To Do','color':'#6b7280','order':0},{'id':'in_progress','label':'In Progress','color':'#3b82f6','order':1},{'id':'completed','label':'Completed','color':'#10b981','order':2}] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') | default(0) %}
+                    {% set total = state_attr(state.entity_id, 'total') | default(0) %}
+                    
+                    <div class="kb-task-card" data-taskid="{{ task_id }}">
+                      <div class="kb-header">
+                        <div class="kb-title">{{ task_title }}</div>
+                        <div style="display:flex;align-items:center;">
+                          <button class="kb-layout-btn" onclick="(function(btn){var board=btn.closest('.kb-task-card').querySelector('.kb-board');board.classList.toggle('vertical');btn.textContent=board.classList.contains('vertical')?'⬌ Horizontal':'⬍ Vertical';})(this);">⬌ Horizontal</button>
+                          <div class="kb-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      
+                      <div class="kb-board vertical">
+                        {% for status in statuses | sort(attribute='order') %}
+                          {% set status_id = status.id %}
+                          {% set status_label = status.label | default(status.name) | default(status.id) %}
+                          {% set status_color = status.color | default('#6b7280') %}
+                          {% set col_ns = namespace(items=[], count=0) %}
+                          {% for item in flat_items %}
+                            {% set idx = item.index_path | default('0') | string %}
+                            {% if '.' not in idx and item.status == status_id %}
+                              {% set col_ns.items = col_ns.items + [item] %}
+                              {% set col_ns.count = col_ns.count + 1 %}
+                            {% endif %}
+                          {% endfor %}
+                          
+                          <div class="kb-column">
+                            <div class="kb-col-header" style="background:{{ status_color }}33;color:{{ status_color }};">
+                              <div class="kb-col-dot" style="background:{{ status_color }};"></div>
+                              <span>{{ status_label }}</span>
+                              <span class="kb-col-count">{{ col_ns.count }}</span>
+                            </div>
+                            
+                            <div class="kb-dropzone" 
+                                 data-taskid="{{ task_id }}" 
+                                 data-status="{{ status_id }}"
+                                 style="border-color:{{ status_color }}55;"
+                                 ondragover="event.preventDefault();this.classList.add('drag-over');"
+                                 ondragleave="this.classList.remove('drag-over');"
+                                 ondrop="(function(zone,e){e.preventDefault();zone.classList.remove('drag-over');var data=e.dataTransfer.getData('text/plain');if(!data)return;var parts=data.split('|||');var taskId=parts[0];var itemIndex=parts[1];var newStatus=zone.dataset.status;if(taskId!==zone.dataset.taskid)return;var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:taskId+'|||'+itemIndex+'|||status|||'+newStatus});}})(this,event);">
+                              
+                              {% if col_ns.count == 0 %}
+                                <div class="kb-empty">Drop here</div>
+                              {% else %}
+                                {% for item in col_ns.items %}
+                                  {% set item_index = item.index_path | default('0') %}
+                                  {% set child_ns = namespace(children=[]) %}
+                                  {% for child in flat_items %}
+                                    {% set child_idx = child.index_path | default('') | string %}
+                                    {% if child_idx.startswith(item_index ~ '.') and child_idx.replace(item_index ~ '.', '').find('.') == -1 %}
+                                      {% set child_ns.children = child_ns.children + [child] %}
+                                    {% endif %}
+                                  {% endfor %}
+                                  
+                                  <div class="kb-card" 
+                                       draggable="true"
+                                       style="border-left-color:{{ status_color }};"
+                                       ondragstart="(function(card,e){card.classList.add('dragging');e.dataTransfer.setData('text/plain','{{ task_id }}|||{{ item_index }}');e.dataTransfer.effectAllowed='move';})(this,event);"
+                                       ondragend="this.classList.remove('dragging');">
+                                    <div class="kb-card-text">{{ item.text }}</div>
+                                    {% if child_ns.children | length > 0 %}
+                                      <div class="kb-card-children">
+                                        {% for child in child_ns.children %}
+                                          {% set child_color = '#6b7280' %}
+                                          {% for s in statuses %}
+                                            {% if s.id == child.status %}
+                                              {% set child_color = s.color | default('#6b7280') %}
+                                            {% endif %}
+                                          {% endfor %}
+                                          <div class="kb-child">
+                                            <div class="kb-child-dot" style="background:{{ child_color }};"></div>
+                                            <span>{{ child.text }}</span>
+                                          </div>
+                                        {% endfor %}
+                                      </div>
+                                    {% endif %}
+                                  </div>
+                                {% endfor %}
+                              {% endif %}
+                            </div>
+                            
+                            <div class="kb-add-row">
+                              <input type="text" placeholder="New item...">
+                              <button onclick="(function(btn){var inp=btn.previousElementSibling;if(!inp.value.trim())return;var txt=inp.value.trim();inp.value='';btn.disabled=true;btn.textContent='...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||{{ status_id }}'});}})(this);">Add</button>
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .kb-container { padding: 8px; }
+                .kb-task-card {
+                  background: var(--ha-card-background);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                .kb-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 16px;
+                  padding-bottom: 12px;
+                  border-bottom: 2px solid var(--primary-color);
+                }
+                .kb-title { font-size: 1.4em; font-weight: 600; color: var(--primary-text-color); }
+                .kb-progress {
+                  font-size: 0.9em;
+                  background: var(--primary-color);
+                  color: white;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                }
+                .kb-layout-btn {
+                  padding: 6px 12px;
+                  background: var(--secondary-background-color);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 0.85em;
+                  color: var(--primary-text-color);
+                  margin-right: 8px;
+                }
+                .kb-layout-btn:hover { background: var(--divider-color); }
+                .kb-board {
+                  display: flex;
+                  gap: 12px;
+                  overflow-x: auto;
+                  padding-bottom: 8px;
+                }
+                .kb-board.vertical { flex-direction: column; }
+                .kb-column {
+                  min-width: 220px;
+                  flex: 1;
+                  background: var(--secondary-background-color);
+                  border-radius: 10px;
+                  padding: 10px;
+                  display: flex;
+                  flex-direction: column;
+                }
+                .kb-board.vertical .kb-column { min-width: auto; }
+                .kb-col-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px;
+                  margin-bottom: 8px;
+                  border-radius: 6px;
+                  font-weight: 600;
+                  font-size: 0.95em;
+                }
+                .kb-col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+                .kb-col-count { margin-left: auto; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+                .kb-dropzone {
+                  flex: 1;
+                  min-height: 60px;
+                  border: 2px dashed transparent;
+                  border-radius: 6px;
+                  padding: 6px;
+                  transition: all 0.2s;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                }
+                .kb-dropzone.drag-over { background: rgba(var(--rgb-primary-color), 0.15); }
+                .kb-card {
+                  background: var(--card-background-color);
+                  border-radius: 6px;
+                  padding: 10px;
+                  cursor: grab;
+                  border-left: 4px solid;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+                }
+                .kb-card:hover { transform: translateY(-2px); box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+                .kb-card.dragging { opacity: 0.4; }
+                .kb-card-text { font-size: 0.9em; color: var(--primary-text-color); word-break: break-word; }
+                .kb-card-children { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--divider-color); font-size: 0.8em; color: var(--secondary-text-color); }
+                .kb-child { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+                .kb-child-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+                .kb-empty { text-align: center; padding: 16px 8px; color: var(--secondary-text-color); font-style: italic; font-size: 0.85em; }
+                .kb-add-row { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider-color); }
+                .kb-add-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.85em; min-width: 0; }
+                .kb-add-row button { padding: 6px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; white-space: nowrap; }
+                .kb-add-row button:disabled { opacity: 0.5; }
+              </style>
+
+              <div class="kb-container">
+                {% set ns = namespace(tasks=[], count=0) %}
+                {% for state in states.sensor %}
+                  {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
+                    {% set ns.tasks = ns.tasks + [state] %}
+                  {% endif %}
+                {% endfor %}
+                
+                {% for state in ns.tasks | sort(attribute='attributes.updated', reverse=true) %}
+                  {% set ns.count = ns.count + 1 %}
+                  {% if ns.count is even %}
+                    {% set task_id = state_attr(state.entity_id, 'task_id') %}
+                    {% set task_title = state_attr(state.entity_id, 'title') %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
+                    {% set statuses = state_attr(state.entity_id, 'statuses') or [{'id':'todo','label':'To Do','color':'#6b7280','order':0},{'id':'in_progress','label':'In Progress','color':'#3b82f6','order':1},{'id':'completed','label':'Completed','color':'#10b981','order':2}] %}
+                    {% set completed = state_attr(state.entity_id, 'completed') | default(0) %}
+                    {% set total = state_attr(state.entity_id, 'total') | default(0) %}
+                    
+                    <div class="kb-task-card" data-taskid="{{ task_id }}">
+                      <div class="kb-header">
+                        <div class="kb-title">{{ task_title }}</div>
+                        <div style="display:flex;align-items:center;">
+                          <button class="kb-layout-btn" onclick="(function(btn){var board=btn.closest('.kb-task-card').querySelector('.kb-board');board.classList.toggle('vertical');btn.textContent=board.classList.contains('vertical')?'⬌ Horizontal':'⬍ Vertical';})(this);">⬌ Horizontal</button>
+                          <div class="kb-progress">{{ completed }}/{{ total }}</div>
+                        </div>
+                      </div>
+                      
+                      <div class="kb-board vertical">
+                        {% for status in statuses | sort(attribute='order') %}
+                          {% set status_id = status.id %}
+                          {% set status_label = status.label | default(status.name) | default(status.id) %}
+                          {% set status_color = status.color | default('#6b7280') %}
+                          {% set col_ns = namespace(items=[], count=0) %}
+                          {% for item in flat_items %}
+                            {% set idx = item.index_path | default('0') | string %}
+                            {% if '.' not in idx and item.status == status_id %}
+                              {% set col_ns.items = col_ns.items + [item] %}
+                              {% set col_ns.count = col_ns.count + 1 %}
+                            {% endif %}
+                          {% endfor %}
+                          
+                          <div class="kb-column">
+                            <div class="kb-col-header" style="background:{{ status_color }}33;color:{{ status_color }};">
+                              <div class="kb-col-dot" style="background:{{ status_color }};"></div>
+                              <span>{{ status_label }}</span>
+                              <span class="kb-col-count">{{ col_ns.count }}</span>
+                            </div>
+                            
+                            <div class="kb-dropzone" 
+                                 data-taskid="{{ task_id }}" 
+                                 data-status="{{ status_id }}"
+                                 style="border-color:{{ status_color }}55;"
+                                 ondragover="event.preventDefault();this.classList.add('drag-over');"
+                                 ondragleave="this.classList.remove('drag-over');"
+                                 ondrop="(function(zone,e){e.preventDefault();zone.classList.remove('drag-over');var data=e.dataTransfer.getData('text/plain');if(!data)return;var parts=data.split('|||');var taskId=parts[0];var itemIndex=parts[1];var newStatus=zone.dataset.status;if(taskId!==zone.dataset.taskid)return;var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:taskId+'|||'+itemIndex+'|||status|||'+newStatus});}})(this,event);">
+                              
+                              {% if col_ns.count == 0 %}
+                                <div class="kb-empty">Drop here</div>
+                              {% else %}
+                                {% for item in col_ns.items %}
+                                  {% set item_index = item.index_path | default('0') %}
+                                  {% set child_ns = namespace(children=[]) %}
+                                  {% for child in flat_items %}
+                                    {% set child_idx = child.index_path | default('') | string %}
+                                    {% if child_idx.startswith(item_index ~ '.') and child_idx.replace(item_index ~ '.', '').find('.') == -1 %}
+                                      {% set child_ns.children = child_ns.children + [child] %}
+                                    {% endif %}
+                                  {% endfor %}
+                                  
+                                  <div class="kb-card" 
+                                       draggable="true"
+                                       style="border-left-color:{{ status_color }};"
+                                       ondragstart="(function(card,e){card.classList.add('dragging');e.dataTransfer.setData('text/plain','{{ task_id }}|||{{ item_index }}');e.dataTransfer.effectAllowed='move';})(this,event);"
+                                       ondragend="this.classList.remove('dragging');">
+                                    <div class="kb-card-text">{{ item.text }}</div>
+                                    {% if child_ns.children | length > 0 %}
+                                      <div class="kb-card-children">
+                                        {% for child in child_ns.children %}
+                                          {% set child_color = '#6b7280' %}
+                                          {% for s in statuses %}
+                                            {% if s.id == child.status %}
+                                              {% set child_color = s.color | default('#6b7280') %}
+                                            {% endif %}
+                                          {% endfor %}
+                                          <div class="kb-child">
+                                            <div class="kb-child-dot" style="background:{{ child_color }};"></div>
+                                            <span>{{ child.text }}</span>
+                                          </div>
+                                        {% endfor %}
+                                      </div>
+                                    {% endif %}
+                                  </div>
+                                {% endfor %}
+                              {% endif %}
+                            </div>
+                            
+                            <div class="kb-add-row">
+                              <input type="text" placeholder="New item...">
+                              <button onclick="(function(btn){var inp=btn.previousElementSibling;if(!inp.value.trim())return;var txt=inp.value.trim();inp.value='';btn.disabled=true;btn.textContent='...';var el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||{{ status_id }}'});}})(this);">Add</button>
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
   - title: Quick
     path: quick
     icon: mdi:lightning-bolt
