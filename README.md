@@ -9,23 +9,31 @@
 
 A notes, checklists, and task management integration for Home Assistant. Includes per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
+###### Notes Preview
 <p align="center">
   <img src="assets/notes-preview.gif"> 
 </p>
+###### Lists Preview
 <p align="center">
   <img src="assets/lists-preview.gif"> 
 </p>
-<p align="center">
-  <img src="assets/kanban-preview.gif"> 
-</p>
+###### Tasks Preview (2 views standard and kanban)
 <p align="center">
   <img src="assets/tasks-preview.gif"> 
+</p>
+###### Calendar Preview
+<p align="center">
+  <img src="assets/calendar-preview.gif">
 </p>
 
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 12/17/25
+### New 12/28/25
+- **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
+- **Version 1.5** Added iCAL import and export for JotTick
+- **Version 1.5** Custom calendar dashboard added to JotTick
+- **Version 1.5** Much More [changelog.md](changelog.md)
 - **Version 1.4** Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
 - **Version 1.3** Assist, reminders and aliases oh my
 - **Natural Language Assist Reminders**: No LLM needed

@@ -268,10 +268,10 @@
               notification_title: "{% if custom_title != '' %}{{ custom_title }}{% else %}{{ item_title }}{% endif %}"
               incomplete_items_list: >
                 {% if item_type == 'task' %}
-                  {% set items = state_attr(sensor_entity, 'flat_items') | default([]) %}
+                  {% set items = (state_attr(sensor_entity, 'flat_items') or []) %}
                   {% set incomplete = items | rejectattr('status', 'eq', 'completed') | map(attribute='text') | list %}
                 {% else %}
-                  {% set items = state_attr(sensor_entity, 'items') | default([]) %}
+                  {% set items = (state_attr(sensor_entity, 'items') or []) %}
                   {% set incomplete = items | selectattr('completed', 'eq', false) | map(attribute='text') | list %}
                 {% endif %}
                 {{ incomplete | join('\n• ') }}
@@ -298,7 +298,6 @@
           - service: script.jottick_update_last_sent
             data:
               item_id: "{{ item_id }}"
-
 - id: jottick_handle_notification_actions
   alias: "JotTick: Handle Notification Actions"
   trigger:
@@ -399,13 +398,13 @@
               title: "{{ sched.title | default('Reminder') }}"
               message: "{{ sched.message | default('') }}"
               targets: "{{ sched.targets | default('') }}"
-              auto_delete: "{{ sched.auto_delete | default(false) }}" 
+              auto_delete: "{{ sched.auto_delete | default(false) }}"  
               
-- id: jottick_process_quick_delete_item
-  alias: "JotTick: Process Quick Delete Item"
+- id: jottick_process_quick_action
+  alias: "JotTick: Process Quick Action"
   trigger:
     - platform: state
-      entity_id: input_text.jottick_quick_delete_item_data
+      entity_id: input_text.jottick_quick_action_data
   condition:
     - condition: template
       value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
@@ -413,17 +412,79 @@
     - variables:
         parts: "{{ trigger.to_state.state.split('|||') }}"
         list_id: "{{ parts[0] }}"
-        item_index: "{{ parts[1] }}"
-    - service: jottick.delete_checklist_item
-      data:
-        checklist_id: "{{ list_id }}"
-        item_index: "{{ item_index }}"
+        action: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'delete' }}"
+          sequence:
+            - service: jottick.delete_checklist
+              data:
+                checklist_id: "{{ list_id }}"
+        - conditions: "{{ action == 'add' }}"
+          sequence:
+            - variables:
+                list_entity: >
+                  {% for s in states.sensor %}
+                    {% if s.name.startswith('JotTick List:') %}
+                      {% if state_attr(s.entity_id, 'checklist_id') == list_id %}
+                        {{ s.entity_id }}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                current_items: "{{ state_attr(list_entity | trim, 'items') | default([]) | length }}"
+                item_text: "{{ parts[2] }}"
+                due_date: "{{ parts[3] | default('') }}"
+                due_time: "{{ parts[4] | default('') }}"
+            - service: jottick.add_checklist_item
+              data:
+                checklist_id: "{{ list_id }}"
+                text: "{{ item_text }}"
+            - condition: template
+              value_template: "{{ due_date != '' }}"
+            - delay:
+                milliseconds: 500
+            - service: jottick.set_checklist_item_due_date
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ current_items }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
+        - conditions: "{{ action == 'check' }}"
+          sequence:
+            - service: jottick.check_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+        - conditions: "{{ action == 'uncheck' }}"
+          sequence:
+            - service: jottick.uncheck_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+      default:
+        - variables:
+            item_index: "{{ action }}"
+            check_action: "{{ parts[2] }}"
+        - choose:
+            - conditions: "{{ check_action == 'check' }}"
+              sequence:
+                - service: jottick.check_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
+            - conditions: "{{ check_action == 'uncheck' }}"
+              sequence:
+                - service: jottick.uncheck_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
     - service: input_text.set_value
       target:
-        entity_id: input_text.jottick_quick_delete_item_data
+        entity_id: input_text.jottick_quick_action_data
       data:
         value: ""
-
+        
+        
 - id: jottick_process_quick_task_action
   alias: "JotTick: Process Quick Task Action"
   trigger:
@@ -443,14 +504,43 @@
             - service: jottick.delete_task
               data:
                 task_id: "{{ task_id }}"
+                
         - conditions: "{{ action == 'add' }}"
           sequence:
+            - variables:
+                task_entity: >
+                  {% for s in states.sensor %}
+                    {% if s.name.startswith('JotTick Task:') %}
+                      {% if state_attr(s.entity_id, 'task_id') == task_id %}
+                        {{ s.entity_id }}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                current_items: "{{ (state_attr(task_entity | trim, 'items') or []) | length }}"
+                item_text: "{{ parts[2] }}"
+                item_status: "{{ parts[3] | default('todo') }}"
+                parent_index: "{{ parts[4] if parts | length > 4 and parts[4] != '' else none }}"
+                due_date: "{{ parts[5] | default('') }}"
+                due_time: "{{ parts[6] | default('') }}"
+            
             - service: jottick.add_task_item
               data:
                 task_id: "{{ task_id }}"
-                text: "{{ parts[2] }}"
-                status: "{{ parts[3] | default('todo') }}"
-                parent_index: "{{ parts[4] if parts | length > 4 and parts[4] != '' else none }}"
+                text: "{{ item_text }}"
+                status: "{{ item_status }}"
+                parent_index: "{{ parent_index if parent_index else none }}"
+            
+            - condition: template
+              value_template: "{{ due_date != '' }}"
+            - delay:
+                milliseconds: 500
+            - service: jottick.set_task_item_due_date
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ current_items }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
         - conditions: "{{ parts[2] | default('') == 'status' }}"
           sequence:
             - service: jottick.update_task_item_status
@@ -469,7 +559,59 @@
         entity_id: input_text.jottick_quick_task_action_data
       data:
         value: ""
-
+- id: jottick_process_due_date_action
+  alias: "JotTick: Process Due Date Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_due_date_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        item_type: "{{ parts[0] }}"
+        item_id: "{{ parts[1] }}"
+        item_index: "{{ parts[2] }}"
+        action: "{{ parts[3] }}"
+        due_date: "{{ parts[4] | default('') }}"
+        due_time: "{{ parts[5] | default('') }}"
+    - choose:
+        - conditions: "{{ item_type == 'list' and action == 'set' }}"
+          sequence:
+            - service: jottick.set_checklist_item_due_date
+              data:
+                checklist_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
+        - conditions: "{{ item_type == 'list' and action == 'clear' }}"
+          sequence:
+            - service: jottick.clear_checklist_item_due_date
+              data:
+                checklist_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+        
+        - conditions: "{{ item_type == 'task' and action == 'set' }}"
+          sequence:
+            - service: jottick.set_task_item_due_date
+              data:
+                task_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"        
+        - conditions: "{{ item_type == 'task' and action == 'clear' }}"
+          sequence:
+            - service: jottick.clear_task_item_due_date
+              data:
+                task_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_due_date_action_data
+      data:
+        value: "" 
 - id: jottick_process_kanban_action
   alias: "JotTick: Process Kanban Action"
   trigger:
@@ -510,12 +652,12 @@
         entity_id: input_text.jottick_kanban_action_data
       data:
         value: ""
-
-- id: jottick_process_quick_action
-  alias: "JotTick: Process Quick Action"
+        
+- id: jottick_process_quick_delete_item
+  alias: "JotTick: Process Quick Delete Item"
   trigger:
     - platform: state
-      entity_id: input_text.jottick_quick_action_data
+      entity_id: input_text.jottick_quick_delete_item_data
   condition:
     - condition: template
       value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
@@ -523,50 +665,70 @@
     - variables:
         parts: "{{ trigger.to_state.state.split('|||') }}"
         list_id: "{{ parts[0] }}"
-        action: "{{ parts[1] }}"
-    - choose:
-        - conditions: "{{ action == 'delete' }}"
-          sequence:
-            - service: jottick.delete_checklist
-              data:
-                checklist_id: "{{ list_id }}"
-        - conditions: "{{ action == 'add' }}"
-          sequence:
-            - service: jottick.add_checklist_item
-              data:
-                checklist_id: "{{ list_id }}"
-                text: "{{ parts[2] }}"
-        - conditions: "{{ action == 'check' }}"
-          sequence:
-            - service: jottick.check_item
-              data:
-                checklist_id: "{{ list_id }}"
-                item_index: "{{ parts[2] }}"
-        - conditions: "{{ action == 'uncheck' }}"
-          sequence:
-            - service: jottick.uncheck_item
-              data:
-                checklist_id: "{{ list_id }}"
-                item_index: "{{ parts[2] }}"
-      default:
-        - variables:
-            item_index: "{{ action }}"
-            check_action: "{{ parts[2] }}"
-        - choose:
-            - conditions: "{{ check_action == 'check' }}"
-              sequence:
-                - service: jottick.check_item
-                  data:
-                    checklist_id: "{{ list_id }}"
-                    item_index: "{{ item_index }}"
-            - conditions: "{{ check_action == 'uncheck' }}"
-              sequence:
-                - service: jottick.uncheck_item
-                  data:
-                    checklist_id: "{{ list_id }}"
-                    item_index: "{{ item_index }}"
+        item_index: "{{ parts[1] }}"
+    - service: jottick.delete_checklist_item
+      data:
+        checklist_id: "{{ list_id }}"
+        item_index: "{{ item_index }}"
     - service: input_text.set_value
       target:
-        entity_id: input_text.jottick_quick_action_data
+        entity_id: input_text.jottick_quick_delete_item_data
       data:
         value: ""        
+
+- id: jottick_refresh_ical_imports
+  alias: 'JotTick: Auto Refresh iCal Imports'
+  trigger:
+    - platform: time_pattern
+      minutes: "/30"
+    - platform: homeassistant
+      event: start
+  condition:
+    - condition: template
+      value_template: "{{ (state_attr('sensor.jottick_ical_sources', 'sources') or []) | length > 0 }}"
+  action:
+    - service: jottick.refresh_ical_imports
+
+- id: jottick_regenerate_ical_export
+  alias: 'JotTick: Regenerate iCal Export on Changes'
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.jottick_total_notes
+        - sensor.jottick_total_checklists
+        - sensor.jottick_total_tasks
+  action:
+    - delay: "00:00:02"
+    - service: jottick.export_ical
+
+- id: jottick_init_calendar_date
+  alias: 'JotTick: Initialize Calendar Date'
+  trigger:
+    - platform: homeassistant
+      event: start
+  action:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"                
+        
+- id: jottick_calendar_color_refresh
+  alias: "JotTick: Refresh calendar on color change"
+  trigger:
+    - platform: state
+      entity_id:
+        - input_text.jottick_calendar_color_note_created
+        - input_text.jottick_calendar_color_note_edited
+        - input_text.jottick_calendar_color_note_reminder
+        - input_text.jottick_calendar_color_list_created
+        - input_text.jottick_calendar_color_list_edited
+        - input_text.jottick_calendar_color_list_due
+        - input_text.jottick_calendar_color_task_due
+        - input_text.jottick_calendar_color_task_overdue
+        - input_text.jottick_calendar_color_imported
+  action:
+    - delay: "00:00:01"
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_calendar_events        

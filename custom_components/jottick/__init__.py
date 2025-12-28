@@ -4,8 +4,10 @@ import os
 import base64
 import shutil
 import json
+import re
+import aiohttp
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
@@ -22,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.SENSOR]
 
 IMAGES_DIR = "www/jottick/images"
+CALENDAR_DIR = "www/jottick/calendar"
 
 
 def generate_id() -> str:
@@ -32,9 +35,45 @@ def now_iso() -> str:
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-class JotTickUploadView(HomeAssistantView):
-    """Handle direct image uploads to JotTick."""
+def parse_ical_datetime(dt_value) -> tuple:
+    if dt_value is None:
+        return None, None
     
+    if hasattr(dt_value, 'dt'):
+        dt_value = dt_value.dt
+    
+    if isinstance(dt_value, datetime):
+        return dt_value.strftime("%Y-%m-%d"), dt_value.strftime("%H:%M")
+    elif hasattr(dt_value, 'strftime'):
+        return dt_value.strftime("%Y-%m-%d"), None
+    
+    return None, None
+
+
+def generate_ical_uid(item_type: str, item_id: str) -> str:
+    return f"{item_type}-{item_id}@jottick"
+
+
+def escape_ical_text(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("\\", "\\\\")
+    text = text.replace(";", "\\;")
+    text = text.replace(",", "\\,")
+    text = text.replace("\n", "\\n")
+    return text
+
+
+def format_ical_datetime(date_str: str, time_str: str = None) -> str:
+    if time_str:
+        dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        return dt.strftime("%Y%m%dT%H%M%S")
+    else:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt.strftime("%Y%m%d")
+
+
+class JotTickUploadView(HomeAssistantView):
     url = "/api/jottick/upload"
     name = "api:jottick:upload"
     requires_auth = True
@@ -43,7 +82,6 @@ class JotTickUploadView(HomeAssistantView):
         self.coordinator = coordinator
     
     async def post(self, request):
-        """Handle image upload."""
         try:
             data = await request.post()
             
@@ -109,8 +147,6 @@ class JotTickUploadView(HomeAssistantView):
 
 
 class JotTickDeleteImageView(HomeAssistantView):
-    """Handle image deletion."""
-    
     url = "/api/jottick/delete-image"
     name = "api:jottick:delete_image"
     requires_auth = True
@@ -119,7 +155,6 @@ class JotTickDeleteImageView(HomeAssistantView):
         self.coordinator = coordinator
     
     async def post(self, request):
-        """Handle image deletion."""
         try:
             data = await request.json()
             note_id = data.get('note_id')
@@ -156,17 +191,61 @@ class JotTickDeleteImageView(HomeAssistantView):
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
 
+class JotTickCalendarExportView(HomeAssistantView):    
+    url = "/api/jottick/calendar/{filename}.ics"
+    name = "api:jottick:calendar_export"
+    requires_auth = False
+    
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+    
+    async def get(self, request, filename):
+        try:
+            calendar_path = self.coordinator.hass.config.path(CALENDAR_DIR)
+            file_path = os.path.join(calendar_path, f"{filename}.ics")
+            
+            if not os.path.exists(file_path):
+                await self.coordinator.export_ical(filename=filename)
+            
+            def read_file():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            
+            content = await self.coordinator.hass.async_add_executor_job(read_file)
+            
+            return web.Response(
+                text=content,
+                content_type="text/calendar; charset=utf-8",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}.ics"'
+                }
+            )
+            
+        except Exception as e:
+            _LOGGER.error(f"Calendar export error: {e}")
+            return web.Response(text=f"Error: {e}", status=500)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
     stored_data = await store.async_load()
     
     if stored_data is None:
-        stored_data = {"notes": [], "checklists": [], "tasks": []}
+        stored_data = {"notes": [], "checklists": [], "tasks": [], "ical_sources": [], "imported_events": []}
         await store.async_save(stored_data)
+    
+    if "ical_sources" not in stored_data:
+        stored_data["ical_sources"] = []
+    if "imported_events" not in stored_data:
+        stored_data["imported_events"] = []
     
     images_path = hass.config.path(IMAGES_DIR)
     if not os.path.exists(images_path):
         os.makedirs(images_path, exist_ok=True)
+    
+    calendar_path = hass.config.path(CALENDAR_DIR)
+    if not os.path.exists(calendar_path):
+        os.makedirs(calendar_path, exist_ok=True)
     
     coordinator = JotTickCoordinator(hass, store, stored_data)
     
@@ -178,6 +257,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     hass.http.register_view(JotTickUploadView(coordinator))
     hass.http.register_view(JotTickDeleteImageView(coordinator))
+    hass.http.register_view(JotTickCalendarExportView(coordinator))
     
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_services(hass, entry.entry_id)
@@ -205,6 +285,8 @@ class JotTickCoordinator(DataUpdateCoordinator):
             "notes": self._data.get("notes", []),
             "checklists": self._data.get("checklists", []),
             "tasks": self._data.get("tasks", []),
+            "ical_sources": self._data.get("ical_sources", []),
+            "imported_events": self._data.get("imported_events", []),
         }
 
     async def _async_update_data(self) -> dict:
@@ -214,7 +296,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
         await self.store.async_save(self._data)
         self.data = self._format_data()
         self.async_set_updated_data(self.data)
-    
+        
     async def create_note(self, title: str, content: str = "", note_id: str = None) -> dict:
         note = {
             "id": note_id if note_id else generate_id(),
@@ -259,7 +341,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def add_note_image(self, note_id: str, image_data: str, filename: str = None, caption: str = "") -> dict:
-        """Add an image to a note from base64 data."""
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 if "images" not in note:
@@ -331,7 +412,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def add_note_image_from_path(self, note_id: str, source_path: str, caption: str = "") -> dict:
-        """Add an image to a note from a file path."""
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 if "images" not in note:
@@ -379,7 +459,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def delete_note_image(self, note_id: str, image_id: str) -> bool:
-        """Delete a specific image from a note."""
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 images = note.get("images", [])
@@ -405,7 +484,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def update_note_image_caption(self, note_id: str, image_id: str, caption: str) -> dict:
-        """Update the caption of an image."""
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 images = note.get("images", [])
@@ -421,7 +499,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def reorder_note_images(self, note_id: str, image_ids: list) -> bool:
-        """Reorder images in a note based on provided order of image IDs."""
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 images = note.get("images", [])
@@ -443,7 +520,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 return True
         
         raise ValueError(f"Note {note_id} not found")
-    
+        
     async def create_checklist(self, title: str, list_type: str = "simple") -> dict:
         checklist = {
             "id": generate_id(),
@@ -529,6 +606,43 @@ class JotTickCoordinator(DataUpdateCoordinator):
             if checklist["id"] == checklist_id:
                 target_list, idx = self._get_item_by_index(checklist["items"], item_index)
                 del target_list[idx]
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
+
+    async def set_checklist_item_due_date(
+        self, 
+        checklist_id: str, 
+        item_index: str, 
+        due_date: str, 
+        due_time: str = None,
+        notify_overdue: bool = False
+    ) -> bool:
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+                target_list[idx]["dueDate"] = due_date
+                if due_time:
+                    target_list[idx]["dueTime"] = due_time
+                elif "dueTime" in target_list[idx]:
+                    del target_list[idx]["dueTime"]
+                target_list[idx]["notifyOverdue"] = notify_overdue
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
+
+    async def clear_checklist_item_due_date(self, checklist_id: str, item_index: str) -> bool:
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+                if "dueDate" in target_list[idx]:
+                    del target_list[idx]["dueDate"]
+                if "dueTime" in target_list[idx]:
+                    del target_list[idx]["dueTime"]
+                if "notifyOverdue" in target_list[idx]:
+                    del target_list[idx]["notifyOverdue"]
                 checklist["updatedAt"] = now_iso()
                 await self.async_save()
                 return True
@@ -657,12 +771,451 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 raise ValueError(f"Status {status_id} not found")
         raise ValueError(f"Task {task_id} not found")
 
+    async def set_task_item_due_date(
+        self, 
+        task_id: str, 
+        item_index: str, 
+        due_date: str, 
+        due_time: str = None,
+        notify_overdue: bool = False
+    ) -> bool:
+        for task in self._data["tasks"]:
+            if task["id"] == task_id:
+                target_list, idx = self._get_item_by_index(task["items"], item_index)
+                target_list[idx]["dueDate"] = due_date
+                if due_time:
+                    target_list[idx]["dueTime"] = due_time
+                elif "dueTime" in target_list[idx]:
+                    del target_list[idx]["dueTime"]
+                target_list[idx]["notifyOverdue"] = notify_overdue
+                task["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Task {task_id} not found")
+
+    async def clear_task_item_due_date(self, task_id: str, item_index: str) -> bool:
+        for task in self._data["tasks"]:
+            if task["id"] == task_id:
+                target_list, idx = self._get_item_by_index(task["items"], item_index)
+                if "dueDate" in target_list[idx]:
+                    del target_list[idx]["dueDate"]
+                if "dueTime" in target_list[idx]:
+                    del target_list[idx]["dueTime"]
+                if "notifyOverdue" in target_list[idx]:
+                    del target_list[idx]["notifyOverdue"]
+                task["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Task {task_id} not found")
+
+    async def import_ical(self, url: str, name: str = None, auto_refresh: bool = True) -> dict:
+        try:
+            for source in self._data.get("ical_sources", []):
+                if source["url"] == url:
+                    raise ValueError(f"iCal source already imported: {url}")
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=30) as response:
+                    if response.status != 200:
+                        raise ValueError(f"Failed to fetch iCal: HTTP {response.status}")
+                    ical_data = await response.text()
+            
+            events = self._parse_ical_data(ical_data, url)
+            
+            source_record = {
+                "id": generate_id()[:8],
+                "url": url,
+                "name": name or url.split("/")[-1].replace(".ics", ""),
+                "auto_refresh": auto_refresh,
+                "last_refresh": now_iso(),
+                "event_count": len(events),
+            }
+            
+            if "ical_sources" not in self._data:
+                self._data["ical_sources"] = []
+            self._data["ical_sources"].append(source_record)
+            
+            if "imported_events" not in self._data:
+                self._data["imported_events"] = []
+            self._data["imported_events"].extend(events)
+            
+            await self.async_save()
+            
+            self.hass.bus.async_fire("jottick_ical_sources_update", {
+                "sources": self._data["ical_sources"]
+            })
+            self.hass.bus.async_fire("jottick_imported_events_update", {
+                "events": self._data["imported_events"]
+            })
+            
+            return source_record
+            
+        except aiohttp.ClientError as e:
+            _LOGGER.error(f"Failed to fetch iCal: {e}")
+            raise ValueError(f"Failed to fetch iCal: {e}")
+        except Exception as e:
+            _LOGGER.error(f"Failed to import iCal: {e}")
+            raise
+
+    def _parse_ical_data(self, ical_data: str, source_url: str) -> list:
+        events = []   
+        ical_data = re.sub(r'\r?\n[ \t]', '', ical_data)    
+        ical_data = ical_data.replace('\r\n', '\n').replace('\r', '\n')
+        vevent_pattern = re.compile(r'BEGIN:VEVENT(.*?)END:VEVENT', re.DOTALL)
+        
+        for match in vevent_pattern.finditer(ical_data):
+            event_data = match.group(1)
+            
+            event = {
+                "id": f"imported_{generate_id()[:8]}",
+                "source_url": source_url,
+                "editable": False,
+            }
+            
+            uid_match = re.search(r'^UID[;:](.+?)$', event_data, re.MULTILINE)
+            if uid_match:
+                event["original_uid"] = uid_match.group(1).strip()
+            summary_match = re.search(r'^SUMMARY[;:](.+?)$', event_data, re.MULTILINE)
+            if summary_match:
+                title = summary_match.group(1).strip()
+                if ':' in title and not title.startswith('\\'):
+                    title = title.split(':', 1)[-1]
+                event["title"] = title.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ")
+            else:
+                event["title"] = "Untitled Event"
+            desc_match = re.search(r'^DESCRIPTION[;:](.+?)$', event_data, re.MULTILINE)
+            if desc_match:
+                desc = desc_match.group(1).strip()
+                if ':' in desc and not desc.startswith('\\'):
+                    desc = desc.split(':', 1)[-1]
+                event["description"] = desc.replace("\\n", "\n").replace("\\,", ",")
+            dtstart_match = re.search(r'^DTSTART[^:\n]*:(\d{8}(?:T\d{6}Z?)?)$', event_data, re.MULTILINE)
+            if dtstart_match:
+                dt_str = dtstart_match.group(1)
+                if len(dt_str) >= 8:
+                    event["date"] = f"{dt_str[:4]}-{dt_str[4:6]}-{dt_str[6:8]}"
+                    if len(dt_str) >= 15:
+                        event["time"] = f"{dt_str[9:11]}:{dt_str[11:13]}"
+            
+
+            dtend_match = re.search(r'^DTEND[^:\n]*:(\d{8}(?:T\d{6}Z?)?)$', event_data, re.MULTILINE)
+            if dtend_match:
+                dt_str = dtend_match.group(1)
+                if len(dt_str) >= 15:  
+                    event["end_time"] = f"{dt_str[9:11]}:{dt_str[11:13]}"
+            
+
+            location_match = re.search(r'^LOCATION[;:](.+?)$', event_data, re.MULTILINE)
+            if location_match:
+                loc = location_match.group(1).strip()
+                if ':' in loc and not loc.startswith('\\'):
+                    loc = loc.split(':', 1)[-1]
+                event["location"] = loc.replace("\\,", ",")
+            
+            if "date" in event:
+                events.append(event)
+                _LOGGER.debug(f"Parsed iCal event: {event.get('title')} on {event.get('date')}")
+        
+        _LOGGER.info(f"Parsed {len(events)} events from iCal source: {source_url}")
+        return events
+
+    async def remove_ical_import(self, url: str) -> bool:
+        sources = self._data.get("ical_sources", [])
+        for i, source in enumerate(sources):
+            if source["url"] == url:
+                del sources[i]
+                break
+        else:
+            raise ValueError(f"iCal source not found: {url}")
+        
+        self._data["imported_events"] = [
+            e for e in self._data.get("imported_events", [])
+            if e.get("source_url") != url
+        ]
+        
+        await self.async_save()
+        
+        self.hass.bus.async_fire("jottick_ical_sources_update", {
+            "sources": self._data["ical_sources"]
+        })
+        self.hass.bus.async_fire("jottick_imported_events_update", {
+            "events": self._data["imported_events"]
+        })
+        
+        return True
+
+    async def refresh_ical_imports(self) -> dict:
+        results = {"refreshed": 0, "errors": []}
+        
+        for source in self._data.get("ical_sources", []):
+            if not source.get("auto_refresh", True):
+                continue
+            
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(source["url"], timeout=30) as response:
+                        if response.status != 200:
+                            results["errors"].append({
+                                "url": source["url"],
+                                "error": f"HTTP {response.status}"
+                            })
+                            for event in self._data.get("imported_events", []):
+                                if event.get("source_url") == source["url"]:
+                                    event["editable"] = True
+                            continue
+                        ical_data = await response.text()
+
+                self._data["imported_events"] = [
+                    e for e in self._data.get("imported_events", [])
+                    if e.get("source_url") != source["url"]
+                ]
+
+                events = self._parse_ical_data(ical_data, source["url"])
+                self._data["imported_events"].extend(events)
+
+                source["last_refresh"] = now_iso()
+                source["event_count"] = len(events)
+                
+                results["refreshed"] += 1
+                
+            except Exception as e:
+                _LOGGER.error(f"Failed to refresh iCal {source['url']}: {e}")
+                results["errors"].append({
+                    "url": source["url"],
+                    "error": str(e)
+                })
+                for event in self._data.get("imported_events", []):
+                    if event.get("source_url") == source["url"]:
+                        event["editable"] = True
+        
+        await self.async_save()
+        
+        self.hass.bus.async_fire("jottick_ical_sources_update", {
+            "sources": self._data["ical_sources"]
+        })
+        self.hass.bus.async_fire("jottick_imported_events_update", {
+            "events": self._data["imported_events"]
+        })
+        
+        return results
+
+    async def export_ical(
+        self, 
+        filename: str = "jottick_calendar",
+        include_notes: bool = True,
+        include_lists: bool = True,
+        include_tasks: bool = True,
+        include_reminders: bool = True
+    ) -> str:
+        lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//JotTick//Home Assistant//EN",
+            "CALSCALE:GREGORIAN",
+            "METHOD:PUBLISH",
+            "X-WR-CALNAME:JotTick Calendar",
+        ]
+        
+        now_stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        
+        if include_notes:
+            for note in self._data.get("notes", []):
+                created = note.get("createdAt", "")
+                updated = note.get("updatedAt", "")
+                
+                if created:
+                    try:
+                        dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('note-created', note['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:📝 Note Created: {escape_ical_text(note.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Note created in JotTick",
+                            "CATEGORIES:JotTick,Note,Created",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+                
+                if updated and updated != created:
+                    try:
+                        dt = datetime.fromisoformat(updated.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('note-edited', note['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:✏️ Note Edited: {escape_ical_text(note.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Note last edited in JotTick",
+                            "CATEGORIES:JotTick,Note,Edited",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+        
+        if include_lists:
+            for checklist in self._data.get("checklists", []):
+                created = checklist.get("createdAt", "")
+                updated = checklist.get("updatedAt", "")
+                
+                if created:
+                    try:
+                        dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('list-created', checklist['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:📋 List Created: {escape_ical_text(checklist.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Checklist created in JotTick",
+                            "CATEGORIES:JotTick,List,Created",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+                
+                if updated and updated != created:
+                    try:
+                        dt = datetime.fromisoformat(updated.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('list-edited', checklist['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:✏️ List Edited: {escape_ical_text(checklist.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Checklist last edited in JotTick",
+                            "CATEGORIES:JotTick,List,Edited",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+                
+                self._export_items_due_dates(lines, checklist.get("items", []), checklist, "list", now_stamp)
+        
+        if include_tasks:
+            for task in self._data.get("tasks", []):
+                created = task.get("createdAt", "")
+                updated = task.get("updatedAt", "")
+                
+                if created:
+                    try:
+                        dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('task-created', task['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:✅ Task Created: {escape_ical_text(task.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Task list created in JotTick",
+                            "CATEGORIES:JotTick,Task,Created",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+                
+                if updated and updated != created:
+                    try:
+                        dt = datetime.fromisoformat(updated.replace("Z", "+00:00"))
+                        date_str = dt.strftime("%Y%m%d")
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('task-edited', task['id'])}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{date_str}",
+                            f"SUMMARY:✏️ Task Edited: {escape_ical_text(task.get('title', 'Untitled'))}",
+                            f"DESCRIPTION:Task list last edited in JotTick",
+                            "CATEGORIES:JotTick,Task,Edited",
+                            "END:VEVENT",
+                        ])
+                    except:
+                        pass
+                
+                self._export_items_due_dates(lines, task.get("items", []), task, "task", now_stamp)
+        
+        if include_reminders:
+            reminder_sensor = self.hass.states.get("sensor.jottick_reminders")
+            if reminder_sensor:
+                configs = reminder_sensor.attributes.get("configs", {})
+                for item_id, config in configs.items():
+                    if config.get("enabled"):
+                        lines.extend([
+                            "BEGIN:VEVENT",
+                            f"UID:{generate_ical_uid('reminder', item_id)}",
+                            f"DTSTAMP:{now_stamp}",
+                            f"DTSTART;VALUE=DATE:{datetime.utcnow().strftime('%Y%m%d')}",
+                            f"SUMMARY:🔔 Reminder: {escape_ical_text(config.get('title', 'Reminder'))}",
+                            f"DESCRIPTION:JotTick reminder - {config.get('interval', 'recurring')}",
+                            "CATEGORIES:JotTick,Reminder",
+                            "END:VEVENT",
+                        ])
+        
+        lines.append("END:VCALENDAR")
+        
+        calendar_path = self.hass.config.path(CALENDAR_DIR)
+        if not os.path.exists(calendar_path):
+            os.makedirs(calendar_path, exist_ok=True)
+        
+        file_path = os.path.join(calendar_path, f"{filename}.ics")
+        
+        def write_ical():
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write("\r\n".join(lines))
+        
+        await self.hass.async_add_executor_job(write_ical)
+        
+        return f"/local/jottick/calendar/{filename}.ics"
+
+    def _export_items_due_dates(self, lines: list, items: list, parent: dict, item_type: str, now_stamp: str, prefix: str = ""):
+        for i, item in enumerate(items):
+            index_path = f"{prefix}{i}" if not prefix else f"{prefix}.{i}"
+            
+            due_date = item.get("dueDate")
+            if due_date:
+                due_time = item.get("dueTime")
+                item_text = item.get("text", "Untitled")
+                parent_title = parent.get("title", "Untitled")
+                
+                if due_time:
+                    dt_str = format_ical_datetime(due_date, due_time)
+                    lines.extend([
+                        "BEGIN:VEVENT",
+                        f"UID:{generate_ical_uid(f'{item_type}-due', f'{parent["id"]}-{index_path}')}",
+                        f"DTSTAMP:{now_stamp}",
+                        f"DTSTART:{dt_str}",
+                        f"SUMMARY:📅 Due: {escape_ical_text(item_text)}",
+                        f"DESCRIPTION:From {item_type}: {escape_ical_text(parent_title)}",
+                        f"CATEGORIES:JotTick,{item_type.title()},Due",
+                        "END:VEVENT",
+                    ])
+                else:
+                    dt_str = format_ical_datetime(due_date)
+                    lines.extend([
+                        "BEGIN:VEVENT",
+                        f"UID:{generate_ical_uid(f'{item_type}-due', f'{parent["id"]}-{index_path}')}",
+                        f"DTSTAMP:{now_stamp}",
+                        f"DTSTART;VALUE=DATE:{dt_str}",
+                        f"SUMMARY:📅 Due: {escape_ical_text(item_text)}",
+                        f"DESCRIPTION:From {item_type}: {escape_ical_text(parent_title)}",
+                        f"CATEGORIES:JotTick,{item_type.title()},Due",
+                        "END:VEVENT",
+                    ])
+            
+            if item.get("children"):
+                self._export_items_due_dates(lines, item["children"], parent, item_type, now_stamp, f"{index_path}.")
+
 
 async def async_setup_services(hass: HomeAssistant, entry_id: str):
     
     def get_coordinator() -> JotTickCoordinator:
         return hass.data[DOMAIN][entry_id]["coordinator"]
-    
+        
     async def handle_create_note(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.create_note(
@@ -724,7 +1277,7 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             note_id=call.data.get("note_id"),
             image_ids=image_ids,
         )
-  
+      
     async def handle_create_checklist(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.create_checklist(
@@ -769,6 +1322,23 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     async def handle_delete_checklist_item(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.delete_checklist_item(
+            checklist_id=call.data.get("checklist_id"),
+            item_index=str(call.data.get("item_index")),
+        )
+
+    async def handle_set_checklist_item_due_date(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.set_checklist_item_due_date(
+            checklist_id=call.data.get("checklist_id"),
+            item_index=str(call.data.get("item_index")),
+            due_date=call.data.get("due_date"),
+            due_time=call.data.get("due_time"),
+            notify_overdue=call.data.get("notify_overdue", False),
+        )
+
+    async def handle_clear_checklist_item_due_date(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.clear_checklist_item_due_date(
             checklist_id=call.data.get("checklist_id"),
             item_index=str(call.data.get("item_index")),
         )
@@ -839,6 +1409,49 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             status_id=call.data.get("status_id"),
         )
 
+    async def handle_set_task_item_due_date(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.set_task_item_due_date(
+            task_id=call.data.get("task_id"),
+            item_index=str(call.data.get("item_index")),
+            due_date=call.data.get("due_date"),
+            due_time=call.data.get("due_time"),
+            notify_overdue=call.data.get("notify_overdue", False),
+        )
+
+    async def handle_clear_task_item_due_date(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.clear_task_item_due_date(
+            task_id=call.data.get("task_id"),
+            item_index=str(call.data.get("item_index")),
+        )
+
+    async def handle_import_ical(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.import_ical(
+            url=call.data.get("url"),
+            name=call.data.get("name"),
+            auto_refresh=call.data.get("auto_refresh", True),
+        )
+
+    async def handle_remove_ical_import(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.remove_ical_import(url=call.data.get("url"))
+
+    async def handle_refresh_ical_imports(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.refresh_ical_imports()
+
+    async def handle_export_ical(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.export_ical(
+            filename=call.data.get("filename", "jottick_calendar"),
+            include_notes=call.data.get("include_notes", True),
+            include_lists=call.data.get("include_lists", True),
+            include_tasks=call.data.get("include_tasks", True),
+            include_reminders=call.data.get("include_reminders", True),
+        )
+
     hass.services.async_register(DOMAIN, "create_note", handle_create_note)
     hass.services.async_register(DOMAIN, "update_note", handle_update_note)
     hass.services.async_register(DOMAIN, "delete_note", handle_delete_note)
@@ -857,6 +1470,9 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     hass.services.async_register(DOMAIN, "uncheck_item", handle_uncheck_item)
     hass.services.async_register(DOMAIN, "delete_checklist_item", handle_delete_checklist_item)
     
+    hass.services.async_register(DOMAIN, "set_checklist_item_due_date", handle_set_checklist_item_due_date)
+    hass.services.async_register(DOMAIN, "clear_checklist_item_due_date", handle_clear_checklist_item_due_date)
+    
     hass.services.async_register(DOMAIN, "create_task", handle_create_task)
     hass.services.async_register(DOMAIN, "update_task", handle_update_task)
     hass.services.async_register(DOMAIN, "delete_task", handle_delete_task)
@@ -866,3 +1482,11 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     hass.services.async_register(DOMAIN, "create_task_status", handle_create_task_status)
     hass.services.async_register(DOMAIN, "update_task_status", handle_update_task_status)
     hass.services.async_register(DOMAIN, "delete_task_status", handle_delete_task_status)
+    
+    hass.services.async_register(DOMAIN, "set_task_item_due_date", handle_set_task_item_due_date)
+    hass.services.async_register(DOMAIN, "clear_task_item_due_date", handle_clear_task_item_due_date)
+    
+    hass.services.async_register(DOMAIN, "import_ical", handle_import_ical)
+    hass.services.async_register(DOMAIN, "remove_ical_import", handle_remove_ical_import)
+    hass.services.async_register(DOMAIN, "refresh_ical_imports", handle_refresh_ical_imports)
+    hass.services.async_register(DOMAIN, "export_ical", handle_export_ical)

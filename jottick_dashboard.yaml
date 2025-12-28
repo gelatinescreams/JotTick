@@ -11,6 +11,8 @@ views:
             ignore_line_breaks: true
             content: |
               <style>
+                .add-img-label { display: inline-block; padding: 10px 16px; background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 6px; cursor:      pointer; font-size: 1em; }
+                .add-img-label input { display: none; }
                 .create-note-form { padding: 16px; }
                 .create-note-form h3 { margin: 0 0 12px 0; color: var(--primary-text-color); }
                 .create-note-form input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--divider-color); border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 1em; box-sizing: border-box; }
@@ -27,6 +29,10 @@ views:
                 .format-toggle button { padding: 6px 14px; background: var(--card-background-color); color: var(--primary-text-color); border: none; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
                 .format-toggle button.active { background: var(--primary-color); color: white; }
                 .format-toggle button:hover:not(.active) { background: var(--divider-color); }
+                .add-img-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, #000)); color: var(--text-primary-color, white); border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+                .add-img-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+                .add-img-btn:active { transform: translateY(0); }
+                .add-img-btn input { display: none; }
               </style>
               <div class="create-note-form">
                 <h3>New Note</h3>
@@ -42,7 +48,7 @@ views:
                 </div>
                 <div class="create-img-preview"></div>
                 <div class="btn-row">
-                  <label class="add-img-label" style="display:inline-block;padding:10px 16px;background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:6px;cursor:pointer;font-size:1em;">📷 Add Images<input type="file" accept="image/*" multiple style="display:none;" onchange="var input=this,form=input.closest('.create-note-form'),preview=form.querySelector('.create-img-preview'),maxBytes=15*1024*1024;for(var i=0;i<input.files.length;i++){(function(file){var addThumb=function(dataUrl,name){var div=document.createElement('div');div.className='preview-thumb';div.dataset.name=name;div.dataset.data=dataUrl;var img=document.createElement('img');img.src=dataUrl;div.appendChild(img);var btn=document.createElement('button');btn.textContent='×';btn.onclick=function(){div.remove();};div.appendChild(btn);preview.appendChild(div);};if(file.size<=maxBytes){var reader=new FileReader();reader.onload=function(e){addThumb(e.target.result,file.name);};reader.readAsDataURL(file);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,s=1;var tryIt=function(){canvas.width=w*s;canvas.height=h*s;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){var r2=new FileReader();r2.onload=function(e2){addThumb(e2.target.result,file.name.replace(/\.[^.]+$/,'.jpg'));};r2.readAsDataURL(blob);}else{q-=0.1;if(q<0.5)s*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}})(input.files[i]);}input.value='';"></label>
+                  <label class="add-img-btn">📷 Add Image<input type="file" accept="image/*" onchange="var input=this,form=input.closest('.create-note-form'),preview=form.querySelector('.create-img-preview'),status=form.querySelector('.create-status'),maxBytes=15*1024*1024;if(input.files[0]){status.textContent='Processing...';var file=input.files[0];var addThumb=function(dataUrl,name){var div=document.createElement('div');div.className='preview-thumb';div.dataset.name=name;div.dataset.data=dataUrl;var img=document.createElement('img');img.src=dataUrl;div.appendChild(img);var btn=document.createElement('button');btn.textContent='×';btn.onclick=function(e){e.preventDefault();div.remove();};div.appendChild(btn);preview.appendChild(div);status.textContent='Added '+name;};if(file.size<=maxBytes){var reader=new FileReader();reader.onload=function(e){addThumb(e.target.result,file.name);};reader.readAsDataURL(file);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,s=1;var tryIt=function(){canvas.width=w*s;canvas.height=h*s;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){var r2=new FileReader();r2.onload=function(e2){addThumb(e2.target.result,file.name.replace(/\\.[^.]+$/,'.jpg'));};r2.readAsDataURL(blob);}else{q-=0.1;if(q<0.5)s*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}}input.value='';"></label>
                   <button type="button" class="create-btn" onclick="(function(btn){var form=btn.closest('.create-note-form'),titleEl=form.querySelector('.new-note-title'),contentEl=form.querySelector('.new-note-content'),title=titleEl.value,content=contentEl.value,status=form.querySelector('.create-status'),preview=form.querySelector('.create-img-preview'),thumbs=preview.querySelectorAll('.preview-thumb'),mdBtn=form.querySelector('.format-btn[data-format=md]'),isMd=mdBtn.classList.contains('active'),lockCb=form.querySelector('.lock-checkbox'),lockPw=form.querySelector('.lock-password'),shouldLock=lockCb.checked,password=lockPw.value;if(!title.trim()){alert('Title is required');return;}if(shouldLock&amp;&amp;!password){alert('Please enter a password');return;}if(isMd){content=String.fromCharCode(60)+'!--MD--'+String.fromCharCode(62)+content;}var doCreate=function(finalContent){btn.disabled=true;btn.textContent='Creating...';var noteId='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r%4+8)).toString(16);});var ha=document.querySelector('home-assistant'),token=ha.hass.auth.data.access_token;ha.hass.callService('jottick','create_note',{title:title,content:finalContent,note_id:noteId});if(thumbs.length>0){status.textContent='Uploading images...';var done=0,total=thumbs.length;thumbs.forEach(function(thumb){fetch(thumb.dataset.data).then(function(r){return r.blob();}).then(function(blob){var fd=new FormData();fd.append('note_id',noteId);fd.append('file',blob,thumb.dataset.name);return fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});}).then(function(){done++;status.textContent='Uploaded '+done+'/'+total;if(done>=total){status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}}).catch(function(e){status.textContent='Error: '+e;});});}else{status.textContent='Note created!';btn.disabled=false;btn.textContent='Create';}titleEl.value='';contentEl.value='';preview.innerHTML='';lockCb.checked=false;lockPw.value='';lockPw.style.display='none';form.querySelector('.format-btn[data-format=html]').classList.add('active');mdBtn.classList.remove('active');contentEl.placeholder='Content (HTML tags accepted)';};if(shouldLock){status.textContent='Encrypting...';var enc=new TextEncoder();var salt=crypto.getRandomValues(new Uint8Array(16));var iv=crypto.getRandomValues(new Uint8Array(12));crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits','deriveKey']).then(function(keyMaterial){return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt']);}).then(function(key){return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,enc.encode(content));}).then(function(encrypted){var b64=function(arr){return btoa(String.fromCharCode.apply(null,new Uint8Array(arr)));};var final=String.fromCharCode(60)+'!--ENC:'+b64(salt)+':'+b64(iv)+'--'+String.fromCharCode(62)+b64(encrypted);doCreate(final);}).catch(function(e){status.textContent='Encryption error: '+e;btn.disabled=false;});}else{doCreate(content);}})(this);">Create</button>
                 </div>
                 <div class="create-status"></div>
@@ -167,6 +173,109 @@ views:
                   </div>
                 </div>
                 <div class="status"></div>
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-mini-cal{padding:12px;font-family:var(--paper-font-body1_-_font-family);}
+                .jt-mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+                .jt-mini-cal-title{font-size:0.95em;font-weight:600;color:var(--primary-text-color);}
+                .jt-mini-cal-nav{display:flex;gap:4px;}
+                .jt-mini-cal-nav button{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.85em;}
+                .jt-mini-cal-nav button:hover{background:var(--divider-color);}
+                .jt-mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:0.75em;}
+                .jt-mini-cal-dow{text-align:center;padding:4px 2px;color:var(--secondary-text-color);font-weight:600;}
+                .jt-mini-cal-day{text-align:center;padding:4px 2px;cursor:pointer;border-radius:4px;position:relative;}
+                .jt-mini-cal-day:hover{background:var(--secondary-background-color);}
+                .jt-mini-cal-day.other{color:var(--disabled-text-color);}
+                .jt-mini-cal-day.today{background:color-mix(in srgb, var(--primary-color) 20%, transparent);font-weight:700;}
+                .jt-mini-cal-day.has-events::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--primary-color);}
+                .jt-mini-cal-events{margin-top:10px;border-top:1px solid var(--divider-color);padding-top:10px;max-height:150px;overflow-y:auto;}
+                .jt-mini-cal-event{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.85em;cursor:pointer;}
+                .jt-mini-cal-event:hover{color:var(--primary-color);}
+                .jt-mini-cal-event-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+                .jt-mini-cal-event-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--primary-text-color);}
+                .jt-mini-cal-empty{font-size:0.8em;color:var(--secondary-text-color);text-align:center;padding:8px;}
+                .jt-mini-cal-link{display:block;text-align:center;margin-top:8px;font-size:0.8em;color:var(--primary-color);cursor:pointer;}
+              </style>
+              <div class="jt-mini-cal">
+                <div class="jt-mini-cal-header">
+                  {% set today = now().strftime('%Y-%m-%d') %}
+                  {% set sel_date = states('input_datetime.jottick_calendar_selected_date') %}
+                  {% set sel_date = sel_date if sel_date and sel_date != 'unknown' else today %}
+                  {% set sel_dt = strptime(sel_date, '%Y-%m-%d') %}
+                  <span class="jt-mini-cal-title">📅 {{ sel_dt.strftime('%b %Y') }}</span>
+                  <div class="jt-mini-cal-nav">
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_previous_month');">◀</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_go_to_today');">•</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_next_month');">▶</button>
+                  </div>
+                </div>
+                <div class="jt-mini-cal-grid">
+                  {% set week_start = states('input_select.jottick_calendar_week_start') %}
+                  {% if week_start == 'monday' %}
+                    {% set dow_names = ['M','T','W','T','F','S','S'] %}
+                  {% else %}
+                    {% set dow_names = ['S','M','T','W','T','F','S'] %}
+                  {% endif %}
+                  {% for d in dow_names %}<div class="jt-mini-cal-dow">{{ d }}</div>{% endfor %}
+                  
+                  {% set year = sel_dt.year %}
+                  {% set month = sel_dt.month %}
+                  {% set first_of_month = sel_dt.replace(day=1) %}
+                  {% set first_dow = first_of_month.weekday() %}
+                  {% if week_start == 'sunday' %}{% set first_dow = (first_dow + 1) % 7 %}{% endif %}
+                  {% set days_in_month = ((first_of_month.replace(month=month%12+1, day=1) if month < 12 else first_of_month.replace(year=year+1, month=1, day=1)) - timedelta(days=1)).day %}
+                  {% set prev_month_end = first_of_month - timedelta(days=1) %}
+                  {% set ns = namespace(events={}) %}
+                  {% for state in states.sensor | selectattr('entity_id', 'match', 'sensor.jottick_note_') %}
+                    {% set created = state_attr(state.entity_id, 'created') %}
+                    {% set updated = state_attr(state.entity_id, 'updated') %}
+                    {% if created %}
+                      {% set cdate = created[:10] %}
+                      {% set ns.events = dict(ns.events, **{cdate: (ns.events.get(cdate, []) + [{'type':'created','color':states('input_text.jottick_calendar_color_note_created'),'title':state.state,'id':state_attr(state.entity_id,'note_id')}])}) %}
+                    {% endif %}
+                    {% if updated and updated != created %}
+                      {% set udate = updated[:10] %}
+                      {% set ns.events = dict(ns.events, **{udate: (ns.events.get(udate, []) + [{'type':'edited','color':states('input_text.jottick_calendar_color_note_edited'),'title':state.state,'id':state_attr(state.entity_id,'note_id')}])}) %}
+                    {% endif %}
+                  {% endfor %}
+                  {% for i in range(first_dow) %}
+                    {% set day_num = prev_month_end.day - first_dow + i + 1 %}
+                    <div class="jt-mini-cal-day other">{{ day_num }}</div>
+                  {% endfor %}
+                  {% for day in range(1, days_in_month + 1) %}
+                    {% set day_date = '%04d-%02d-%02d' | format(year, month, day) %}
+                    {% set is_today = day_date == today %}
+                    {% set has_events = day_date in ns.events %}
+                    <div class="jt-mini-cal-day{% if is_today %} today{% endif %}{% if has_events %} has-events{% endif %}" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:'{{ day_date }}'});">{{ day }}</div>
+                  {% endfor %}
+                  {% set total = first_dow + days_in_month %}
+                  {% for i in range((7 - total % 7) % 7) %}
+                    <div class="jt-mini-cal-day other">{{ i + 1 }}</div>
+                  {% endfor %}
+                </div>
+                <div class="jt-mini-cal-events">
+                  {% set day_events = ns.events.get(sel_date, []) %}
+                  {% if day_events | length > 0 %}
+                    {% for evt in day_events[:4] %}
+                    <div class="jt-mini-cal-event" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_note_id',value:'{{ evt.id }}'});">
+                      <div class="jt-mini-cal-event-dot" style="background:{{ evt.color }};"></div>
+                      <span class="jt-mini-cal-event-text">{{ evt.title }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if day_events | length > 4 %}
+                    <div class="jt-mini-cal-empty">+{{ day_events | length - 4 }} more</div>
+                    {% endif %}
+                  {% else %}
+                    <div class="jt-mini-cal-empty">No note events</div>
+                  {% endif %}
+                </div>
+               <div class="jt-mini-cal-link" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,-1).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">View Full Calendar</div>
               </div>
             grid_options:
               columns: full
@@ -436,7 +545,7 @@ views:
                             {% endfor %}
                           </div>
                           {% endif %}
-                          <label class="edit-upload-label">📤 Add Image<input type="file" accept="image/*" onchange="var input=this,card=input.closest('.note-card'),editImages=input.closest('.edit-images'),status=editImages.querySelector('.upload-status'),maxBytes=15*1024*1024;if(input.files[0]){status.textContent='Processing...';var file=input.files[0];var doUpload=function(blob,fname){status.textContent='Uploading...';var fd=new FormData();fd.append('note_id','{{ note_id }}');fd.append('file',blob,fname);var token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd}).then(function(r){return r.json();}).then(function(d){if(d.success){status.textContent='Done!';var gallery=editImages.querySelector('.note-image-gallery');if(!gallery){gallery=document.createElement('div');gallery.className='note-image-gallery';editImages.insertBefore(gallery,editImages.querySelector('.edit-upload-label'));}var thumb=document.createElement('div');thumb.className='note-image-thumb';var timg=document.createElement('img');timg.src=d.image.url;timg.loading='lazy';thumb.appendChild(timg);thumb.onclick=function(){var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display='none';};document.body.appendChild(lb);}lb.querySelector('img').src=d.image.url;lb.style.display='flex';};gallery.appendChild(thumb);var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;badge.textContent='📷'+(n+1);}else{badge=document.createElement('span');badge.className='image-count';badge.textContent='📷1';card.querySelector('.note-title').appendChild(badge);}setTimeout(function(){status.textContent='';},1500);}else{status.textContent='Error: '+(d.error||'Unknown');}}).catch(function(e){status.textContent='Error';});};if(file.size<=maxBytes){doUpload(file,file.name);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,sc=1;var tryIt=function(){canvas.width=w*sc;canvas.height=h*sc;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){doUpload(blob,file.name.replace(/\.[^.]+$/,'.jpg'));}else{q-=0.1;if(q<0.5)sc*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}input.value='';}"></label>
+                          <label class="edit-upload-label">📤 Add Image<input type="file" accept="image/*" onchange="var input=this,card=input.closest('.note-card'),editImages=input.closest('.edit-images'),status=editImages.querySelector('.upload-status'),maxBytes=15*1024*1024;if(input.files[0]){status.textContent='Processing...';var file=input.files[0];var doUpload=function(blob,fname){status.textContent='Uploading...';var fd=new FormData();fd.append('note_id','{{ note_id }}');fd.append('file',blob,fname);var token=document.querySelector('home-assistant').hass.auth.data.access_token;fetch('/api/jottick/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd}).then(function(r){return r.json();}).then(function(d){if(d.success){status.textContent='Done!';var gallery=editImages.querySelector('.note-image-gallery');if(!gallery){gallery=document.createElement('div');gallery.className='note-image-gallery';editImages.insertBefore(gallery,editImages.querySelector('.edit-upload-label'));}var thumb=document.createElement('div');thumb.className='note-image-thumb';var timg=document.createElement('img');timg.src=d.image.url;timg.loading='lazy';thumb.appendChild(timg);thumb.onclick=function(){var lb=document.getElementById('jottick-lb');if(!lb){lb=document.createElement('div');lb.id='jottick-lb';lb.style.cssText='display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:999999;justify-content:center;align-items:center;cursor:pointer;';lb.innerHTML='<img style=&quot;max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px;&quot;>';lb.onclick=function(){lb.style.display='none';};document.body.appendChild(lb);}lb.querySelector('img').src=d.image.url;lb.style.display='flex';};gallery.appendChild(thumb);var badge=card.querySelector('.note-title .image-count');if(badge){var n=parseInt(badge.textContent.replace(/[^0-9]/g,''))||0;badge.textContent='📷'+(n+1);}else{badge=document.createElement('span');badge.className='image-count';badge.textContent='📷1';card.querySelector('.note-title').appendChild(badge);}setTimeout(function(){status.textContent='';},1500);}else{status.textContent='Error:'+(d.error||'Unknown');}}).catch(function(e){status.textContent='Error';});};if(file.size<=maxBytes){doUpload(file,file.name);}else{var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),w=img.width,h=img.height,q=0.9,sc=1;var tryIt=function(){canvas.width=w*sc;canvas.height=h*sc;ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(blob.size<=maxBytes||q<0.1){doUpload(blob,file.name.replace(/\.[^.]+$/,'.jpg'));}else{q-=0.1;if(q<0.5)sc*=0.8;tryIt();}},'image/jpeg',q);};tryIt();};img.src=e.target.result;};reader.readAsDataURL(file);}input.value='';}"></label>
                           <div class="upload-status"></div>
                         </div>
                         <div class="edit-actions">
@@ -723,6 +832,118 @@ views:
             grid_options:
               columns: full
               rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-mini-cal{padding:12px;font-family:var(--paper-font-body1_-_font-family);}
+                .jt-mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+                .jt-mini-cal-title{font-size:0.95em;font-weight:600;color:var(--primary-text-color);}
+                .jt-mini-cal-nav{display:flex;gap:4px;}
+                .jt-mini-cal-nav button{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.85em;}
+                .jt-mini-cal-nav button:hover{background:var(--divider-color);}
+                .jt-mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:0.75em;}
+                .jt-mini-cal-dow{text-align:center;padding:4px 2px;color:var(--secondary-text-color);font-weight:600;}
+                .jt-mini-cal-day{text-align:center;padding:4px 2px;cursor:pointer;border-radius:4px;position:relative;}
+                .jt-mini-cal-day:hover{background:var(--secondary-background-color);}
+                .jt-mini-cal-day.other{color:var(--disabled-text-color);}
+                .jt-mini-cal-day.today{background:color-mix(in srgb, var(--primary-color) 20%, transparent);font-weight:700;}
+                .jt-mini-cal-day.has-events::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--primary-color);}
+                .jt-mini-cal-day.has-due::after{background:{{ states('input_text.jottick_calendar_color_list_due') }};}
+                .jt-mini-cal-events{margin-top:10px;border-top:1px solid var(--divider-color);padding-top:10px;max-height:150px;overflow-y:auto;}
+                .jt-mini-cal-event{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.85em;cursor:pointer;}
+                .jt-mini-cal-event:hover{color:var(--primary-color);}
+                .jt-mini-cal-event-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+                .jt-mini-cal-event-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--primary-text-color);}
+                .jt-mini-cal-empty{font-size:0.8em;color:var(--secondary-text-color);text-align:center;padding:8px;}
+                .jt-mini-cal-link{display:block;text-align:center;margin-top:8px;font-size:0.8em;color:var(--primary-color);cursor:pointer;}
+              </style>
+              <div class="jt-mini-cal">
+                <div class="jt-mini-cal-header">
+                  {% set today = now().strftime('%Y-%m-%d') %}
+                  {% set sel_date = states('input_datetime.jottick_calendar_selected_date') %}
+                  {% set sel_date = sel_date if sel_date and sel_date != 'unknown' else today %}
+                  {% set sel_dt = strptime(sel_date, '%Y-%m-%d') %}
+                  <span class="jt-mini-cal-title">📅 {{ sel_dt.strftime('%b %Y') }}</span>
+                  <div class="jt-mini-cal-nav">
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_previous_month');">◀</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_go_to_today');">•</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_next_month');">▶</button>
+                  </div>
+                </div>
+                <div class="jt-mini-cal-grid">
+                  {% set week_start = states('input_select.jottick_calendar_week_start') %}
+                  {% if week_start == 'monday' %}{% set dow_names = ['M','T','W','T','F','S','S'] %}{% else %}{% set dow_names = ['S','M','T','W','T','F','S'] %}{% endif %}
+                  {% for d in dow_names %}<div class="jt-mini-cal-dow">{{ d }}</div>{% endfor %}
+                  
+                  {% set year = sel_dt.year %}
+                  {% set month = sel_dt.month %}
+                  {% set first_of_month = sel_dt.replace(day=1) %}
+                  {% set first_dow = first_of_month.weekday() %}
+                  {% if week_start == 'sunday' %}{% set first_dow = (first_dow + 1) % 7 %}{% endif %}
+                  {% set days_in_month = ((first_of_month.replace(month=month%12+1, day=1) if month < 12 else first_of_month.replace(year=year+1, month=1, day=1)) - timedelta(days=1)).day %}
+                  {% set prev_month_end = first_of_month - timedelta(days=1) %}
+                  
+                  {% set ns = namespace(events={}, due_dates={}) %}
+                  {% for state in states.sensor | selectattr('entity_id', 'match', 'sensor.jottick_list_') %}
+                    {% set created = state_attr(state.entity_id, 'created') %}
+                    {% set updated = state_attr(state.entity_id, 'updated') %}
+                    {% set due_items = state_attr(state.entity_id, 'due_items') or [] %}
+                    {% set list_id = state_attr(state.entity_id, 'checklist_id') %}
+                    {% set list_title = state_attr(state.entity_id, 'title') %}
+                    {% if created %}
+                      {% set cdate = created[:10] %}
+                      {% set ns.events = dict(ns.events, **{cdate: (ns.events.get(cdate, []) + [{'type':'created','color':states('input_text.jottick_calendar_color_list_created'),'title':list_title,'id':list_id}])}) %}
+                    {% endif %}
+                    {% if updated and updated != created %}
+                      {% set udate = updated[:10] %}
+                      {% set ns.events = dict(ns.events, **{udate: (ns.events.get(udate, []) + [{'type':'edited','color':states('input_text.jottick_calendar_color_list_edited'),'title':list_title,'id':list_id}])}) %}
+                    {% endif %}
+                    {% for item in due_items %}
+                      {% set ddate = item.get('dueDate', '') %}
+                      {% set ns.events = dict(ns.events, **{ddate: (ns.events.get(ddate, []) + [{'type':'due','color':states('input_text.jottick_calendar_color_list_due'),'title':item.text,'id':list_id,'time':item.get('dueTime', '')}])}) %}
+                      {% set ns.due_dates = dict(ns.due_dates, **{ddate: true}) %}
+                    {% endfor %}
+                  {% endfor %}
+                  
+                  {% for i in range(first_dow) %}
+                    {% set day_num = prev_month_end.day - first_dow + i + 1 %}
+                    <div class="jt-mini-cal-day other">{{ day_num }}</div>
+                  {% endfor %}
+                  
+                  {% for day in range(1, days_in_month + 1) %}
+                    {% set day_date = '%04d-%02d-%02d' | format(year, month, day) %}
+                    {% set is_today = day_date == today %}
+                    {% set has_events = day_date in ns.events %}
+                    {% set has_due = day_date in ns.due_dates %}
+                    <div class="jt-mini-cal-day{% if is_today %} today{% endif %}{% if has_events %} has-events{% endif %}{% if has_due %} has-due{% endif %}" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:'{{ day_date }}'});">{{ day }}</div>
+                  {% endfor %}
+                  
+                  {% set total = first_dow + days_in_month %}
+                  {% for i in range((7 - total % 7) % 7) %}
+                    <div class="jt-mini-cal-day other">{{ i + 1 }}</div>
+                  {% endfor %}
+                </div>
+                
+                <div class="jt-mini-cal-events">
+                  {% set day_events = ns.events.get(sel_date, []) %}
+                  {% if day_events | length > 0 %}
+                    {% for evt in day_events[:4] %}
+                    <div class="jt-mini-cal-event" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,2).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">
+                      <div class="jt-mini-cal-event-dot" style="background:{{ evt.color }};"></div>
+                      <span class="jt-mini-cal-event-text">{% if evt.type == 'due' %}{% endif %}{{ evt.title }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if day_events | length > 4 %}<div class="jt-mini-cal-empty">+{{ day_events | length - 4 }} more</div>{% endif %}
+                  {% else %}
+                    <div class="jt-mini-cal-empty">No list events</div>
+                  {% endif %}
+                </div>
+                <div class="jt-mini-cal-link" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,-1).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">View Full Calendar</div>
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
       - type: grid
         cards:
           - type: custom:html-template-card
@@ -802,6 +1023,24 @@ views:
                   color: var(--primary-text-color);
                   font-size: 1em;
                 }
+                              .due-date-wrapper {
+                position: relative;
+              }
+              .due-popup {
+                animation: fadeIn 0.2s ease;
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-4px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .due-badge:hover {
+                opacity: 0.9;
+              }
+              .add-due-btn:hover {
+                background: var(--primary-color) !important;
+                color: white !important;
+                border-color: var(--primary-color) !important;
+              }
                 .add-item-btn {
                   padding: 8px 16px;
                   background: var(--primary-color);
@@ -927,19 +1166,52 @@ views:
                           <div class="list-progress">{{ completed }}/{{ total }}</div>
                         </div>
                       </div>
-                      <div class="list-items">
-                        {% for item in items %}
-                          <div class="list-item">
-                            <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
-                            <span class="item-text {{ 'completed' if item.completed else '' }}">{{ item.text }}</span>
-                            <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete
-                          </div>
-                        {% endfor %}
+                    <div class="list-items">
+                    {% for item in items %}
+                      <div class="list-item" style="flex-wrap:wrap;">
+                        <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                        <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
+                        <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
+                          {% if item.get('dueDate', '') %}
+                            <span class="due-badge" style="font-size:0.75em;padding:2px 8px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and not item.completed %}#EF4444{% else %}#10B981{% endif %};color:white;border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
+                              {{ item.get('dueDate', '') }}{% if item.get('dueTime', '') %} {{ item.get('dueTime', '') }}{% endif %}
+                            </span>
+                            <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                              <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Edit Due Date</div>
+                              <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                              <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                              <div style="display:flex;gap:6px;">
+                                <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                              </div>
+                            </div>
+                          {% else %}
+                            <button class="add-due-btn" style="padding:2px 6px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.7em;color:var(--secondary-text-color);" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">+</button>
+                            <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                              <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
+                              <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                              <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                              <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                            </div>
+                          {% endif %}
+                        </div>
+                        
+                        <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete</button>
                       </div>
-                      <div class="add-item-section">
-                        <input type="text" class="add-item-input" placeholder="Add new item...">
-                        <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                    {% endfor %}
+                  </div>
+                      <div class="add-item-section" style="flex-direction:column;">
+                        <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+                          <input type="text" class="add-item-input" placeholder="Add new item..." style="flex:1;min-width:150px;">
+                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt;if(dueDate){data+='|||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete</button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
+                          <input type="date" class="add-item-date" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <input type="time" class="add-item-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-item-section');sec.querySelector('.add-item-date').value='';sec.querySelector('.add-item-time').value='';})(this);">✕</button>
+                        </div>
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -1219,19 +1491,52 @@ views:
                           <div class="list-progress">{{ completed }}/{{ total }}</div>
                         </div>
                       </div>
-                      <div class="list-items">
-                        {% for item in items %}
-                          <div class="list-item">
-                            <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
-                            <span class="item-text {{ 'completed' if item.completed else '' }}">{{ item.text }}</span>
-                            <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete
+                    <div class="list-items">
+                      {% for item in items %}
+                        <div class="list-item" style="flex-wrap:wrap;">
+                          <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                          <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
+                          <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
+                            {% if item.get('dueDate', '') %}
+                              <span class="due-badge" style="font-size:0.75em;padding:2px 8px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and not item.completed %}#EF4444{% else %}#10B981{% endif %};color:white;border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
+                                {{ item.get('dueDate', '') }}{% if item.get('dueTime', '') %} {{ item.get('dueTime', '') }}{% endif %}
+                              </span>
+                              <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Edit Due Date</div>
+                                <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                <div style="display:flex;gap:6px;">
+                                  <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                                </div>
+                              </div>
+                            {% else %}
+                              <button class="add-due-btn" style="padding:2px 6px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.7em;color:var(--secondary-text-color);" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">+</button>
+                              <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
+                                <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                              </div>
+                            {% endif %}
                           </div>
-                        {% endfor %}
-                      </div>
-                      <div class="add-item-section">
-                        <input type="text" class="add-item-input" placeholder="Add new item...">
-                        <button class="add-item-btn" onclick="(function(btn){const inp=btn.previousElementSibling;if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();inp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||add|||'+txt});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete
+                          
+                          <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete</button>
+                        </div>
+                      {% endfor %}
+                    </div>
+                      <div class="add-item-section" style="flex-direction:column;">
+                        <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+                          <input type="text" class="add-item-input" placeholder="Add new item..." style="flex:1;min-width:150px;">
+                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt;if(dueDate){data+='|||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete</button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);">📅 Due:</span>
+                          <input type="date" class="add-item-date" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <input type="time" class="add-item-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-item-section');sec.querySelector('.add-item-date').value='';sec.querySelector('.add-item-time').value='';})(this);">✕</button>
+                        </div>
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -1354,6 +1659,131 @@ views:
                 - entity: script.jottick_create_task
                   name: Create
                   icon: mdi:plus-circle
+            grid_options:
+              columns: full
+              rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-mini-cal{padding:12px;font-family:var(--paper-font-body1_-_font-family);}
+                .jt-mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+                .jt-mini-cal-title{font-size:0.95em;font-weight:600;color:var(--primary-text-color);}
+                .jt-mini-cal-nav{display:flex;gap:4px;}
+                .jt-mini-cal-nav button{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.85em;}
+                .jt-mini-cal-nav button:hover{background:var(--divider-color);}
+                .jt-mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:0.75em;}
+                .jt-mini-cal-dow{text-align:center;padding:4px 2px;color:var(--secondary-text-color);font-weight:600;}
+                .jt-mini-cal-day{text-align:center;padding:4px 2px;cursor:pointer;border-radius:4px;position:relative;}
+                .jt-mini-cal-day:hover{background:var(--secondary-background-color);}
+                .jt-mini-cal-day.other{color:var(--disabled-text-color);}
+                .jt-mini-cal-day.today{background:color-mix(in srgb, var(--primary-color) 20%, transparent);font-weight:700;}
+                .jt-mini-cal-day.has-events::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--primary-color);}
+                .jt-mini-cal-day.has-due::after{background:{{ states('input_text.jottick_calendar_color_task_due') }};}
+                .jt-mini-cal-day.has-overdue::after{background:{{ states('input_text.jottick_calendar_color_task_overdue') }};}
+                .jt-mini-cal-events{margin-top:10px;border-top:1px solid var(--divider-color);padding-top:10px;max-height:150px;overflow-y:auto;}
+                .jt-mini-cal-event{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.85em;cursor:pointer;}
+                .jt-mini-cal-event:hover{color:var(--primary-color);}
+                .jt-mini-cal-event-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+                .jt-mini-cal-event-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--primary-text-color);}
+                .jt-mini-cal-empty{font-size:0.8em;color:var(--secondary-text-color);text-align:center;padding:8px;}
+                .jt-mini-cal-link{display:block;text-align:center;margin-top:8px;font-size:0.8em;color:var(--primary-color);cursor:pointer;}
+                .jt-mini-cal-overdue{background:color-mix(in srgb, {{ states('input_text.jottick_calendar_color_task_overdue') }} 15%, transparent);border:1px solid {{ states('input_text.jottick_calendar_color_task_overdue') }};border-radius:6px;padding:8px;margin-bottom:10px;font-size:0.85em;display:flex;align-items:center;gap:6px;}
+              </style>
+              <div class="jt-mini-cal">
+                {% set overdue_count = states('sensor.jottick_overdue_items') | int(0) %}
+                {% if overdue_count > 0 %}
+                <div class="jt-mini-cal-overdue">⚠️ <span>{{ overdue_count }} overdue</span></div>
+                {% endif %}
+                <div class="jt-mini-cal-header">
+                  {% set today = now().strftime('%Y-%m-%d') %}
+                  {% set sel_date = states('input_datetime.jottick_calendar_selected_date') %}
+                  {% set sel_date = sel_date if sel_date and sel_date != 'unknown' else today %}
+                  {% set sel_dt = strptime(sel_date, '%Y-%m-%d') %}
+                  <span class="jt-mini-cal-title">📅 {{ sel_dt.strftime('%b %Y') }}</span>
+                  <div class="jt-mini-cal-nav">
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_previous_month');">◀</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_go_to_today');">•</button>
+                    <button onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_calendar_next_month');">▶</button>
+                  </div>
+                </div>
+                <div class="jt-mini-cal-grid">
+                  {% set week_start = states('input_select.jottick_calendar_week_start') %}
+                  {% if week_start == 'monday' %}{% set dow_names = ['M','T','W','T','F','S','S'] %}{% else %}{% set dow_names = ['S','M','T','W','T','F','S'] %}{% endif %}
+                  {% for d in dow_names %}<div class="jt-mini-cal-dow">{{ d }}</div>{% endfor %}
+                  
+                  {% set year = sel_dt.year %}
+                  {% set month = sel_dt.month %}
+                  {% set first_of_month = sel_dt.replace(day=1) %}
+                  {% set first_dow = first_of_month.weekday() %}
+                  {% if week_start == 'sunday' %}{% set first_dow = (first_dow + 1) % 7 %}{% endif %}
+                  {% set days_in_month = ((first_of_month.replace(month=month%12+1, day=1) if month < 12 else first_of_month.replace(year=year+1, month=1, day=1)) - timedelta(days=1)).day %}
+                  {% set prev_month_end = first_of_month - timedelta(days=1) %}
+                  
+                  {% set ns = namespace(events={}, due_dates={}, overdue_dates={}) %}
+                  {% for state in states.sensor | selectattr('entity_id', 'match', 'sensor.jottick_task_') %}
+                    {% set created = state_attr(state.entity_id, 'created') %}
+                    {% set updated = state_attr(state.entity_id, 'updated') %}
+                    {% set due_items = state_attr(state.entity_id, 'due_items') or [] %}
+                    {% set task_id = state_attr(state.entity_id, 'task_id') %}
+                    {% set task_title = state_attr(state.entity_id, 'title') %}
+                    {% if created %}
+                      {% set cdate = created[:10] %}
+                      {% set ns.events = dict(ns.events, **{cdate: (ns.events.get(cdate, []) + [{'type':'created','color':states('input_text.jottick_calendar_color_task_due'),'title':task_title,'id':task_id}])}) %}
+                    {% endif %}
+                    {% if updated and updated != created %}
+                      {% set udate = updated[:10] %}
+                      {% set ns.events = dict(ns.events, **{udate: (ns.events.get(udate, []) + [{'type':'edited','color':states('input_text.jottick_calendar_color_task_due'),'title':task_title,'id':task_id}])}) %}
+                    {% endif %}
+                    {% for item in due_items %}
+                      {% set ddate = item.get('dueDate', '') %}
+                      {% set is_overdue = item.isOverdue | default(false) %}
+                      {% set evt_color = states('input_text.jottick_calendar_color_task_overdue') if is_overdue else states('input_text.jottick_calendar_color_task_due') %}
+                      {% set ns.events = dict(ns.events, **{ddate: (ns.events.get(ddate, []) + [{'type':'due','color':evt_color,'title':item.text,'id':task_id,'time':item.get('dueTime', ''),'overdue':is_overdue}])}) %}
+                      {% if is_overdue %}
+                        {% set ns.overdue_dates = dict(ns.overdue_dates, **{ddate: true}) %}
+                      {% else %}
+                        {% set ns.due_dates = dict(ns.due_dates, **{ddate: true}) %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                  
+                  {% for i in range(first_dow) %}
+                    {% set day_num = prev_month_end.day - first_dow + i + 1 %}
+                    <div class="jt-mini-cal-day other">{{ day_num }}</div>
+                  {% endfor %}
+                  
+                  {% for day in range(1, days_in_month + 1) %}
+                    {% set day_date = '%04d-%02d-%02d' | format(year, month, day) %}
+                    {% set is_today = day_date == today %}
+                    {% set has_events = day_date in ns.events %}
+                    {% set has_due = day_date in ns.due_dates %}
+                    {% set has_overdue = day_date in ns.overdue_dates %}
+                    <div class="jt-mini-cal-day{% if is_today %} today{% endif %}{% if has_events %} has-events{% endif %}{% if has_due %} has-due{% endif %}{% if has_overdue %} has-overdue{% endif %}" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:'{{ day_date }}'});">{{ day }}</div>
+                  {% endfor %}
+                  
+                  {% set total = first_dow + days_in_month %}
+                  {% for i in range((7 - total % 7) % 7) %}
+                    <div class="jt-mini-cal-day other">{{ i + 1 }}</div>
+                  {% endfor %}
+                </div>
+                
+                <div class="jt-mini-cal-events">
+                  {% set day_events = ns.events.get(sel_date, []) %}
+                  {% if day_events | length > 0 %}
+                    {% for evt in day_events[:4] %}
+                    <div class="jt-mini-cal-event" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,2).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">
+                      <div class="jt-mini-cal-event-dot" style="background:{{ evt.color }};"></div>
+                      <span class="jt-mini-cal-event-text">{% if evt.overdue %}{% elif evt.type == 'due' %}{% endif %}{{ evt.title }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if day_events | length > 4 %}<div class="jt-mini-cal-empty">+{{ day_events | length - 4 }} more</div>{% endif %}
+                  {% else %}
+                    <div class="jt-mini-cal-empty">No task events</div>
+                  {% endif %}
+                </div>
+                <div class="jt-mini-cal-link" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,-1).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">View Full Calendar</div>
+              </div>
             grid_options:
               columns: full
               rows: auto
@@ -1645,28 +2075,60 @@ views:
                         {% for item in flat_items %}
                           {% set index_path = item.index_path | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
-                          <div class="task-item depth-{{ depth }} status-{{ item.status }}">
+                          <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
+                              {% if item.get('dueDate', '') %}
+                                <span class="due-badge" style="font-size:0.7em;padding:2px 6px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}#EF4444{% else %}#F9E900{% endif %};color:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}white{% else %}#000{% endif %};border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
+                                  {{ item.get('dueDate', '') }}{% if item.get('dueTime', '') %} {{ item.get('dueTime', '') }}{% endif %}
+                                </span>
+                                <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                  <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Edit Due Date</div>
+                                  <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <div style="display:flex;gap:6px;">
+                                    <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                    <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                                  </div>
+                                </div>
+                              {% else %}
+                                <button class="add-due-btn" style="padding:2px 6px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:var(--secondary-text-color);" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">+</button>
+                                <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                  <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
+                                  <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                                </div>
+                              {% endif %}
+                            </div>     
                             <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}setTimeout(function(){sel.disabled=false;sel.parentElement.style.opacity='1';},1000);})(this);">
                               {% for status in statuses | sort(attribute='order') %}
                                 <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
                               {% endfor %}
                             </select>
                             <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
-                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete
+                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
                         {% endfor %}
                       </div>
-                      <div class="add-task-section">
-                        <input type="text" class="add-task-input" placeholder="Add new task...">
-                        <select class="task-status-select" style="min-width:100px;">
-                          {% for status in statuses | sort(attribute='order') %}
-                            <option value="{{ status.id }}">{{ status.name }}</option>
-                          {% endfor %}
-                        </select>
-                        <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
-                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                      <div class="add-task-section" style="flex-direction:column;">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;">
+                          <input type="text" class="add-task-input" placeholder="Add new task..." style="flex:1;min-width:120px;">
+                          <select class="task-status-select" style="min-width:100px;">
+                            {% for status in statuses | sort(attribute='order') %}
+                              <option value="{{ status.id }}">{{ status.name }}</option>
+                            {% endfor %}
+                          </select>
+                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st;if(dueDate){data+='||||||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
+                          <input type="date" class="add-task-date" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <input type="time" class="add-task-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-task-section');sec.querySelector('.add-task-date').value='';sec.querySelector('.add-task-time').value='';})(this);">✕</button>
+                          <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
+                          <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete</button>
+                        </div>
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -1923,28 +2385,60 @@ views:
                         {% for item in flat_items %}
                           {% set index_path = item.index_path | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
-                          <div class="task-item depth-{{ depth }} status-{{ item.status }}">
+                          <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
+                              {% if item.get('dueDate', '') %}
+                                <span class="due-badge" style="font-size:0.7em;padding:2px 6px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}#EF4444{% else %}#F9E900{% endif %};color:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}white{% else %}#000{% endif %};border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
+                                  {{ item.get('dueDate', '') }}{% if item.get('dueTime', '') %} {{ item.get('dueTime', '') }}{% endif %}
+                                </span>
+                                <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                  <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Edit Due Date</div>
+                                  <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <div style="display:flex;gap:6px;">
+                                    <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                    <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                                  </div>
+                                </div>
+                              {% else %}
+                                <button class="add-due-btn" style="padding:2px 6px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:var(--secondary-text-color);" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">+</button>
+                                <div class="due-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:200px;">
+                                  <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
+                                  <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
+                                  <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                                </div>
+                              {% endif %}
+                            </div>
                             <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}})(this);">
                               {% for status in statuses | sort(attribute='order') %}
                                 <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
                               {% endfor %}
                             </select>
                             <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
-                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete
+                            <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
                         {% endfor %}
                       </div>
-                      <div class="add-task-section">
-                        <input type="text" class="add-task-input" placeholder="Add new task...">
-                        <select class="task-status-select" style="min-width:100px;">
-                          {% for status in statuses | sort(attribute='order') %}
-                            <option value="{{ status.id }}">{{ status.name }}</option>
-                          {% endfor %}
-                        </select>
-                        <button class="add-task-btn" onclick="(function(btn){const inp=btn.parentElement.querySelector('.add-task-input');const sel=btn.parentElement.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;inp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt+'|||'+st});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add Item</button>
-                        <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Task Categories</button>
-                        <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete
+                      <div class="add-task-section" style="flex-direction:column;">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;">
+                          <input type="text" class="add-task-input" placeholder="Add new task..." style="flex:1;min-width:120px;">
+                          <select class="task-status-select" style="min-width:100px;">
+                            {% for status in statuses | sort(attribute='order') %}
+                              <option value="{{ status.id }}">{{ status.name }}</option>
+                            {% endfor %}
+                          </select>
+                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st;if(dueDate){data+='||||||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
+                          <input type="date" class="add-task-date" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <input type="time" class="add-task-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                          <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-task-section');sec.querySelector('.add-task-date').value='';sec.querySelector('.add-task-time').value='';})(this);">✕</button>
+                          <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
+                          <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete</button>
+                        </div>
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -2688,3 +3182,459 @@ views:
           - entity: sensor.jottick_completion_rate
             name: Completion Rate
             icon: mdi:percent
+  - title: Calendar
+    path: calendar
+    icon: mdi:calendar-month
+    sections:
+      - type: grid
+        cards:
+          - type: conditional
+            conditions:
+              - entity: input_boolean.jottick_show_calendar_event_popup
+                state: 'on'
+            card:
+              type: custom:html-template-card
+              ignore_line_breaks: true
+              content: >
+                <style>
+                  .jt-cal-popup-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+                  .jt-cal-popup{background:var(--card-background-color);border-radius:12px;max-width:400px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+                  .jt-cal-popup-header{padding:16px;border-bottom:1px solid var(--divider-color);display:flex;justify-content:space-between;align-items:center;}
+                  .jt-cal-popup-header h3{margin:0;color:var(--primary-text-color);font-size:1.1em;}
+                  .jt-cal-popup-close{background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--secondary-text-color);padding:0;line-height:1;}
+                  .jt-cal-popup-close:hover{color:var(--primary-text-color);}
+                  .jt-cal-popup-body{padding:16px;}
+                  .jt-cal-popup-type{display:inline-block;padding:4px 8px;border-radius:4px;font-size:0.75em;font-weight:600;margin-bottom:12px;text-transform:uppercase;}
+                  .jt-cal-popup-title{font-size:1.2em;font-weight:600;color:var(--primary-text-color);margin-bottom:8px;}
+                  .jt-cal-popup-meta{font-size:0.9em;color:var(--secondary-text-color);margin-bottom:16px;}
+                  .jt-cal-popup-meta div{margin-bottom:4px;}
+                  .jt-cal-popup-desc{font-size:0.9em;color:var(--primary-text-color);padding:12px;background:var(--secondary-background-color);border-radius:6px;margin-bottom:16px;}
+                  .jt-cal-popup-actions{display:flex;gap:8px;}
+                  .jt-cal-popup-actions button{flex:1;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;transition:opacity 0.2s;}
+                  .jt-cal-popup-btn-goto{background:var(--primary-color);color:var(--text-primary-color,white);}
+                  .jt-cal-popup-btn-close{background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color)!important;}
+                  .jt-cal-popup-actions button:hover{opacity:0.9;}
+                </style>
+
+                <div class="jt-cal-popup-overlay"
+                onclick="if(event.target===this){var
+                ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_event_popup'});}">
+                  <div class="jt-cal-popup">
+                    <div class="jt-cal-popup-header">
+                      <h3>📅 Event Details</h3>
+                      <button class="jt-cal-popup-close" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_event_popup'});">×</button>
+                    </div>
+                    <div class="jt-cal-popup-body" id="jt-cal-popup-content">
+                      <script>
+                        (function(){
+                          var dataStr = '{{ states("input_text.jottick_calendar_popup_event_data") }}';
+                          var container = document.getElementById('jt-cal-popup-content');
+                          if(!dataStr || dataStr === '' || dataStr === 'unknown'){
+                            container.innerHTML = '<p style="color:var(--secondary-text-color);">No event data</p>';
+                            return;
+                          }
+                          try {
+                            var evt = JSON.parse(dataStr.replace(/&quot;/g,'"').replace(/&#39;/g,"'"));
+                            var typeColors = {
+                              'note_created': 'background:#9CCAEB;color:#fff;',
+                              'note_edited': 'background:#6BA5D4;color:#fff;',
+                              'note_reminder': 'background:#F7A700;color:#000;',
+                              'list_created': 'background:#99C66D;color:#fff;',
+                              'list_edited': 'background:#7AAD52;color:#fff;',
+                              'list_due': 'background:#10B981;color:#fff;',
+                              'task_due': 'background:#F9E900;color:#000;',
+                              'task_overdue': 'background:#EF4444;color:#fff;',
+                              'imported': 'background:#A855F7;color:#fff;'
+                            };
+                            var typeLabels = {
+                              'note_created': 'Note Created', 'note_edited': 'Note Edited', 'note_reminder': 'Reminder',
+                              'list_created': 'List Created', 'list_edited': 'List Edited', 'list_due': 'List Due',
+                              'task_due': 'Task Due', 'task_overdue': 'Overdue', 'imported': 'Imported'
+                            };
+                            var typeStyle = typeColors[evt.type] || 'background:var(--primary-color);color:#fff;';
+                            var typeLabel = typeLabels[evt.type] || evt.type;
+                            var html = '<div class="jt-cal-popup-type" style="'+typeStyle+'">'+typeLabel+'</div>';
+                            html += '<div class="jt-cal-popup-title">'+(evt.title||'Untitled')+'</div>';
+                            html += '<div class="jt-cal-popup-meta"><div>📆 '+(evt.date||'No date')+(evt.time?' at '+evt.time:'')+'</div>';
+                            if(evt.parent_title) html += '<div>📁 '+evt.parent_title+'</div>';
+                            html += '</div>';
+                            if(evt.description) html += '<div class="jt-cal-popup-desc">'+evt.description+'</div>';
+                            html += '<div class="jt-cal-popup-actions">';
+                            html += '<button class="jt-cal-popup-btn-close" onclick="var ha=document.querySelector(\'home-assistant\');ha.hass.callService(\'input_boolean\',\'turn_off\',{entity_id:\'input_boolean.jottick_show_calendar_event_popup\'});">Close</button>';
+                            html += '</div>';
+                            container.innerHTML = html;
+                          } catch(e) {
+                            container.innerHTML = '<p style="color:var(--error-color);">Error: '+e.message+'</p>';
+                          }
+                        })();
+                      </script>
+                    </div>
+                  </div>
+                </div>
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-cal-container{padding:16px;font-family:var(--paper-font-body1_-_font-family);}
+                .jt-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+                .jt-cal-nav{display:flex;align-items:center;gap:8px;}
+                .jt-cal-nav-btn{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:8px 12px;border-radius:6px;cursor:pointer;font-size:1em;}
+                .jt-cal-nav-btn:hover{background:var(--divider-color);}
+                .jt-cal-title{font-size:1.3em;font-weight:600;color:var(--primary-text-color);min-width:180px;text-align:center;}
+                .jt-cal-actions{display:flex;gap:8px;flex-wrap:wrap;}
+                .jt-cal-today-btn{background:var(--primary-color);color:var(--text-primary-color,white);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;}
+                .jt-cal-settings-btn{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:8px;border-radius:6px;cursor:pointer;font-size:1.1em;}
+                .jt-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;background:var(--divider-color);border:1px solid var(--divider-color);border-radius:8px;overflow:hidden;}
+                .jt-cal-dow{background:var(--secondary-background-color);padding:8px 4px;text-align:center;font-size:0.75em;font-weight:600;color:var(--secondary-text-color);text-transform:uppercase;}
+                .jt-cal-day{background:var(--card-background-color);min-height:80px;padding:4px;cursor:pointer;position:relative;transition:background 0.2s;}
+                .jt-cal-day:hover{background:var(--secondary-background-color);}
+                .jt-cal-day.other{opacity:0.4;}
+                .jt-cal-day.today{background:color-mix(in srgb, var(--primary-color) 15%, var(--card-background-color));}
+                .jt-cal-day.selected{box-shadow:inset 0 0 0 2px var(--primary-color);}
+                .jt-cal-day-num{font-size:0.9em;font-weight:500;color:var(--primary-text-color);margin-bottom:4px;}
+                .jt-cal-day.today .jt-cal-day-num{color:var(--primary-color);font-weight:700;}
+                .jt-cal-dots{display:flex;flex-wrap:wrap;gap:2px;}
+                .jt-cal-dot{width:6px;height:6px;border-radius:50%;}
+                .jt-cal-events-panel{margin-top:16px;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;overflow:hidden;}
+                .jt-cal-events-header{padding:12px 16px;background:var(--secondary-background-color);border-bottom:1px solid var(--divider-color);font-weight:600;color:var(--primary-text-color);}
+                .jt-cal-events-list{max-height:300px;overflow-y:auto;}
+                .jt-cal-event{padding:10px 16px;border-bottom:1px solid var(--divider-color);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background 0.2s;}
+                .jt-cal-event:hover{background:var(--secondary-background-color);}
+                .jt-cal-event:last-child{border-bottom:none;}
+                .jt-cal-event-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+                .jt-cal-event-info{flex:1;min-width:0;}
+                .jt-cal-event-title{font-size:0.9em;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+                .jt-cal-event-meta{font-size:0.75em;color:var(--secondary-text-color);}
+                .jt-cal-empty{padding:20px;text-align:center;color:var(--secondary-text-color);font-size:0.9em;}
+                .jt-cal-overdue-banner{background:color-mix(in srgb, #EF4444 15%, var(--card-background-color));border:1px solid #EF4444;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+                .jt-cal-overdue-icon{font-size:1.5em;}
+                .jt-cal-overdue-text{flex:1;}
+                .jt-cal-overdue-count{font-weight:700;color:#EF4444;}
+                .jt-cal-settings-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+                .jt-cal-settings{background:var(--card-background-color);border-radius:12px;max-width:500px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+                .jt-cal-settings-header{padding:16px;border-bottom:1px solid var(--divider-color);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card-background-color);z-index:1;}
+                .jt-cal-settings-header h3{margin:0;color:var(--primary-text-color);}
+                .jt-cal-settings-close{background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--secondary-text-color);}
+                .jt-cal-settings-body{padding:16px;}
+                .jt-settings-section{margin-bottom:20px;}
+                .jt-settings-section h4{margin:0 0 12px 0;color:var(--primary-text-color);font-size:0.95em;}
+                .jt-settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--divider-color);}
+                .jt-settings-row:last-child{border-bottom:none;}
+                .jt-settings-label{color:var(--primary-text-color);font-size:0.9em;}
+                .jt-settings-toggle{position:relative;width:44px;height:24px;}
+                .jt-settings-toggle input{opacity:0;width:0;height:0;}
+                .jt-settings-toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--divider-color);transition:.3s;border-radius:24px;}
+                .jt-settings-toggle .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%;}
+                .jt-settings-toggle input:checked + .slider{background:var(--primary-color);}
+                .jt-settings-toggle input:checked + .slider:before{transform:translateX(20px);}
+                .jt-settings-color{width:40px;height:30px;border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;padding:0;}
+                .jt-settings-select{padding:6px 10px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);}
+                @media(max-width:600px){
+                  .jt-cal-day{min-height:50px;}
+                  .jt-cal-day-num{font-size:0.8em;}
+                  .jt-cal-dot{width:4px;height:4px;}
+                  .jt-cal-title{font-size:1em;min-width:auto;}
+                }
+              </style>
+              <div class="jt-cal-container">
+                {% set overdue_count = states('sensor.jottick_overdue_items') | int(0) %}
+                {% if overdue_count > 0 %}
+                <div class="jt-cal-overdue-banner">
+                  <span class="jt-cal-overdue-text">You have <span class="jt-cal-overdue-count">{{ overdue_count }}</span> overdue item{% if overdue_count > 1 %}s{% endif %}</span>
+                </div>
+                {% endif %}
+                <div class="jt-cal-header">
+                  <div class="jt-cal-nav">
+                    <button class="jt-cal-nav-btn" onclick="(function(){var ha=document.querySelector('home-assistant');var cur=ha.hass.states['input_datetime.jottick_calendar_selected_date'];var d=cur&&cur.state&&cur.state!='unknown'?new Date(cur.state):new Date();d.setMonth(d.getMonth()-1);ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:d.toISOString().split('T')[0]});})();">◀</button>
+                    {% set sel_date = states('input_datetime.jottick_calendar_selected_date') %}
+                    {% set sel_dt = strptime(sel_date, '%Y-%m-%d') if sel_date and sel_date != 'unknown' else now() %}
+                    <span class="jt-cal-title">{{ sel_dt.strftime('%B %Y') }}</span>
+                    <button class="jt-cal-nav-btn" onclick="(function(){var ha=document.querySelector('home-assistant');var cur=ha.hass.states['input_datetime.jottick_calendar_selected_date'];var d=cur&&cur.state&&cur.state!='unknown'?new Date(cur.state):new Date();d.setMonth(d.getMonth()+1);ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:d.toISOString().split('T')[0]});})();">▶</button>
+                  </div>
+                  <div class="jt-cal-actions">
+                    <button class="jt-cal-today-btn" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:new Date().toISOString().split('T')[0]});">Today</button>
+                    <button class="jt-cal-settings-btn" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_on',{entity_id:'input_boolean.jottick_show_calendar_settings'});">⚙️</button>
+                  </div>
+                </div>
+                <div class="jt-cal-grid">
+                  {% set week_start = states('input_select.jottick_calendar_week_start') %}
+                  {% if week_start == 'monday' %}
+                    {% set dow_names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                  {% else %}
+                    {% set dow_names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+                  {% endif %}
+                  {% for d in dow_names %}
+                  <div class="jt-cal-dow">{{ d }}</div>
+                  {% endfor %}
+                  {% set today = now().strftime('%Y-%m-%d') %}
+                  {% set sel_date = states('input_datetime.jottick_calendar_selected_date') %}
+                  {% set sel_date = sel_date if sel_date and sel_date != 'unknown' else today %}
+                  {% set sel_dt = strptime(sel_date, '%Y-%m-%d') %}
+                  {% set year = sel_dt.year %}
+                  {% set month = sel_dt.month %}
+                  {% set first_of_month = sel_dt.replace(day=1) %}
+                  {% set first_dow = first_of_month.weekday() %}
+                  {% if week_start == 'sunday' %}
+                    {% set first_dow = (first_dow + 1) % 7 %}
+                  {% endif %}
+                  {% set days_in_month = ((first_of_month.replace(month=month%12+1, day=1) if month < 12 else first_of_month.replace(year=year+1, month=1, day=1)) - timedelta(days=1)).day %}      
+                  {% set prev_month_end = first_of_month - timedelta(days=1) %}
+                  {% set prev_days = first_dow %}  
+                  
+                  {# Use pre-computed calendar events from sensor for MUCH faster rendering #}
+                  {% set cal_events = state_attr('sensor.jottick_calendar_events', 'events') or {} %}
+                  
+                  {% for i in range(prev_days) %}
+                    {% set day_num = prev_month_end.day - prev_days + i + 1 %}
+                    <div class="jt-cal-day other"><span class="jt-cal-day-num">{{ day_num }}</span></div>
+                  {% endfor %}
+                  {% for day in range(1, days_in_month + 1) %}
+                    {% set date_str = '%04d-%02d-%02d' | format(year, month, day) %}
+                    {% set is_today = date_str == today %}
+                    {% set day_events = (cal_events.get(date_str, []) if cal_events is mapping else []) %}
+                    <div class="jt-cal-day {{ 'today' if is_today else '' }}" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:'{{ date_str }}'});">
+                      <span class="jt-cal-day-num">{{ day }}</span>
+                      {% if day_events | length > 0 %}
+                      <div class="jt-cal-dots">
+                        {% for evt in day_events[:5] %}
+                        <div class="jt-cal-dot" style="background:{{ evt.color }};"></div>
+                        {% endfor %}
+                        {% if day_events | length > 5 %}<span style="font-size:0.6em;color:var(--secondary-text-color);">+{{ day_events | length - 5 }}</span>{% endif %}
+                      </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                  {% set total_cells = prev_days + days_in_month %}
+                  {% set remaining = (7 - (total_cells % 7)) % 7 %}
+                  {% for i in range(remaining) %}
+                    <div class="jt-cal-day other"><span class="jt-cal-day-num">{{ i + 1 }}</span></div>
+                  {% endfor %}
+                </div>
+                {% set selected_events = (cal_events.get(sel_date, []) if cal_events is mapping else []) %}
+                <div class="jt-cal-events-panel">
+                  <div class="jt-cal-events-header">{{ sel_dt.strftime('%A, %B %d, %Y') }}</div>
+                  <div class="jt-cal-events-list">
+                    {% if selected_events | length > 0 %}
+                      {% for evt in selected_events %}
+                      <div class="jt-cal-event" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_popup_event_data',value:JSON.stringify({{ evt | tojson }})});ha.hass.callService('input_boolean','turn_on',{entity_id:'input_boolean.jottick_show_calendar_event_popup'});">
+                        <div class="jt-cal-event-dot" style="background:{{ evt.color }};"></div>
+                        <div class="jt-cal-event-info">
+                          <div class="jt-cal-event-title">{{ evt.title }}</div>
+                          <div class="jt-cal-event-meta">{{ evt.type | replace('_', ' ') | title }}{% if evt.get('parent_title') %} • {{ evt.get('parent_title') }}{% endif %}</div>
+                        </div>
+                        {% if evt.get('time') %}<div class="jt-cal-event-time">{{ evt.get('time') }}</div>{% endif %}
+                      </div>
+                      {% endfor %}
+                    {% else %}
+                      <div class="jt-cal-empty">No events on this day</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+          - type: conditional
+            conditions:
+              - entity: input_boolean.jottick_show_calendar_settings
+                state: 'on'
+            card:
+              type: custom:html-template-card
+              ignore_line_breaks: true
+              content: >
+                <style>
+                  .jt-cal-settings-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+                  .jt-cal-settings{background:var(--card-background-color);border-radius:12px;max-width:550px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+                  .jt-cal-settings-header{padding:16px;border-bottom:1px solid var(--divider-color);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card-background-color);z-index:1;}
+                  .jt-cal-settings-header h3{margin:0;color:var(--primary-text-color);}
+                  .jt-cal-settings-close{background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--secondary-text-color);padding:4px 8px;}
+                  .jt-cal-settings-close:hover{color:var(--primary-text-color);}
+                  .jt-cal-settings-body{padding:16px;}
+                  .jt-settings-section{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--divider-color);}
+                  .jt-settings-section:last-child{border-bottom:none;margin-bottom:0;}
+                  .jt-settings-section h4{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1em;display:flex;align-items:center;gap:8px;}
+                  .jt-settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--divider-color);gap:12px;}
+                  .jt-settings-row:last-child{border-bottom:none;}
+                  .jt-settings-label{color:var(--primary-text-color);font-size:0.9em;display:flex;align-items:center;gap:8px;flex:1;}
+                  .jt-settings-toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+                  .jt-settings-toggle input{opacity:0;width:0;height:0;}
+                  .jt-settings-toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--divider-color);transition:.3s;border-radius:24px;}
+                  .jt-settings-toggle .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.3s;border-radius:50%;}
+                  .jt-settings-toggle input:checked + .slider{background:var(--primary-color);}
+                  .jt-settings-toggle input:checked + .slider:before{transform:translateX(20px);}
+                  .jt-settings-select{padding:8px 12px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.9em;}
+                  .jt-settings-color{width:40px;height:32px;border:2px solid var(--divider-color);border-radius:6px;cursor:pointer;padding:0;flex-shrink:0;}
+                  .jt-settings-color::-webkit-color-swatch-wrapper{padding:0;}
+                  .jt-settings-color::-webkit-color-swatch{border:none;border-radius:4px;}
+                  .jt-settings-input{flex:1;padding:8px 12px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.9em;min-width:0;}
+                  .jt-settings-btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;font-weight:500;transition:opacity 0.2s;}
+                  .jt-settings-btn:hover{opacity:0.9;}
+                  .jt-settings-btn.primary{background:var(--primary-color);color:white;}
+                  .jt-settings-btn.secondary{background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);}
+                  .jt-settings-btn.danger{background:#EF4444;color:white;}
+                  .jt-settings-btn:disabled{opacity:0.5;cursor:not-allowed;}
+                  .jt-ical-sources{margin-top:12px;}
+                  .jt-ical-source{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--secondary-background-color);border-radius:6px;margin-bottom:8px;}
+                  .jt-ical-source-info{flex:1;min-width:0;}
+                  .jt-ical-source-name{font-size:0.9em;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+                  .jt-ical-source-url{font-size:0.75em;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+                  .jt-ical-remove{background:#EF4444;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.8em;}
+                  .jt-settings-status{font-size:0.85em;padding:8px 12px;border-radius:6px;margin-top:8px;}
+                  .jt-settings-status.success{background:rgba(16,185,129,0.1);color:#10B981;}
+                  .jt-settings-status.error{background:rgba(239,68,68,0.1);color:#EF4444;}
+                  .jt-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+                </style>
+
+                <div class="jt-cal-settings-overlay"
+                onclick="if(event.target===this){var
+                ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_settings'});}">
+                  <div class="jt-cal-settings">
+                    <div class="jt-cal-settings-header">
+                      <h3>Calendar Settings</h3>
+                      <button class="jt-cal-settings-close" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_settings'});">×</button>
+                    </div>
+                    <div class="jt-cal-settings-body">   
+                      <div class="jt-settings-section">
+                        <h4>General</h4>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">Start week on</span>
+                          <select class="jt-settings-select" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_select','select_option',{entity_id:'input_select.jottick_calendar_week_start',option:this.value});">
+                            <option value="sunday" {% if states('input_select.jottick_calendar_week_start') == 'sunday' %}selected{% endif %}>Sunday</option>
+                            <option value="monday" {% if states('input_select.jottick_calendar_week_start') == 'monday' %}selected{% endif %}>Monday</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div class="jt-settings-section">
+                        <h4>Event Types & Colors</h4>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_created') }};"></span>
+                            Note Created
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#9CCAEB' if states('input_text.jottick_calendar_color_note_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_created',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_created'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_edited') }};"></span>
+                            Note Edited
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#6BA5D4' if states('input_text.jottick_calendar_color_note_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_edited',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_edited'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_reminder') }};"></span>
+                            Scheduled Notes
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#F7A700' if states('input_text.jottick_calendar_color_note_reminder') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_reminder') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_reminder',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_reminders') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_reminders'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_created') }};"></span>
+                            List Created
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#99C66D' if states('input_text.jottick_calendar_color_list_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_created',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_created'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_edited') }};"></span>
+                            List Edited
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#7AAD52' if states('input_text.jottick_calendar_color_list_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_edited',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_edited'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_due') }};"></span>
+                            List Due Dates
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#10B981' if states('input_text.jottick_calendar_color_list_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_due',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_due'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_due') }};"></span>
+                            Task Due Dates
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#F9E900' if states('input_text.jottick_calendar_color_task_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_due',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_task_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_task_due'});"><span class="slider"></span></label>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_overdue') }};"></span>
+                            Overdue Items
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#EF4444' if states('input_text.jottick_calendar_color_task_overdue') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_overdue') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_overdue',value:this.value});">
+                          <span style="width:44px;"></span>
+                        </div>
+                        <div class="jt-settings-row">
+                          <span class="jt-settings-label">
+                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_imported') }};"></span>
+                            Imported Events
+                          </span>
+                          <input type="color" class="jt-settings-color" value="{{ '#A855F7' if states('input_text.jottick_calendar_color_imported') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_imported') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_imported',value:this.value});">
+                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_imported') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_imported'});"><span class="slider"></span></label>
+                        </div>
+                      </div>
+                      <div class="jt-settings-section">
+                        <h4>Import Calendar (iCal)</h4>
+                        <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Import events from Google Calendar, Outlook, Apple Calendar, or any .ics URL</p>
+                        <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                          <input type="text" class="jt-settings-input ical-url-input" placeholder="Calendar URL (ends in .ics)" value="{{ '' if states('input_text.jottick_ical_import_url') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_url') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:this.value});">
+                          <input type="text" class="jt-settings-input ical-name-input" placeholder="Calendar name (optional)" value="{{ '' if states('input_text.jottick_ical_import_name') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_name') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:this.value});">
+                          <div style="display:flex;gap:8px;">
+                            <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var urlInput=btn.closest('.jt-settings-section').querySelector('.ical-url-input');var nameInput=btn.closest('.jt-settings-section').querySelector('.ical-name-input');var url=urlInput.value.trim();if(!url){alert('Please enter a calendar URL');return;}btn.disabled=true;btn.textContent='Importing...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','import_ical',{url:url,name:nameInput.value.trim()||'Imported Calendar',auto_refresh:true});setTimeout(function(){btn.disabled=false;btn.textContent='Import Calendar';urlInput.value='';nameInput.value='';ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:''});ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:''});},2000);})(this);">Import Calendar</button>
+                            <button class="jt-settings-btn secondary" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','refresh_ical_imports');this.textContent='Refreshing...';var btn=this;setTimeout(function(){btn.textContent='Refresh All';},1500);">Refresh All</button>
+                          </div>
+                        </div>
+                        {% set ical_sources = state_attr('sensor.jottick_imported_events', 'sources') or [] %}
+                        {% if ical_sources | length > 0 %}
+                        <div class="jt-ical-sources">
+                          <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Imported Calendars:</div>
+                          {% for source in ical_sources %}
+                          <div class="jt-ical-source">
+                            <div class="jt-ical-source-info">
+                              <div class="jt-ical-source-name">{{ source.name | default('Imported Calendar') }} <span style="font-size:0.75em;color:var(--secondary-text-color);">({{ source.event_count | default(0) }} events)</span></div>
+                              <div class="jt-ical-source-url">{{ source.url | truncate(40) }}</div>
+                            </div>
+                            <button class="jt-ical-remove" onclick="if(confirm('Remove this calendar?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','remove_ical_import',{url:'{{ source.url }}'});}">Remove</button>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="jt-settings-section">
+                        <h4>Export Calendar</h4>
+                        <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Export your JotTick data as an iCal file</p>
+                        
+                        <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                          <input type="text" class="jt-settings-input export-filename" placeholder="Filename (without .ics)" value="{{ states('input_text.jottick_calendar_export_filename') | default('jottick_calendar') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_export_filename',value:this.value});">
+                          
+                          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.85em;">
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                              <input type="checkbox" class="export-notes" checked> Notes
+                            </label>
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                              <input type="checkbox" class="export-lists" checked> Lists
+                            </label>
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                              <input type="checkbox" class="export-tasks" checked> Tasks
+                            </label>
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                              <input type="checkbox" class="export-reminders" checked> Reminders
+                            </label>
+                          </div>     
+                          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var sec=btn.closest('.jt-settings-section');var filename=sec.querySelector('.export-filename').value.trim()||'jottick_calendar';var includeNotes=sec.querySelector('.export-notes').checked;var includeLists=sec.querySelector('.export-lists').checked;var includeTasks=sec.querySelector('.export-tasks').checked;var includeReminders=sec.querySelector('.export-reminders').checked;btn.disabled=true;btn.textContent='Exporting...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','export_ical',{filename:filename,include_notes:includeNotes,include_lists:includeLists,include_tasks:includeTasks,include_reminders:includeReminders});var downloadDiv=sec.querySelector('.export-download-link');setTimeout(function(){btn.disabled=false;btn.textContent='Export to .ics File';var link=document.createElement('a');link.href='/api/jottick/calendar/'+filename+'.ics';link.download=filename+'.ics';link.style.cssText='display:inline-block;padding:8px 16px;background:var(--success-color,#10b981);color:white;border-radius:6px;text-decoration:none;font-size:0.9em;';link.textContent='⬇️ Download '+filename+'.ics';downloadDiv.innerHTML='';downloadDiv.appendChild(link);downloadDiv.style.display='block';},1500);})(this);">Export to .ics File</button>
+                          </div>                 
+                          <div class="export-download-link" style="display:none;text-align:center;margin-top:8px;"></div>                      
+                          <p style="font-size:0.75em;color:var(--secondary-text-color);margin:8px 0 0 0;">
+                            After exporting, click the download button or access the file at:<br>
+                            <code style="font-size:0.9em;">/api/jottick/calendar/{filename}.ics</code>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>

@@ -1,5 +1,17 @@
 ### Changelog
 
+### New 12/28/25
+- **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
+  - Added iCAL import and export for JotTick
+  - Custom calendar dashboard added to JotTick.
+  - Easy to use settings modal for ical, colors and general calendar settings
+  - Added due dates to list and task items
+  - Fixed mobile image uploads for create note
+  - General fixes for HACS, lovelace, htmlcard, markupcard and jinja
+- **Upgrade Information**
+  - Core plugin files are changed in 1.5. Please replace them all
+  - Replace all the scripts, automations and inputs. Many have changed and or fixed
+
 ### New 12/19/25
 - **Version 1.4** Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
 - **Version 1.3** Assist, reminders and aliases oh my

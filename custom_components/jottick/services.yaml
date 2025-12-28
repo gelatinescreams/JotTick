@@ -1,3 +1,7 @@
+# =============================================================================
+# JotTick
+# =============================================================================
+
 create_note:
   name: Create Note
   description: Create a new note
@@ -279,6 +283,61 @@ delete_checklist_item:
       selector:
         text:
 
+set_checklist_item_due_date:
+  name: Set Checklist Item Due Date
+  description: Set a due date on a checklist item
+  fields:
+    checklist_id:
+      name: Checklist ID
+      description: The ID of the checklist
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item (e.g., "0" or "0.1" for nested)
+      required: true
+      selector:
+        text:
+    due_date:
+      name: Due Date
+      description: Due date in YYYY-MM-DD format
+      required: true
+      example: "2025-01-15"
+      selector:
+        date:
+    due_time:
+      name: Due Time
+      description: Optional due time in HH:MM format
+      required: false
+      example: "14:30"
+      selector:
+        time:
+    notify_overdue:
+      name: Notify When Overdue
+      description: Send notification when item becomes overdue
+      required: false
+      default: false
+      selector:
+        boolean:
+
+clear_checklist_item_due_date:
+  name: Clear Checklist Item Due Date
+  description: Remove due date from a checklist item
+  fields:
+    checklist_id:
+      name: Checklist ID
+      description: The ID of the checklist
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item
+      required: true
+      selector:
+        text:
+
 create_task:
   name: Create Task List
   description: Create a new task list
@@ -457,3 +516,139 @@ delete_task_status:
       required: true
       selector:
         text:
+
+set_task_item_due_date:
+  name: Set Task Item Due Date
+  description: Set a due date on a task item
+  fields:
+    task_id:
+      name: Task ID
+      description: The ID of the task list
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item (e.g., "0" or "0.1" for nested)
+      required: true
+      selector:
+        text:
+    due_date:
+      name: Due Date
+      description: Due date in YYYY-MM-DD format
+      required: true
+      example: "2025-01-15"
+      selector:
+        date:
+    due_time:
+      name: Due Time
+      description: Optional due time in HH:MM format
+      required: false
+      example: "14:30"
+      selector:
+        time:
+    notify_overdue:
+      name: Notify When Overdue
+      description: Send notification when item becomes overdue
+      required: false
+      default: false
+      selector:
+        boolean:
+
+clear_task_item_due_date:
+  name: Clear Task Item Due Date
+  description: Remove due date from a task item
+  fields:
+    task_id:
+      name: Task ID
+      description: The ID of the task list
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item
+      required: true
+      selector:
+        text:
+
+import_ical:
+  name: Import iCal
+  description: Import events from an iCal/ICS URL
+  fields:
+    url:
+      name: URL
+      description: The iCal URL to import (must end in .ics or be a valid iCal feed)
+      required: true
+      example: "https://calendar.google.com/calendar/ical/xxx/basic.ics"
+      selector:
+        text:
+    name:
+      name: Name
+      description: Friendly name for this calendar source
+      required: false
+      example: "Work Calendar"
+      selector:
+        text:
+    auto_refresh:
+      name: Auto Refresh
+      description: Automatically refresh this calendar every 30 minutes
+      required: false
+      default: true
+      selector:
+        boolean:
+
+remove_ical_import:
+  name: Remove iCal Import
+  description: Remove an imported iCal source and all its events
+  fields:
+    url:
+      name: URL
+      description: The iCal URL to remove
+      required: true
+      selector:
+        text:
+
+refresh_ical_imports:
+  name: Refresh iCal Imports
+  description: Manually refresh all imported iCal sources
+
+export_ical:
+  name: Export iCal
+  description: Generate an iCal file from JotTick data
+  fields:
+    filename:
+      name: Filename
+      description: Name for the exported file (without .ics extension)
+      required: false
+      default: "jottick_calendar"
+      selector:
+        text:
+    include_notes:
+      name: Include Notes
+      description: Include note created/edited dates
+      required: false
+      default: true
+      selector:
+        boolean:
+    include_lists:
+      name: Include Lists
+      description: Include checklist created/edited dates and due dates
+      required: false
+      default: true
+      selector:
+        boolean:
+    include_tasks:
+      name: Include Tasks
+      description: Include task created/edited dates and due dates
+      required: false
+      default: true
+      selector:
+        boolean:
+    include_reminders:
+      name: Include Reminders
+      description: Include reminder events
+      required: false
+      default: true
+      selector:
+        boolean:

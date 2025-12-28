@@ -1,10 +1,13 @@
 {
-  "domain": "jottick",
-  "name": "JotTick",
-  "codeowners": [],
-  "config_flow": true,
-  "documentation": "",
-  "iot_class": "local_push",
-  "requirements": [],
-  "version": "1.3"
+    "domain": "jottick",
+    "name": "JotTick",
+    "version": "1.5.0",
+    "codeowners": [],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/gelatinescreams/JotTick",
+    "iot_class": "local_push",
+    "requirements": [
+        "aiohttp>=3.8.0"
+    ]
 }

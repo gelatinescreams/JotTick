@@ -7,6 +7,12 @@
 
 input_text:
 
+  jottick_due_date_action_data:
+    name: "Due Date Action Data"
+    initial: ""
+    max: 255
+    icon: mdi:calendar-edit
+
   jottick_editing_reminder_id:
     name: "Editing Reminder ID"
     initial: ""
@@ -163,6 +169,84 @@ input_text:
     max: 50
     icon: mdi:file-tree    
 
+  jottick_calendar_color_note_created:
+    name: "Calendar Color - Note Created"
+    initial: "#9CCAEB"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_note_edited:
+    name: "Calendar Color - Note Edited"
+    initial: "#6BA5D4"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_note_reminder:
+    name: "Calendar Color - Note Reminder"
+    initial: "#F7A700"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_created:
+    name: "Calendar Color - List Created"
+    initial: "#99C66D"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_edited:
+    name: "Calendar Color - List Edited"
+    initial: "#7AAD52"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_due:
+    name: "Calendar Color - List Due"
+    initial: "#10B981"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_task_due:
+    name: "Calendar Color - Task Due"
+    initial: "#F9E900"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_task_overdue:
+    name: "Calendar Color - Task Overdue"
+    initial: "#EF4444"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_imported:
+    name: "Calendar Color - Imported Events"
+    initial: "#A855F7"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_popup_event_data:
+    name: "Calendar Popup Event Data"
+    initial: ""
+    max: 255
+    icon: mdi:calendar
+
+  jottick_calendar_export_filename:
+    name: "Calendar Export Filename"
+    initial: "jottick_calendar"
+    max: 100
+    icon: mdi:file-export
+
+  jottick_ical_import_url:
+    name: "iCal Import URL"
+    initial: ""
+    max: 255
+    icon: mdi:calendar-import
+
+  jottick_ical_import_name:
+    name: "iCal Import Name"
+    initial: ""
+    max: 100
+    icon: mdi:calendar
+
 
 #under input_select  
 input_select:
@@ -267,6 +351,31 @@ input_select:
       - "completed"
     initial: "-- Select status --"
 
+  jottick_calendar_view:
+    name: "Calendar View"
+    options:
+      - "month"
+      - "week"
+    initial: "month"
+    icon: mdi:calendar-month
+
+  jottick_calendar_week_start:
+    name: "Calendar Week Start"
+    options:
+      - "sunday"
+      - "monday"
+    initial: "sunday"
+    icon: mdi:calendar-week
+
+  jottick_calendar_default_event_display:
+    name: "Default Event Display"
+    options:
+      - "all_day"
+      - "morning"
+      - "custom"
+    initial: "all_day"
+    icon: mdi:clock-outline
+
 #under input_number 
 input_number:
 #under input_number 
@@ -287,9 +396,95 @@ input_number:
     mode: box
     icon: mdi:sort-numeric-ascending  
 
+  jottick_calendar_default_time_hour:
+    name: "Default Event Time (Hour)"
+    initial: 9
+    min: 0
+    max: 23
+    step: 1
+    mode: box
+    icon: mdi:clock-outline
+
+  jottick_calendar_default_time_minute:
+    name: "Default Event Time (Minute)"
+    initial: 0
+    min: 0
+    max: 59
+    step: 15
+    mode: box
+    icon: mdi:clock-outline
+
+  jottick_selected_item_index:
+    name: "Selected Item Index"
+    min: 0
+    max: 1000
+    step: 1
+    initial: 0
+    mode: box
+
+  jottick_new_status_order:
+    name: "New Status Order"
+    initial: 0
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:sort-numeric-ascending
+    
 #under input_boolean    
 input_boolean:
 #under input_boolean  
+
+  jottick_calendar_show_note_created:
+    name: "Show Note Created"
+    initial: true
+    icon: mdi:note-plus
+
+  jottick_calendar_show_note_edited:
+    name: "Show Note Edited"
+    initial: true
+    icon: mdi:note-edit
+
+  jottick_calendar_show_note_reminders:
+    name: "Show Note Reminders"
+    initial: true
+    icon: mdi:bell
+
+  jottick_calendar_show_list_created:
+    name: "Show List Created"
+    initial: true
+    icon: mdi:playlist-plus
+
+  jottick_calendar_show_list_edited:
+    name: "Show List Edited"
+    initial: true
+    icon: mdi:playlist-edit
+
+  jottick_calendar_show_list_due:
+    name: "Show List Due Dates"
+    initial: true
+    icon: mdi:calendar-check
+
+  jottick_calendar_show_task_due:
+    name: "Show Task Due Dates"
+    initial: true
+    icon: mdi:calendar-clock
+
+  jottick_calendar_show_imported:
+    name: "Show Imported Events"
+    initial: true
+    icon: mdi:calendar-import
+
+  jottick_show_calendar_settings:
+    name: "Show Calendar Settings"
+    initial: false
+    icon: mdi:cog
+
+  jottick_show_calendar_event_popup:
+    name: "Show Calendar Event Popup"
+    initial: false
+    icon: mdi:popup
+
   jottick_item_completed:
     name: "Item Completed"
     initial: false
@@ -322,7 +517,12 @@ input_datetime:
     has_date: false
     has_time: true
 
-#at the bottom of config    
+  jottick_calendar_selected_date:
+    name: "Selected Calendar Date"
+    has_date: true
+    has_time: false
+
+    
 template:
 
   - trigger:

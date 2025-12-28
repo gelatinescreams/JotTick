@@ -1747,3 +1747,199 @@ jottick_delete_note_with_schedules:
     - service: jottick.delete_note
       data:
         note_id: "{{ note_id }}"       
+        
+jottick_calendar_go_to_today:
+  alias: 'JotTick: Calendar Go To Today'
+  icon: mdi:calendar-today
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"
+
+jottick_calendar_previous_month:
+  alias: 'JotTick: Calendar Previous Month'
+  icon: mdi:chevron-left
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: >
+          {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+          {% set dt = strptime(current, '%Y-%m-%d') %}
+          {% set prev = dt.replace(day=1) - timedelta(days=1) %}
+          {{ prev.replace(day=1).strftime('%Y-%m-%d') }}
+
+jottick_calendar_next_month:
+  alias: 'JotTick: Calendar Next Month'
+  icon: mdi:chevron-right
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: >
+          {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+          {% set dt = strptime(current, '%Y-%m-%d') %}
+          {% set last_of_month = (dt.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1) %}
+          {% set next = last_of_month + timedelta(days=1) %}
+          {{ next.strftime('%Y-%m-%d') }}
+
+jottick_calendar_previous_week:
+  alias: 'JotTick: Calendar Previous Week'
+  icon: mdi:chevron-double-left
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: >
+          {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+          {% set dt = strptime(current, '%Y-%m-%d') %}
+          {{ (dt - timedelta(days=7)).strftime('%Y-%m-%d') }}
+
+jottick_calendar_next_week:
+  alias: 'JotTick: Calendar Next Week'
+  icon: mdi:chevron-double-right
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: >
+          {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+          {% set dt = strptime(current, '%Y-%m-%d') %}
+          {{ (dt + timedelta(days=7)).strftime('%Y-%m-%d') }}
+
+jottick_calendar_select_day:
+  alias: 'JotTick: Calendar Select Day'
+  icon: mdi:calendar
+  fields:
+    date:
+      description: 'Date in YYYY-MM-DD format'
+      example: '2025-01-15'
+  sequence:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: "{{ date }}"
+
+jottick_calendar_open_event_popup:
+  alias: 'JotTick: Open Event Popup'
+  icon: mdi:popup
+  fields:
+    event_data:
+      description: 'JSON string with event details'
+      example: '{"id":"note_xxx","type":"note_created","title":"My Note"}'
+  sequence:
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_calendar_popup_event_data
+      data:
+        value: "{{ event_data }}"
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_show_calendar_event_popup
+
+jottick_calendar_close_event_popup:
+  alias: 'JotTick: Close Event Popup'
+  icon: mdi:close
+  sequence:
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_show_calendar_event_popup
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_calendar_popup_event_data
+      data:
+        value: ""
+
+jottick_calendar_open_settings:
+  alias: 'JotTick: Open Calendar Settings'
+  icon: mdi:cog
+  sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_show_calendar_settings
+
+jottick_calendar_close_settings:
+  alias: 'JotTick: Close Calendar Settings'
+  icon: mdi:close
+  sequence:
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_show_calendar_settings
+
+jottick_import_ical:
+  alias: 'JotTick: Import iCal'
+  icon: mdi:calendar-import
+  sequence:
+    - service: jottick.import_ical
+      data:
+        url: "{{ states('input_text.jottick_ical_import_url') }}"
+        name: "{{ states('input_text.jottick_ical_import_name') }}"
+    - service: input_text.set_value
+      target:
+        entity_id: 
+          - input_text.jottick_ical_import_url
+          - input_text.jottick_ical_import_name
+      data:
+        value: ""
+
+jottick_navigate_to_item:
+  alias: 'JotTick: Navigate to Item'
+  icon: mdi:arrow-right
+  fields:
+    item_type:
+      description: 'Type: note, list, or task'
+      example: 'note'
+    item_id:
+      description: 'The item ID'
+      example: 'abc-123'
+  sequence:
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_show_calendar_event_popup
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ item_type == 'note' }}"
+          sequence:
+            - service: browser_mod.navigate
+              data:
+                path: /jottick-dashboard/notes
+            - delay: "00:00:01"
+            - service: input_text.set_value
+              target:
+                entity_id: input_text.jottick_note_id
+              data:
+                value: "{{ item_id }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ item_type == 'list' }}"
+          sequence:
+            - service: browser_mod.navigate
+              data:
+                path: /jottick-dashboard/lists
+            - delay: "00:00:01"
+            - service: input_text.set_value
+              target:
+                entity_id: input_text.jottick_checklist_id
+              data:
+                value: "{{ item_id }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ item_type == 'task' }}"
+          sequence:
+            - service: browser_mod.navigate
+              data:
+                path: /jottick-dashboard/tasks
+            - delay: "00:00:01"
+            - service: input_text.set_value
+              target:
+                entity_id: input_text.jottick_selected_task_id
+              data:
+                value: "{{ item_id }}"        
