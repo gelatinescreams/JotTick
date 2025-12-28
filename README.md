@@ -10,21 +10,16 @@
 A notes, checklists, task management and calendar integration for Home Assistant. Includes iCal support, per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
 ###### Notes Preview
-<p align="center">
-  <img src="assets/notes-preview.gif"> 
-</p>
+![Notes Preview](assets/notes-preview.gif)
+
 ###### Lists Preview
-<p align="center">
-  <img src="assets/lists-preview.gif"> 
-</p>
+![Lists Preview](assets/lists-preview.gif)
+
 ###### Tasks Preview (2 views standard and kanban)
-<p align="center">
-  <img src="assets/tasks-preview.gif"> 
-</p>
+![Tasks Preview](assets/tasks-preview.gif)
+
 ###### Calendar Preview
-<p align="center">
-  <img src="assets/calendar-preview.gif">
-</p>
+![Calendar Preview](assets/calendar-preview.gif)
 
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
