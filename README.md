@@ -49,6 +49,7 @@ A notes, checklists, task management and calendar integration for Home Assistant
 - Add and remove items
 - **Recurring resets** : automatically start a list over at any scheduled time(s)
 - **Reminders** : Easy to use, per device, notification schedules on each note list and task
+- 1.5 added due dates to list items for calendar view
 
 ### Tasks
 - Task lists with customizable task statuses
@@ -56,7 +57,17 @@ A notes, checklists, task management and calendar integration for Home Assistant
 - Status tracking (To Do, In Progress, Completed, or make your own)
 - **Cascade completion** : marking a task complete also completes its subtasks
 - Recurring resets and reminders (same as checklists)
-- Kanban drag and drop option coming very soon (in beta testing)
+- Kanban functions and alternate task view
+- 1.5 added due dates to taks items for calendar view
+
+### Calendar
+- Fully customizable calendar for JotTick
+- Inlcudes notes, lists, tasks and imported events
+- List and task items can now have due dates
+- Import unlimited iCal calendars
+- **Full built dashboard**
+- Export HA calendar as .iCal
+
 
 ### Dashboard
 - Prebuilt dashboard with all features
