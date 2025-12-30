@@ -268,6 +268,26 @@ uncheck_item:
       selector:
         text:
 
+check_all_items:
+  name: Check All Items
+  description: Mark all items in a checklist as checked
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+
+uncheck_all_items:
+  name: Uncheck All Items
+  description: Mark all items in a checklist as unchecked
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+        
 delete_checklist_item:
   name: Delete Checklist Item
   description: Delete an item from a checklist
@@ -338,6 +358,50 @@ clear_checklist_item_due_date:
       selector:
         text:
 
+update_checklist_item:
+  name: Update Checklist Item
+  description: Update a checklist item's text or completed status
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item (e.g., "0" or "0.1" for nested)
+      required: true
+      selector:
+        text:
+    text:
+      name: Text
+      description: New text for the item
+      required: false
+      selector:
+        text:
+    completed:
+      name: Completed
+      description: Set completed status
+      required: false
+      selector:
+        boolean:
+
+reorder_checklist_items:
+  name: Reorder Checklist Items
+  description: Reorder items in a checklist
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    item_indices:
+      name: Item Indices
+      description: Comma-separated list of item indices in new order (e.g., "2,0,1")
+      required: true
+      selector:
+        text:
+        
 create_task:
   name: Create Task List
   description: Create a new task list
@@ -572,6 +636,50 @@ clear_task_item_due_date:
       selector:
         text:
 
+update_task_item:
+  name: Update Task Item
+  description: Update a task item's text or status
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    item_index:
+      name: Item Index
+      description: The index path of the item (e.g., "0" or "0.1" for nested)
+      required: true
+      selector:
+        text:
+    text:
+      name: Text
+      description: New text for the item
+      required: false
+      selector:
+        text:
+    status:
+      name: Status
+      description: New status (cascades to children if "completed")
+      required: false
+      selector:
+        text:
+
+reorder_task_items:
+  name: Reorder Task Items
+  description: Reorder items in a task list
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    item_indices:
+      name: Item Indices
+      description: Comma-separated list of item indices in new order (e.g., "2,0,1")
+      required: true
+      selector:
+        text:
+        
 import_ical:
   name: Import iCal
   description: Import events from an iCal/ICS URL
@@ -652,3 +760,51 @@ export_ical:
       default: true
       selector:
         boolean:
+
+duplicate_note:
+  name: Duplicate Note
+  description: Create a copy of an existing note
+  fields:
+    note_id:
+      name: Note ID
+      required: true
+      selector:
+        text:
+    new_title:
+      name: New Title
+      description: Title for the copy (defaults to "Original Title (copy)")
+      required: false
+      selector:
+        text:
+
+duplicate_checklist:
+  name: Duplicate Checklist
+  description: Create a copy of an existing checklist
+  fields:
+    checklist_id:
+      name: Checklist ID
+      required: true
+      selector:
+        text:
+    new_title:
+      name: New Title
+      description: Title for the copy (defaults to "Original Title (copy)")
+      required: false
+      selector:
+        text:
+
+duplicate_task:
+  name: Duplicate Task
+  description: Create a copy of an existing task list
+  fields:
+    task_id:
+      name: Task ID
+      required: true
+      selector:
+        text:
+    new_title:
+      name: New Title
+      description: Title for the copy (defaults to "Original Title (copy)")
+      required: false
+      selector:
+        text:

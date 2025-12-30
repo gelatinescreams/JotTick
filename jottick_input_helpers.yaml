@@ -379,6 +379,7 @@ input_select:
 #under input_number 
 input_number:
 #under input_number 
+
   jottick_selected_item_index:
     name: "Selected Item Index"
     min: 0
@@ -413,23 +414,6 @@ input_number:
     step: 15
     mode: box
     icon: mdi:clock-outline
-
-  jottick_selected_item_index:
-    name: "Selected Item Index"
-    min: 0
-    max: 1000
-    step: 1
-    initial: 0
-    mode: box
-
-  jottick_new_status_order:
-    name: "New Status Order"
-    initial: 0
-    min: 0
-    max: 20
-    step: 1
-    mode: box
-    icon: mdi:sort-numeric-ascending
     
 #under input_boolean    
 input_boolean:

@@ -201,19 +201,19 @@
               config: "{{ configs[item_id] if configs[repeat.item] is defined else {} }}"
               item_type: "{{ config.type | default('checklist') }}"
               days: "{{ config.days | default('every_day') }}"
-              start_time: "{{ config.start_time | default('08:00') }}"
-              end_time: "{{ config.end_time | default('20:00') }}"
-              interval_str: "{{ config.interval | default('1_hour') }}"
+              start_time: "{{ config.start | default('08:00') }}"
+              end_time: "{{ config.end | default('20:00') }}"
+              interval_str: "{{ config.interval | default('1 hour') }}"
               last_sent: "{{ config.last_sent | default(0) }}"
               interval_minutes: >
                 {% set i = interval_str %}
-                {% if i == '30_min' %}30
-                {% elif i == '1_hour' %}60
-                {% elif i == '2_hours' %}120
-                {% elif i == '4_hours' %}240
-                {% elif i == '8_hours' %}480
-                {% elif i == '12_hours' %}720
-                {% elif i == 'once_daily' %}1440
+                {% if i == '30 minutes' %}30
+                {% elif i == '1 hour' %}60
+                {% elif i == '2 hours' %}120
+                {% elif i == '4 hours' %}240
+                {% elif i == '8 hours' %}480
+                {% elif i == '12 hours' %}720
+                {% elif i == 'Once a day' %}1440
                 {% else %}60{% endif %}
               should_run_today: >
                 {% if days == 'weekdays' %}
@@ -685,7 +685,7 @@
       event: start
   condition:
     - condition: template
-      value_template: "{{ (state_attr('sensor.jottick_ical_sources', 'sources') or []) | length > 0 }}"
+      value_template: "{{ (state_attr('sensor.jottick_imported_events', 'sources') or []) | length > 0 }}"
   action:
     - service: jottick.refresh_ical_imports
 
@@ -732,3 +732,127 @@
     - service: homeassistant.update_entity
       target:
         entity_id: sensor.jottick_calendar_events        
+
+- id: jottick_auto_update_task_picker_fixed
+  alias: 'JotTick: Auto Update Task Picker'
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.jottick_total_tasks
+  - platform: homeassistant
+    event: start
+  action:
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_task_picker
+    data:
+      options: >
+        {%- set ns = namespace(items=['-- Pick a task list --'], titles={}) -%}
+        {%- set tasks = states.sensor | selectattr('name', 'search', '^JotTick Task:')
+        | rejectattr('state', 'eq', 'unavailable') | list -%}
+        {%- for state in tasks -%}
+          {%- set title = state_attr(state.entity_id, 'title') -%}
+          {%- if title -%}
+            {%- if title in ns.titles -%}
+              {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}
+            {%- else -%}
+              {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- set ns2 = namespace(counts={}) -%}
+        {%- for state in tasks | sort(attribute='attributes.updated', reverse=true) -%}
+          {%- set title = state_attr(state.entity_id, 'title') -%}
+          {%- if title -%}
+            {%- set task_id = state_attr(state.entity_id, 'task_id') -%}
+            {%- if ns.titles[title] > 1 -%}
+              {%- set current_count = ns2.counts.get(title, 0) + 1 -%}
+              {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}
+              {%- set display_title = title ~ ' (' ~ task_id[-6:] ~ ')' -%}
+            {%- else -%}
+              {%- set display_title = title -%}
+            {%- endif -%}
+            {%- set ns.items = ns.items + [display_title] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.items }}        
+        
+- id: jottick_load_task_when_picked
+  alias: 'JotTick: Load Task When Picked'
+  trigger:
+  - platform: state
+    entity_id: input_select.jottick_task_picker
+  condition:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'', ''-- Pick a task list --''] }}'
+  action:
+  - variables:
+      selected_option: '{{ states(''input_select.jottick_task_picker'') }}'
+      selected_title: >
+        {%- if '(' in selected_option and selected_option.endswith(')') -%}
+          {{ selected_option.split(' (')[0] }}
+        {%- else -%}
+          {{ selected_option }}
+        {%- endif -%}
+      task_id_hint: >
+        {%- if '(' in selected_option and selected_option.endswith(')') -%}
+          {{ selected_option.split('(')[-1].rstrip(')') }}
+        {%- else -%}
+        {%- endif -%}
+      task_entity: >
+        {%- for s in states.sensor -%}
+          {%- if s.name.startswith('JotTick Task:') -%}
+            {%- set title = state_attr(s.entity_id, 'title') -%}
+            {%- set task_id = state_attr(s.entity_id, 'task_id') -%}
+            {%- if task_id_hint and task_id and task_id.endswith(task_id_hint) -%}
+              {{ s.entity_id }}
+            {%- elif not task_id_hint and title == selected_title -%}
+              {{ s.entity_id }}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+  - condition: template
+    value_template: '{{ task_entity | trim != '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_task_id
+    data:
+      value: '{{ state_attr(task_entity, ''task_id'') or '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_task_title
+    data:
+      value: '{{ state_attr(task_entity, ''title'') or '''' }}'     
+
+- id: jottick_load_task_items
+  alias: 'JotTick: Load Task Items'
+  trigger:
+  - platform: state
+    entity_id: input_text.jottick_selected_task_id
+  condition:
+  - condition: template
+    value_template: '{{ states(''input_text.jottick_selected_task_id'') not in ['''', ''unknown'', ''unavailable''] }}'
+  action:
+  - variables:
+      task_id: '{{ states(''input_text.jottick_selected_task_id'') }}'
+      task_entity: >
+        {%- for s in states.sensor -%}
+          {%- if s.name.startswith('JotTick Task:') -%}
+            {%- if state_attr(s.entity_id, 'task_id') == task_id -%}
+              {{ s.entity_id }}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+  - condition: template
+    value_template: '{{ task_entity | trim != '''' }}'
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_task_item_picker
+    data:
+      options: >
+        {%- set items = state_attr(task_entity, 'items') or [] -%}
+        {%- set ns = namespace(opts=['-- Select task item --']) -%}
+        {%- for item in items -%}
+          {%- set ns.opts = ns.opts + [item.text | default('Item ' ~ loop.index)] -%}
+        {%- endfor -%}
+        {{ ns.opts }}      

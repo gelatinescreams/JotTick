@@ -130,7 +130,7 @@ class JotTickUploadView(HomeAssistantView):
                     if "images" not in note:
                         note["images"] = []
                     note["images"].append(image_record)
-                    note["updated"] = now_iso()
+                    note["updatedAt"] = now_iso()
                     break
             
             await self.coordinator.async_save()
@@ -175,7 +175,7 @@ class JotTickDeleteImageView(HomeAssistantView):
                                 await self.coordinator.hass.async_add_executor_job(os.remove, file_path)
                             
                             note["images"].remove(img)
-                            note["updated"] = now_iso()
+                            note["updatedAt"] = now_iso()
                             
                             await self.coordinator.async_save()
                             await self.coordinator.async_request_refresh()
@@ -575,11 +575,24 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Checklist {checklist_id} not found")
 
     def _get_item_by_index(self, items: list, index_path: str) -> tuple:
-        indices = [int(i) for i in str(index_path).split(".")]
+        try:
+            indices = [int(i) for i in str(index_path).split(".")]
+        except ValueError:
+            raise ValueError(f"Invalid item index format: {index_path}. Expected format like '0' or '0.1.2'")
+        
         target_list = items
-        for idx in indices[:-1]:
-            target_list = target_list[idx].setdefault("children", [])
-        return target_list, indices[-1]
+        for i, idx in enumerate(indices[:-1]):
+            if idx < 0 or idx >= len(target_list):
+                raise ValueError(f"Item index {idx} out of range at level {i}")
+            if "children" not in target_list[idx]:
+                target_list[idx]["children"] = []
+            target_list = target_list[idx]["children"]
+        
+        final_idx = indices[-1]
+        if final_idx < 0 or final_idx >= len(target_list):
+            raise ValueError(f"Item index {final_idx} out of range")
+        
+        return target_list, final_idx
 
     async def check_item(self, checklist_id: str, item_index: str) -> bool:
         for checklist in self._data["checklists"]:
@@ -600,7 +613,37 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 await self.async_save()
                 return True
         raise ValueError(f"Checklist {checklist_id} not found")
+    
+    async def check_all_items(self, checklist_id: str) -> bool:
+        def check_recursive(items):
+            for item in items:
+                item["completed"] = True
+                if "children" in item and item["children"]:
+                    check_recursive(item["children"])
+        
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                check_recursive(checklist["items"])
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
 
+    async def uncheck_all_items(self, checklist_id: str) -> bool:
+        def uncheck_recursive(items):
+            for item in items:
+                item["completed"] = False
+                if "children" in item and item["children"]:
+                    uncheck_recursive(item["children"])
+        
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                uncheck_recursive(checklist["items"])
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
+        
     async def delete_checklist_item(self, checklist_id: str, item_index: str) -> bool:
         for checklist in self._data["checklists"]:
             if checklist["id"] == checklist_id:
@@ -643,6 +686,35 @@ class JotTickCoordinator(DataUpdateCoordinator):
                     del target_list[idx]["dueTime"]
                 if "notifyOverdue" in target_list[idx]:
                     del target_list[idx]["notifyOverdue"]
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
+    
+    async def update_checklist_item(self, checklist_id: str, item_index: str, text: str = None, completed: bool = None) -> bool:
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+                if text is not None:
+                    target_list[idx]["text"] = text
+                if completed is not None:
+                    target_list[idx]["completed"] = completed
+                checklist["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Checklist {checklist_id} not found")
+
+    async def reorder_checklist_items(self, checklist_id: str, item_indices: list) -> bool:
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                items = checklist["items"]
+                try:
+                    new_order = [items[int(i)] for i in item_indices]
+                except (IndexError, ValueError) as e:
+                    raise ValueError(f"Invalid item indices: {e}")
+                if len(new_order) != len(items):
+                    raise ValueError("Must provide all item indices")
+                checklist["items"] = new_order
                 checklist["updatedAt"] = now_iso()
                 await self.async_save()
                 return True
@@ -709,8 +781,12 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 target_list, idx = self._get_item_by_index(task["items"], item_index)
                 target_list[idx]["status"] = status
                 if status == "completed":
-                    for child in target_list[idx].get("children", []):
-                        child["status"] = "completed"
+                    def cascade_complete(items):
+                        for item in items:
+                            item["status"] = "completed"
+                            if item.get("children"):
+                                cascade_complete(item["children"])
+                    cascade_complete(target_list[idx].get("children", []))
                 task["updatedAt"] = now_iso()
                 await self.async_save()
                 return True
@@ -807,7 +883,85 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 await self.async_save()
                 return True
         raise ValueError(f"Task {task_id} not found")
+    
+    async def update_task_item(self, task_id: str, item_index: str, text: str = None, status: str = None) -> bool:
+        for task in self._data["tasks"]:
+            if task["id"] == task_id:
+                target_list, idx = self._get_item_by_index(task["items"], item_index)
+                if text is not None:
+                    target_list[idx]["text"] = text
+                if status is not None:
+                    target_list[idx]["status"] = status
+                    if status == "completed":
+                        def cascade_complete(items):
+                            for item in items:
+                                item["status"] = "completed"
+                                if item.get("children"):
+                                    cascade_complete(item["children"])
+                        cascade_complete(target_list[idx].get("children", []))
+                task["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Task {task_id} not found")
 
+    async def reorder_task_items(self, task_id: str, item_indices: list) -> bool:
+        for task in self._data["tasks"]:
+            if task["id"] == task_id:
+                items = task["items"]
+                try:
+                    new_order = [items[int(i)] for i in item_indices]
+                except (IndexError, ValueError) as e:
+                    raise ValueError(f"Invalid item indices: {e}")
+                if len(new_order) != len(items):
+                    raise ValueError("Must provide all item indices")
+                task["items"] = new_order
+                task["updatedAt"] = now_iso()
+                await self.async_save()
+                return True
+        raise ValueError(f"Task {task_id} not found")
+
+    async def duplicate_note(self, note_id: str, new_title: str = None) -> dict:
+        import copy
+        for note in self._data["notes"]:
+            if note["id"] == note_id:
+                new_note = copy.deepcopy(note)
+                new_note["id"] = generate_id()
+                new_note["title"] = new_title or f"{note['title']} (copy)"
+                new_note["createdAt"] = now_iso()
+                new_note["updatedAt"] = now_iso()
+                self._data["notes"].append(new_note)
+                await self.async_save()
+                return new_note
+        raise ValueError(f"Note {note_id} not found")
+
+    async def duplicate_checklist(self, checklist_id: str, new_title: str = None) -> dict:
+        import copy
+        for checklist in self._data["checklists"]:
+            if checklist["id"] == checklist_id:
+                new_checklist = copy.deepcopy(checklist)
+                new_checklist["id"] = generate_id()
+                new_checklist["title"] = new_title or f"{checklist['title']} (copy)"
+                new_checklist["createdAt"] = now_iso()
+                new_checklist["updatedAt"] = now_iso()
+                self._data["checklists"].append(new_checklist)
+                await self.async_save()
+                return new_checklist
+        raise ValueError(f"Checklist {checklist_id} not found")
+
+    async def duplicate_task(self, task_id: str, new_title: str = None) -> dict:
+        import copy
+        for task in self._data["tasks"]:
+            if task["id"] == task_id:
+                new_task = copy.deepcopy(task)
+                new_task["id"] = generate_id()
+                new_task["title"] = new_title or f"{task['title']} (copy)"
+                new_task["createdAt"] = now_iso()
+                new_task["updatedAt"] = now_iso()
+                self._data["tasks"].append(new_task)
+                await self.async_save()
+                return new_task
+        raise ValueError(f"Task {task_id} not found")
+        
     async def import_ical(self, url: str, name: str = None, auto_refresh: bool = True) -> dict:
         try:
             for source in self._data.get("ical_sources", []):
@@ -1291,7 +1445,17 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             checklist_id=call.data.get("checklist_id"),
             title=call.data.get("title"),
         )
+    
+    async def handle_check_all_items(call: ServiceCall):
+        coordinator = get_coordinator()
+        checklist_id = call.data["checklist_id"]
+        await coordinator.check_all_items(checklist_id)
 
+    async def handle_uncheck_all_items(call: ServiceCall):
+        coordinator = get_coordinator()
+        checklist_id = call.data["checklist_id"]
+        await coordinator.uncheck_all_items(checklist_id)
+        
     async def handle_delete_checklist(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.delete_checklist(checklist_id=call.data.get("checklist_id"))
@@ -1343,6 +1507,25 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             item_index=str(call.data.get("item_index")),
         )
     
+    async def handle_update_checklist_item(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_checklist_item(
+            checklist_id=call.data.get("checklist_id"),
+            item_index=str(call.data.get("item_index")),
+            text=call.data.get("text"),
+            completed=call.data.get("completed"),
+        )
+
+    async def handle_reorder_checklist_items(call: ServiceCall):
+        coordinator = get_coordinator()
+        indices = call.data.get("item_indices", "")
+        if isinstance(indices, str):
+            indices = [i.strip() for i in indices.split(",")]
+        await coordinator.reorder_checklist_items(
+            checklist_id=call.data.get("checklist_id"),
+            item_indices=indices,
+        )
+        
     async def handle_create_task(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.create_task(title=call.data.get("title"))
@@ -1425,7 +1608,47 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             task_id=call.data.get("task_id"),
             item_index=str(call.data.get("item_index")),
         )
+    
+    async def handle_update_task_item(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_task_item(
+            task_id=call.data.get("task_id"),
+            item_index=str(call.data.get("item_index")),
+            text=call.data.get("text"),
+            status=call.data.get("status"),
+        )
 
+    async def handle_reorder_task_items(call: ServiceCall):
+        coordinator = get_coordinator()
+        indices = call.data.get("item_indices", "")
+        if isinstance(indices, str):
+            indices = [i.strip() for i in indices.split(",")]
+        await coordinator.reorder_task_items(
+            task_id=call.data.get("task_id"),
+            item_indices=indices,
+        )
+
+    async def handle_duplicate_note(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.duplicate_note(
+            note_id=call.data.get("note_id"),
+            new_title=call.data.get("new_title"),
+        )
+
+    async def handle_duplicate_checklist(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.duplicate_checklist(
+            checklist_id=call.data.get("checklist_id"),
+            new_title=call.data.get("new_title"),
+        )
+
+    async def handle_duplicate_task(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.duplicate_task(
+            task_id=call.data.get("task_id"),
+            new_title=call.data.get("new_title"),
+        )
+        
     async def handle_import_ical(call: ServiceCall):
         coordinator = get_coordinator()
         await coordinator.import_ical(
@@ -1473,6 +1696,15 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     hass.services.async_register(DOMAIN, "set_checklist_item_due_date", handle_set_checklist_item_due_date)
     hass.services.async_register(DOMAIN, "clear_checklist_item_due_date", handle_clear_checklist_item_due_date)
     
+    hass.services.async_register(DOMAIN, "check_all_items", handle_check_all_items)
+    hass.services.async_register(DOMAIN, "uncheck_all_items", handle_uncheck_all_items)
+    hass.services.async_register(DOMAIN, "update_checklist_item", handle_update_checklist_item)
+    hass.services.async_register(DOMAIN, "reorder_checklist_items", handle_reorder_checklist_items)
+    hass.services.async_register(DOMAIN, "update_task_item", handle_update_task_item)
+    hass.services.async_register(DOMAIN, "reorder_task_items", handle_reorder_task_items)
+    hass.services.async_register(DOMAIN, "duplicate_note", handle_duplicate_note)
+    hass.services.async_register(DOMAIN, "duplicate_checklist", handle_duplicate_checklist)
+    hass.services.async_register(DOMAIN, "duplicate_task", handle_duplicate_task)
     hass.services.async_register(DOMAIN, "create_task", handle_create_task)
     hass.services.async_register(DOMAIN, "update_task", handle_update_task)
     hass.services.async_register(DOMAIN, "delete_task", handle_delete_task)

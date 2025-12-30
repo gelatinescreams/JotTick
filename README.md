@@ -24,7 +24,8 @@ A notes, checklists, task management and calendar integration for Home Assistant
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 12/28/25
+### New 1.5.1 12/29/25
+- **Version 1.5.1** [changelog.md](changelog.md)
 - **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
 - **Version 1.5** Added iCAL import and export for JotTick
 - **Version 1.5** Custom calendar dashboard added to JotTick
@@ -233,37 +234,54 @@ When you mark a task as "Completed", all its direct subtasks are also marked com
 | `jottick.create_note` | Create a new note |
 | `jottick.update_note` | Update note title/content |
 | `jottick.delete_note` | Delete a note |
-| `jottick.create_note` | Create a new note |
-| `jottick.update_note` | Update note title/content |
-| `jottick.delete_note` | Delete a note |
-| `jottick_send_note_to_devices` | Send note to selected devices |
-| `jottick_schedule_note` | Schedule note for future delivery |
-| `jottick_cancel_scheduled_note` | Cancel a scheduled send |
-| `jottick_send_scheduled_note` | Execute scheduled send (called by automation) |
+| `jottick.add_note_image` | Add image from base64 data |
+| `jottick.add_note_image_from_path` | Add image from file path |
+| `jottick.delete_note_image` | Delete image from note |
+| `jottick.update_note_image_caption` | Update image caption |
+| `jottick.reorder_note_images` | Reorder images in note |
+| `script.jottick_send_note_to_devices` | Send note to selected devices |
+| `script.jottick_schedule_note` | Schedule note for future delivery |
+| `script.jottick_cancel_scheduled_note` | Cancel a scheduled send |
 
 ### Checklists
 | Service | Description |
 |---------|-------------|
 | `jottick.create_checklist` | Create a new checklist |
+| `jottick.update_checklist` | Update checklist title |
 | `jottick.delete_checklist` | Delete a checklist |
-| `jottick.add_item` | Add item to checklist |
-| `jottick.delete_item` | Remove item from checklist |
+| `jottick.add_checklist_item` | Add item to checklist |
+| `jottick.delete_checklist_item` | Remove item from checklist |
 | `jottick.check_item` | Mark item as checked |
 | `jottick.uncheck_item` | Mark item as unchecked |
-| `jottick.reset_checklist` | Uncheck all items |
+| `jottick.set_checklist_item_due_date` | Set due date on item |
+| `jottick.clear_checklist_item_due_date` | Remove due date from item |
+| `script.jottick_reset_checklist` | Uncheck all items |
+| `jottick.check_all_items` | Mark all items as checked |
+| `jottick.uncheck_all_items` | Mark all items as unchecked |
 
 ### Tasks
 | Service | Description |
 |---------|-------------|
 | `jottick.create_task` | Create a new task list |
+| `jottick.update_task` | Update task list title |
 | `jottick.delete_task` | Delete a task list |
 | `jottick.add_task_item` | Add item (optionally as subtask) |
 | `jottick.delete_task_item` | Remove task item |
 | `jottick.update_task_item_status` | Change item status |
-| `jottick.reset_task` | Reset all items to "todo" |
+| `jottick.set_task_item_due_date` | Set due date on item |
+| `jottick.clear_task_item_due_date` | Remove due date from item |
 | `jottick.create_task_status` | Add custom status column |
-| `jottick.update_task_status` | Rename a status |
+| `jottick.update_task_status` | Update a status column |
 | `jottick.delete_task_status` | Remove a status column |
+| `script.jottick_reset_task` | Reset all items to "todo" |
+
+### Calendar & iCal
+| Service | Description |
+|---------|-------------|
+| `jottick.import_ical` | Import events from iCal URL |
+| `jottick.remove_ical_import` | Remove imported calendar |
+| `jottick.refresh_ical_imports` | Manually refresh all imports |
+| `jottick.export_ical` | Export JotTick data as iCal |
 
 ---
 
@@ -291,6 +309,9 @@ JotTick creates sensors for each item:
 | `sensor.jottick_total_checklists` | Count | — |
 | `sensor.jottick_total_tasks` | Count | — |
 | `sensor.jottick_scheduled_notes` | Count | schedules (dict of pending sends) |
+| `sensor.jottick_overdue_items` | Count | overdue_items list |
+| `sensor.jottick_imported_events` | Count | events, sources |
+| `sensor.jottick_calendar_events` | Count | events by date |
 
 ---
 

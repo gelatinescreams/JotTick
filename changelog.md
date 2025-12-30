@@ -1,5 +1,30 @@
 ### Changelog
 
+### New 1.5.1 12/29/25
+  - **Added missing automations not transferred from the test install**
+  - Fixed 5 automations
+- **Services created and will be added to dashboard later**
+  - Added Check All to mark all items in a checklist as complete with one click
+  - Added Uncheck All to reset all items in a checklist to unchecked
+  - Edit checklist item text without deleting and readding
+  - Edit task item text without deleting and readding
+  - Reorder checklist items via service call
+  - Reorder task items via service call
+  - Duplicate notes (with all content and images)
+  - Duplicate checklists (with all items and settings)
+  - Duplicate task lists (with all items, subtasks, and custom columns) 
+  - **Updated README with all available services**
+  - **Fixed inconsistent datetime(s)**
+  - **Fixed multi level nested tasks**
+  - Fixed multi level nested completion cascade
+  - **Fixed reminder interval automation**
+  - Better validation for item indexes and invalid formats now show helpful error messages instead of crashing
+  - Out of range indexes are now caught with clear error messages    
+
+- **Upgrade Information**
+  - Core plugin file(s) are changed in 1.5.1, please replace them all
+  - New Automations were added and 4 were updated. Please replace all automations with the new file
+  
 ### New 12/28/25
 - **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
   - Added iCAL import and export for JotTick
