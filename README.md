@@ -19,7 +19,7 @@ A notes, checklists, task management, calendar and chore/gamification integratio
 ![Tasks Preview](assets/tasks-preview.gif)
 
 ###### Calendar Preview
-![Calendar Preview](assets/calendar-preview.gif)
+![Calendar Preview](assets/calendar-preview.png)
 
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
