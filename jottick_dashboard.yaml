@@ -1007,6 +1007,12 @@ views:
                 .item-checkbox:disabled { cursor: wait; }
                 .item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
                 .item-text.completed { text-decoration: line-through; opacity: 0.6; }
+                .jt-points-badge { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; border-radius: 12px; font-size: 0.75em; font-weight: 600; cursor: pointer; }
+                .jt-points-badge.claimed { background: #10B981; color: white; cursor: default; }
+                .jt-points-badge.assigned { background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; cursor: default; }
+                .jt-points-badge.bounty { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; cursor: pointer; }
+                .jt-claim-btn { padding: 2px 8px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75em; }
+                .jt-claim-btn:hover { opacity: 0.9; }
                 .add-item-section {
                   margin-top: 16px;
                   padding-top: 12px;
@@ -1137,6 +1143,9 @@ views:
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
+                {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
+                {% set default_list_points = states('input_number.jottick_points_default_list_item') | int(0) %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick List:') and state.state != 'unavailable' %}
                     {% set list_type = state_attr(state.entity_id, 'type') %}
@@ -1171,6 +1180,39 @@ views:
                       <div class="list-item" style="flex-wrap:wrap;">
                         <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
                         <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
+                        {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_lists', 'on') %}
+                        {% set item_points = item.get('points') %}
+                        {% set item_points = (item_points | int(0)) if item_points is not none else (states('input_number.jottick_points_default_list_item') | int(0)) %}
+                        {% set item_assigned = item.get('assigned_to', '') %}
+                        {% set assigned_user = points_users.get(item_assigned, {}) %}
+                        {% if item_points > 0 %}
+                        {% if item.get('points_claimed') %}
+                        {% set claimed_user = points_users.get(item.get('points_claimed_by', ''), {}) %}
+                        <span class="jt-points-badge claimed" title="Claimed by {{ claimed_user.get('name', 'user') }}">✓ {{ item_points }}pts</span>
+                        {% elif item_assigned %}
+                        <div style="position:relative;display:inline-flex;">
+                          <span class="jt-points-badge assigned" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Assigned to {{ assigned_user.get('name', 'user') }} - Click to claim">👤 {{ assigned_user.get('name', 'user')[:10] }} ({{ item_points }}pts)</span>
+                          <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                            <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
+                            <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
+                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                          </div>
+                        </div>
+                        {% else %}
+                        <div style="position:relative;display:inline-flex;">
+                          <span class="jt-points-badge bounty" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Open Bounty - Click to claim">⭐ Open Bounty ({{ item_points }}pts)</span>
+                          <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                            <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Claim {{ item_points }} points</div>
+                            <select class="claim-user-select" style="width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.9em;margin-bottom:8px;">
+                              <option value="">Select user...</option>
+                              {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                            </select>
+                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim</button>
+                          </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                        {% endif %}
                         <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
                           {% if item.get('dueDate', '') %}
                             <span class="due-badge" style="font-size:0.75em;padding:2px 8px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and not item.completed %}#EF4444{% else %}#10B981{% endif %};color:white;border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
@@ -1203,7 +1245,7 @@ views:
                       <div class="add-item-section" style="flex-direction:column;">
                         <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
                           <input type="text" class="add-item-input" placeholder="Add new item..." style="flex:1;min-width:150px;">
-                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt;if(dueDate){data+='|||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';const pointsInp=sec.querySelector('.add-item-points');const assignInp=sec.querySelector('.add-item-assign');const points=pointsInp?pointsInp.value:'';const assignTo=assignInp?assignInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';if(pointsInp)pointsInp.value='{{ default_list_points }}';if(assignInp)assignInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt+'|||'+(dueDate||'')+'|||'+(dueTime||'')+'|||'+(points||'')+'|||'+(assignTo||'');el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
                           <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete</button>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
@@ -1212,6 +1254,17 @@ views:
                           <input type="time" class="add-item-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
                           <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-item-section');sec.querySelector('.add-item-date').value='';sec.querySelector('.add-item-time').value='';})(this);">✕</button>
                         </div>
+                        {% if points_enabled %}
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
+                          <input type="number" class="add-item-points" value="{{ default_list_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          <select class="add-item-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                            <option value="">Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -1462,6 +1515,9 @@ views:
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
+                {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
+                {% set default_list_points = states('input_number.jottick_points_default_list_item') | int(0) %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick List:') and state.state != 'unavailable' %}
                     {% set list_type = state_attr(state.entity_id, 'type') %}
@@ -1496,6 +1552,39 @@ views:
                         <div class="list-item" style="flex-wrap:wrap;">
                           <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
                           <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
+                          {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_lists', 'on') %}
+                          {% set item_points = item.get('points') %}
+                          {% set item_points = (item_points | int(0)) if item_points is not none else (states('input_number.jottick_points_default_list_item') | int(0)) %}
+                          {% set item_assigned = item.get('assigned_to', '') %}
+                          {% set assigned_user = points_users.get(item_assigned, {}) %}
+                          {% if item_points > 0 %}
+                          {% if item.get('points_claimed') %}
+                          {% set claimed_user = points_users.get(item.get('points_claimed_by', ''), {}) %}
+                          <span class="jt-points-badge claimed" title="Claimed by {{ claimed_user.get('name', 'user') }}">✓ {{ item_points }}pts</span>
+                          {% elif item_assigned %}
+                          <div style="position:relative;display:inline-flex;">
+                            <span class="jt-points-badge assigned" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Assigned to {{ assigned_user.get('name', 'user') }} - Click to claim">👤 {{ assigned_user.get('name', 'user')[:10] }} ({{ item_points }}pts)</span>
+                            <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                              <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
+                              <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
+                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                            </div>
+                          </div>
+                          {% else %}
+                          <div style="position:relative;display:inline-flex;">
+                            <span class="jt-points-badge bounty" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Open Bounty - Click to claim">⭐ Open Bounty ({{ item_points }}pts)</span>
+                            <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                              <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Claim {{ item_points }} points</div>
+                              <select class="claim-user-select" style="width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.9em;margin-bottom:8px;">
+                                <option value="">Select user...</option>
+                                {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                              </select>
+                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim</button>
+                            </div>
+                          </div>
+                          {% endif %}
+                          {% endif %}
+                          {% endif %}
                           <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
                             {% if item.get('dueDate', '') %}
                               <span class="due-badge" style="font-size:0.75em;padding:2px 8px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and not item.completed %}#EF4444{% else %}#10B981{% endif %};color:white;border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
@@ -1520,7 +1609,7 @@ views:
                               </div>
                             {% endif %}
                           </div>
-                          
+
                           <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete</button>
                         </div>
                       {% endfor %}
@@ -1528,15 +1617,26 @@ views:
                       <div class="add-item-section" style="flex-direction:column;">
                         <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
                           <input type="text" class="add-item-input" placeholder="Add new item..." style="flex:1;min-width:150px;">
-                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt;if(dueDate){data+='|||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="add-item-btn" onclick="(function(btn){const sec=btn.closest('.add-item-section');const inp=sec.querySelector('.add-item-input');if(!inp.value.trim()){inp.placeholder='Type something first!';setTimeout(function(){inp.placeholder='Add new item...';},2000);return;}const txt=inp.value.trim();const dateInp=sec.querySelector('.add-item-date');const timeInp=sec.querySelector('.add-item-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';const pointsInp=sec.querySelector('.add-item-points');const assignInp=sec.querySelector('.add-item-assign');const points=pointsInp?pointsInp.value:'';const assignTo=assignInp?assignInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';if(pointsInp)pointsInp.value='{{ default_list_points }}';if(assignInp)assignInp.value='';inp.placeholder='Adding...';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ list_id }}|||add|||'+txt+'|||'+(dueDate||'')+'|||'+(dueTime||'')+'|||'+(points||'')+'|||'+(assignTo||'');el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:data});}setTimeout(function(){inp.placeholder='Add new item...';btn.disabled=false;},2000);})(this);">Add</button>
                           <button class="delete-list-btn" onclick="if(confirm('Delete {{ list_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||delete'});}})(this);}">Delete</button>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
-                          <span style="font-size:0.85em;color:var(--secondary-text-color);">📅 Due:</span>
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
                           <input type="date" class="add-item-date" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
                           <input type="time" class="add-item-time" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
                           <button style="padding:4px 8px;background:var(--secondary-background-color);border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.75em;color:var(--secondary-text-color);" onclick="(function(btn){var sec=btn.closest('.add-item-section');sec.querySelector('.add-item-date').value='';sec.querySelector('.add-item-time').value='';})(this);">✕</button>
                         </div>
+                        {% if points_enabled %}
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
+                          <input type="number" class="add-item-points" value="{{ default_list_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          <select class="add-item-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                            <option value="">Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="reminder-section">
                         <h4>Reminder Notifications</h4>
@@ -1774,7 +1874,7 @@ views:
                     {% for evt in day_events[:4] %}
                     <div class="jt-mini-cal-event" onclick="history.pushState(null,'',window.location.pathname.split('/').slice(0,2).join('/')+'/calendar');window.dispatchEvent(new CustomEvent('location-changed'));">
                       <div class="jt-mini-cal-event-dot" style="background:{{ evt.color }};"></div>
-                      <span class="jt-mini-cal-event-text">{% if evt.overdue %}{% elif evt.type == 'due' %}{% endif %}{{ evt.title }}</span>
+                      <span class="jt-mini-cal-event-text">{% if evt.get('overdue', false) %}{% elif evt.type == 'due' %}{% endif %}{{ evt.title }}</span>
                     </div>
                     {% endfor %}
                     {% if day_events | length > 4 %}<div class="jt-mini-cal-empty">+{{ day_events | length - 4 }} more</div>{% endif %}
@@ -2044,6 +2144,9 @@ views:
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
+                {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
+                {% set default_task_points = states('input_number.jottick_points_default_task_item') | int(0) %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
                     {% set ns.tasks = ns.tasks + [state] %}
@@ -2077,6 +2180,39 @@ views:
                           {% set depth = index_path.split('.') | length - 1 %}
                           <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_tasks', 'on') %}
+                            {% set item_points = item.get('points') %}
+                            {% set item_points = (item_points | int(0)) if item_points is not none else (states('input_number.jottick_points_default_task_item') | int(0)) %}
+                            {% set item_assigned = item.get('assigned_to', '') %}
+                            {% set assigned_user = points_users.get(item_assigned, {}) %}
+                            {% if item_points > 0 %}
+                            {% if item.get('points_claimed') %}
+                            {% set claimed_user = points_users.get(item.get('points_claimed_by', ''), {}) %}
+                            <span class="jt-points-badge claimed" title="Claimed by {{ claimed_user.get('name', 'user') }}">✓ {{ item_points }}pts</span>
+                            {% elif item_assigned %}
+                            <div style="position:relative;display:inline-flex;">
+                              <span class="jt-points-badge assigned" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Assigned to {{ assigned_user.get('name', 'user') }} - Click to claim">👤 {{ assigned_user.get('name', 'user')[:10] }} ({{ item_points }}pts)</span>
+                              <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
+                                <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
+                                <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'task',parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                              </div>
+                            </div>
+                            {% else %}
+                            <div style="position:relative;display:inline-flex;">
+                              <span class="jt-points-badge bounty" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Open Bounty - Click to claim">⭐ Open Bounty ({{ item_points }}pts)</span>
+                              <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Claim {{ item_points }} points</div>
+                                <select class="claim-user-select" style="width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.9em;margin-bottom:8px;">
+                                  <option value="">Select user...</option>
+                                  {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                                </select>
+                                <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'task',parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim</button>
+                              </div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            {% endif %}
                             <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
                               {% if item.get('dueDate', '') %}
                                 <span class="due-badge" style="font-size:0.7em;padding:2px 6px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}#EF4444{% else %}#F9E900{% endif %};color:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}white{% else %}#000{% endif %};border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
@@ -2119,7 +2255,7 @@ views:
                               <option value="{{ status.id }}">{{ status.name }}</option>
                             {% endfor %}
                           </select>
-                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st;if(dueDate){data+='||||||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';const pointsInp=sec.querySelector('.add-task-points');const assignInp=sec.querySelector('.add-task-assign');const points=pointsInp?pointsInp.value:'';const assignTo=assignInp?assignInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';if(pointsInp)pointsInp.value='{{ default_task_points }}';if(assignInp)assignInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st+'|||'+(dueDate||'')+'|||'+(dueTime||'')+'|||'+(points||'')+'|||'+(assignTo||'');el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
@@ -2129,6 +2265,17 @@ views:
                           <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
                           <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete</button>
                         </div>
+                        {% if points_enabled %}
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
+                          <input type="number" class="add-task-points" value="{{ default_task_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          <select class="add-task-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                            <option value="">Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -2354,6 +2501,9 @@ views:
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
                 {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
+                {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
+                {% set default_task_points = states('input_number.jottick_points_default_task_item') | int(0) %}
                 {% for state in states.sensor %}
                   {% if state.name.startswith('JotTick Task:') and state.state != 'unavailable' %}
                     {% set ns.tasks = ns.tasks + [state] %}
@@ -2387,6 +2537,39 @@ views:
                           {% set depth = index_path.split('.') | length - 1 %}
                           <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
+                            {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_tasks', 'on') %}
+                            {% set item_points = item.get('points') %}
+                            {% set item_points = (item_points | int(0)) if item_points is not none else (states('input_number.jottick_points_default_task_item') | int(0)) %}
+                            {% set item_assigned = item.get('assigned_to', '') %}
+                            {% set assigned_user = points_users.get(item_assigned, {}) %}
+                            {% if item_points > 0 %}
+                            {% if item.get('points_claimed') %}
+                            {% set claimed_user = points_users.get(item.get('points_claimed_by', ''), {}) %}
+                            <span class="jt-points-badge claimed" title="Claimed by {{ claimed_user.get('name', 'user') }}">✓ {{ item_points }}pts</span>
+                            {% elif item_assigned %}
+                            <div style="position:relative;display:inline-flex;">
+                              <span class="jt-points-badge assigned" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Assigned to {{ assigned_user.get('name', 'user') }} - Click to claim">👤 {{ assigned_user.get('name', 'user')[:10] }} ({{ item_points }}pts)</span>
+                              <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
+                                <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
+                                <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'task',parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                              </div>
+                            </div>
+                            {% else %}
+                            <div style="position:relative;display:inline-flex;">
+                              <span class="jt-points-badge bounty" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="Open Bounty - Click to claim">⭐ Open Bounty ({{ item_points }}pts)</span>
+                              <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Claim {{ item_points }} points</div>
+                                <select class="claim-user-select" style="width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.9em;margin-bottom:8px;">
+                                  <option value="">Select user...</option>
+                                  {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                                </select>
+                                <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'task',parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim</button>
+                              </div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            {% endif %}
                             <div class="due-date-wrapper" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
                               {% if item.get('dueDate', '') %}
                                 <span class="due-badge" style="font-size:0.7em;padding:2px 6px;background:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}#EF4444{% else %}#F9E900{% endif %};color:{% if item.get('dueDate', '') < now().strftime('%Y-%m-%d') and item.status != 'completed' %}white{% else %}#000{% endif %};border-radius:4px;cursor:pointer;" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);">
@@ -2429,7 +2612,7 @@ views:
                               <option value="{{ status.id }}">{{ status.name }}</option>
                             {% endfor %}
                           </select>
-                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st;if(dueDate){data+='||||||'+dueDate+'|||'+(dueTime||'');}el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
+                          <button class="add-task-btn" onclick="(function(btn){const sec=btn.closest('.add-task-section');const inp=sec.querySelector('.add-task-input');const sel=sec.querySelector('.task-status-select');if(!inp.value.trim())return;const txt=inp.value.trim();const st=sel.value;const dateInp=sec.querySelector('.add-task-date');const timeInp=sec.querySelector('.add-task-time');const dueDate=dateInp?dateInp.value:'';const dueTime=timeInp?timeInp.value:'';const pointsInp=sec.querySelector('.add-task-points');const assignInp=sec.querySelector('.add-task-assign');const points=pointsInp?pointsInp.value:'';const assignTo=assignInp?assignInp.value:'';inp.value='';if(dateInp)dateInp.value='';if(timeInp)timeInp.value='';if(pointsInp)pointsInp.value='{{ default_task_points }}';if(assignInp)assignInp.value='';btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){var data='{{ task_id }}|||add|||'+txt+'|||'+st+'|||'+(dueDate||'')+'|||'+(dueTime||'')+'|||'+(points||'')+'|||'+(assignTo||'');el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:data});}setTimeout(function(){btn.disabled=false;},2000);})(this);">Add</button>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);">Due:</span>
@@ -2439,6 +2622,17 @@ views:
                           <button class="kanban-btn" onclick="(function(btn){var panel=btn.closest('.task-card').querySelector('.status-section');if(panel){panel.classList.toggle('show');}})(this);">Columns</button>
                           <button class="delete-task-btn" onclick="if(confirm('Delete {{ task_title | replace('"', '&quot;') | replace("'", "\\'") }}?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||delete'});}}">Delete</button>
                         </div>
+                        {% if points_enabled %}
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
+                          <input type="number" class="add-task-points" value="{{ default_task_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
+                          <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          <select class="add-task-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                            <option value="">Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                          </select>
+                        </div>
+                        {% endif %}
                       </div>
                       <div class="status-section">
                         <strong>Kanban Task Columns</strong>
@@ -3010,10 +3204,6 @@ views:
     path: quick
     icon: mdi:lightning-bolt
     cards:
-      - type: markdown
-        content: |
-          # Quick Actions
-          One-tap notes and lists!
       - type: button
         name: Refresh All Data
         icon: mdi:refresh
@@ -3021,6 +3211,73 @@ views:
           action: call-service
           service: script.jottick_refresh_dashboard_data
         show_state: false
+      - type: grid
+        columns: 2
+        cards:
+          - type: button
+            name: Clear Reminders
+            icon: mdi:bell-off
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_reminders
+            confirmation:
+              text: Clear all reminder configurations?
+          - type: button
+            name: Clear Recurring
+            icon: mdi:calendar-remove
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_recurring
+            confirmation:
+              text: Clear all recurring reset configurations?
+          - type: button
+            name: Clear Scheduled Notes
+            icon: mdi:calendar-clock
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_scheduled_notes
+            confirmation:
+              text: Clear all scheduled note notifications?
+          - type: button
+            name: Clear Points Users
+            icon: mdi:account-off
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_points_users
+            confirmation:
+              text: Clear all points users?
+          - type: button
+            name: Clear Points History
+            icon: mdi:history
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_points_history
+            confirmation:
+              text: Clear all points history?
+          - type: button
+            name: Clear Prizes
+            icon: mdi:gift-off
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_prizes
+            confirmation:
+              text: Clear all prizes?
+          - type: button
+            name: Clear Achievements
+            icon: mdi:trophy-broken
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_achievements
+            confirmation:
+              text: Clear all achievements?
+          - type: button
+            name: Clear User Achievements
+            icon: mdi:medal
+            tap_action:
+              action: call-service
+              service: script.jottick_clear_user_achievements
+            confirmation:
+              text: Clear all user achievements?
       - type: grid
         columns: 2
         cards:
@@ -3283,7 +3540,6 @@ views:
                 .jt-cal-title{font-size:1.3em;font-weight:600;color:var(--primary-text-color);min-width:180px;text-align:center;}
                 .jt-cal-actions{display:flex;gap:8px;flex-wrap:wrap;}
                 .jt-cal-today-btn{background:var(--primary-color);color:var(--text-primary-color,white);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;}
-                .jt-cal-settings-btn{background:var(--secondary-background-color);border:1px solid var(--divider-color);color:var(--primary-text-color);padding:8px;border-radius:6px;cursor:pointer;font-size:1.1em;}
                 .jt-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;background:var(--divider-color);border:1px solid var(--divider-color);border-radius:8px;overflow:hidden;}
                 .jt-cal-dow{background:var(--secondary-background-color);padding:8px 4px;text-align:center;font-size:0.75em;font-weight:600;color:var(--secondary-text-color);text-transform:uppercase;}
                 .jt-cal-day{background:var(--card-background-color);min-height:80px;padding:4px;cursor:pointer;position:relative;transition:background 0.2s;}
@@ -3353,7 +3609,6 @@ views:
                   </div>
                   <div class="jt-cal-actions">
                     <button class="jt-cal-today-btn" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_datetime','set_datetime',{entity_id:'input_datetime.jottick_calendar_selected_date',date:new Date().toISOString().split('T')[0]});">Today</button>
-                    <button class="jt-cal-settings-btn" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_on',{entity_id:'input_boolean.jottick_show_calendar_settings'});">⚙️</button>
                   </div>
                 </div>
                 <div class="jt-cal-grid">
@@ -3430,22 +3685,16 @@ views:
                   </div>
                 </div>
               </div>
-          - type: conditional
-            conditions:
-              - entity: input_boolean.jottick_show_calendar_settings
-                state: 'on'
-            card:
-              type: custom:html-template-card
-              ignore_line_breaks: true
-              content: >
-                <style>
-                  .jt-cal-settings-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
-                  .jt-cal-settings{background:var(--card-background-color);border-radius:12px;max-width:550px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
-                  .jt-cal-settings-header{padding:16px;border-bottom:1px solid var(--divider-color);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card-background-color);z-index:1;}
-                  .jt-cal-settings-header h3{margin:0;color:var(--primary-text-color);}
-                  .jt-cal-settings-close{background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--secondary-text-color);padding:4px 8px;}
-                  .jt-cal-settings-close:hover{color:var(--primary-text-color);}
-                  .jt-cal-settings-body{padding:16px;}
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-cal-settings-card{background:var(--card-background-color);border-radius:12px;border:1px solid var(--divider-color);overflow:hidden;}
+                .jt-cal-settings-header{padding:16px;background:var(--secondary-background-color);border-bottom:1px solid var(--divider-color);}
+                .jt-cal-settings-header h3{margin:0;color:var(--primary-text-color);font-size:1.1em;}
+                .jt-cal-settings-body{padding:16px;}
                   .jt-settings-section{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--divider-color);}
                   .jt-settings-section:last-child{border-bottom:none;margin-bottom:0;}
                   .jt-settings-section h4{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1em;display:flex;align-items:center;gap:8px;}
@@ -3480,160 +3729,663 @@ views:
                   .jt-settings-status.error{background:rgba(239,68,68,0.1);color:#EF4444;}
                   .jt-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
                 </style>
-
-                <div class="jt-cal-settings-overlay"
-                onclick="if(event.target===this){var
-                ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_settings'});}">
-                  <div class="jt-cal-settings">
-                    <div class="jt-cal-settings-header">
-                      <h3>Calendar Settings</h3>
-                      <button class="jt-cal-settings-close" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean','turn_off',{entity_id:'input_boolean.jottick_show_calendar_settings'});">×</button>
+                <div class="jt-cal-settings-card">
+                <div class="jt-cal-settings-header">
+                  <h3>Calendar Settings</h3>
+                </div>
+                  <div class="jt-cal-settings-body">
+                    <div class="jt-settings-section">
+                      <h4>General</h4>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">Start week on</span>
+                        <select class="jt-settings-select" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_select','select_option',{entity_id:'input_select.jottick_calendar_week_start',option:this.value});">
+                          <option value="sunday" {% if states('input_select.jottick_calendar_week_start') == 'sunday' %}selected{% endif %}>Sunday</option>
+                          <option value="monday" {% if states('input_select.jottick_calendar_week_start') == 'monday' %}selected{% endif %}>Monday</option>
+                        </select>
+                      </div>
                     </div>
-                    <div class="jt-cal-settings-body">   
-                      <div class="jt-settings-section">
-                        <h4>General</h4>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">Start week on</span>
-                          <select class="jt-settings-select" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_select','select_option',{entity_id:'input_select.jottick_calendar_week_start',option:this.value});">
-                            <option value="sunday" {% if states('input_select.jottick_calendar_week_start') == 'sunday' %}selected{% endif %}>Sunday</option>
-                            <option value="monday" {% if states('input_select.jottick_calendar_week_start') == 'monday' %}selected{% endif %}>Monday</option>
-                          </select>
+
+                    <div class="jt-settings-section">
+                      <h4>Event Types & Colors</h4>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_created') }};"></span>
+                          Note Created
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#9CCAEB' if states('input_text.jottick_calendar_color_note_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_created',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_created'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_edited') }};"></span>
+                          Note Edited
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#6BA5D4' if states('input_text.jottick_calendar_color_note_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_edited',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_edited'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_reminder') }};"></span>
+                          Scheduled Notes
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#F7A700' if states('input_text.jottick_calendar_color_note_reminder') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_reminder') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_reminder',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_reminders') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_reminders'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_created') }};"></span>
+                          List Created
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#99C66D' if states('input_text.jottick_calendar_color_list_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_created',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_created'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_edited') }};"></span>
+                          List Edited
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#7AAD52' if states('input_text.jottick_calendar_color_list_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_edited',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_edited'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_due') }};"></span>
+                          List Due Dates
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#10B981' if states('input_text.jottick_calendar_color_list_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_due',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_due'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_due') }};"></span>
+                          Task Due Dates
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#F9E900' if states('input_text.jottick_calendar_color_task_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_due',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_task_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_task_due'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_overdue') }};"></span>
+                          Overdue Items
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#EF4444' if states('input_text.jottick_calendar_color_task_overdue') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_overdue') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_overdue',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_overdue') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_overdue'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_completed') }};"></span>
+                          Completed Items
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#6B7280' if states('input_text.jottick_calendar_color_completed') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_completed') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_completed',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_completed') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_completed'});"><span class="slider"></span></label>
+                      </div>
+                      <div class="jt-settings-row">
+                        <span class="jt-settings-label">
+                          <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_imported') }};"></span>
+                          Imported Events
+                        </span>
+                        <input type="color" class="jt-settings-color" value="{{ '#A855F7' if states('input_text.jottick_calendar_color_imported') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_imported') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_imported',value:this.value});">
+                        <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_imported') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_imported'});"><span class="slider"></span></label>
+                      </div>
+                    </div>
+                    <div class="jt-settings-section">
+                      <h4>Import Calendar (iCal)</h4>
+                      <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Import events from Google Calendar, Outlook, Apple Calendar, or any .ics URL</p>
+                      <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                        <input type="text" class="jt-settings-input ical-url-input" placeholder="Calendar URL (ends in .ics)" value="{{ '' if states('input_text.jottick_ical_import_url') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_url') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:this.value});">
+                        <input type="text" class="jt-settings-input ical-name-input" placeholder="Calendar name (optional)" value="{{ '' if states('input_text.jottick_ical_import_name') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_name') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:this.value});">
+                        <div style="display:flex;gap:8px;">
+                          <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var urlInput=btn.closest('.jt-settings-section').querySelector('.ical-url-input');var nameInput=btn.closest('.jt-settings-section').querySelector('.ical-name-input');var url=urlInput.value.trim();if(!url){alert('Please enter a calendar URL');return;}btn.disabled=true;btn.textContent='Importing...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','import_ical',{url:url,name:nameInput.value.trim()||'Imported Calendar',auto_refresh:true});setTimeout(function(){btn.disabled=false;btn.textContent='Import Calendar';urlInput.value='';nameInput.value='';ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:''});ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:''});},2000);})(this);">Import Calendar</button>
+                          <button class="jt-settings-btn secondary" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','refresh_ical_imports');this.textContent='Refreshing...';var btn=this;setTimeout(function(){btn.textContent='Refresh All';},1500);">Refresh All</button>
                         </div>
                       </div>
-                      
-                      <div class="jt-settings-section">
-                        <h4>Event Types & Colors</h4>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_created') }};"></span>
-                            Note Created
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#9CCAEB' if states('input_text.jottick_calendar_color_note_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_created',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_created'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_edited') }};"></span>
-                            Note Edited
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#6BA5D4' if states('input_text.jottick_calendar_color_note_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_edited',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_edited'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_note_reminder') }};"></span>
-                            Scheduled Notes
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#F7A700' if states('input_text.jottick_calendar_color_note_reminder') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_note_reminder') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_note_reminder',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_note_reminders') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_note_reminders'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_created') }};"></span>
-                            List Created
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#99C66D' if states('input_text.jottick_calendar_color_list_created') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_created') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_created',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_created') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_created'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_edited') }};"></span>
-                            List Edited
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#7AAD52' if states('input_text.jottick_calendar_color_list_edited') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_edited') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_edited',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_edited') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_edited'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_list_due') }};"></span>
-                            List Due Dates
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#10B981' if states('input_text.jottick_calendar_color_list_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_list_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_list_due',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_list_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_list_due'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_due') }};"></span>
-                            Task Due Dates
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#F9E900' if states('input_text.jottick_calendar_color_task_due') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_due') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_due',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_task_due') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_task_due'});"><span class="slider"></span></label>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_task_overdue') }};"></span>
-                            Overdue Items
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#EF4444' if states('input_text.jottick_calendar_color_task_overdue') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_task_overdue') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_task_overdue',value:this.value});">
-                          <span style="width:44px;"></span>
-                        </div>
-                        <div class="jt-settings-row">
-                          <span class="jt-settings-label">
-                            <span class="jt-color-dot" style="background:{{ states('input_text.jottick_calendar_color_imported') }};"></span>
-                            Imported Events
-                          </span>
-                          <input type="color" class="jt-settings-color" value="{{ '#A855F7' if states('input_text.jottick_calendar_color_imported') in ['unknown','unavailable'] else states('input_text.jottick_calendar_color_imported') }}" onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_color_imported',value:this.value});">
-                          <label class="jt-settings-toggle"><input type="checkbox" {% if states('input_boolean.jottick_calendar_show_imported') == 'on' %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_calendar_show_imported'});"><span class="slider"></span></label>
-                        </div>
-                      </div>
-                      <div class="jt-settings-section">
-                        <h4>Import Calendar (iCal)</h4>
-                        <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Import events from Google Calendar, Outlook, Apple Calendar, or any .ics URL</p>
-                        <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
-                          <input type="text" class="jt-settings-input ical-url-input" placeholder="Calendar URL (ends in .ics)" value="{{ '' if states('input_text.jottick_ical_import_url') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_url') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:this.value});">
-                          <input type="text" class="jt-settings-input ical-name-input" placeholder="Calendar name (optional)" value="{{ '' if states('input_text.jottick_ical_import_name') in ['unknown','unavailable'] else states('input_text.jottick_ical_import_name') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:this.value});">
-                          <div style="display:flex;gap:8px;">
-                            <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var urlInput=btn.closest('.jt-settings-section').querySelector('.ical-url-input');var nameInput=btn.closest('.jt-settings-section').querySelector('.ical-name-input');var url=urlInput.value.trim();if(!url){alert('Please enter a calendar URL');return;}btn.disabled=true;btn.textContent='Importing...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','import_ical',{url:url,name:nameInput.value.trim()||'Imported Calendar',auto_refresh:true});setTimeout(function(){btn.disabled=false;btn.textContent='Import Calendar';urlInput.value='';nameInput.value='';ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_url',value:''});ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_ical_import_name',value:''});},2000);})(this);">Import Calendar</button>
-                            <button class="jt-settings-btn secondary" onclick="var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','refresh_ical_imports');this.textContent='Refreshing...';var btn=this;setTimeout(function(){btn.textContent='Refresh All';},1500);">Refresh All</button>
+                      {% set ical_sources = state_attr('sensor.jottick_imported_events', 'sources') or [] %}
+                      {% if ical_sources | length > 0 %}
+                      <div class="jt-ical-sources">
+                        <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Imported Calendars:</div>
+                        {% for source in ical_sources %}
+                        <div class="jt-ical-source">
+                          <div class="jt-ical-source-info">
+                            <div class="jt-ical-source-name">{{ source.name | default('Imported Calendar') }} <span style="font-size:0.75em;color:var(--secondary-text-color);">({{ source.event_count | default(0) }} events)</span></div>
+                            <div class="jt-ical-source-url">{{ source.url | truncate(40) }}</div>
                           </div>
+                          <button class="jt-ical-remove" onclick="if(confirm('Remove this calendar?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','remove_ical_import',{url:'{{ source.url }}'});}">Remove</button>
                         </div>
-                        {% set ical_sources = state_attr('sensor.jottick_imported_events', 'sources') or [] %}
-                        {% if ical_sources | length > 0 %}
-                        <div class="jt-ical-sources">
-                          <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Imported Calendars:</div>
-                          {% for source in ical_sources %}
-                          <div class="jt-ical-source">
-                            <div class="jt-ical-source-info">
-                              <div class="jt-ical-source-name">{{ source.name | default('Imported Calendar') }} <span style="font-size:0.75em;color:var(--secondary-text-color);">({{ source.event_count | default(0) }} events)</span></div>
-                              <div class="jt-ical-source-url">{{ source.url | truncate(40) }}</div>
-                            </div>
-                            <button class="jt-ical-remove" onclick="if(confirm('Remove this calendar?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','remove_ical_import',{url:'{{ source.url }}'});}">Remove</button>
-                          </div>
-                          {% endfor %}
-                        </div>
-                        {% endif %}
+                        {% endfor %}
                       </div>
-                      <div class="jt-settings-section">
-                        <h4>Export Calendar</h4>
-                        <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Export your JotTick data as an iCal file</p>
-                        
-                        <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
-                          <input type="text" class="jt-settings-input export-filename" placeholder="Filename (without .ics)" value="{{ states('input_text.jottick_calendar_export_filename') | default('jottick_calendar') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_export_filename',value:this.value});">
-                          
-                          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.85em;">
-                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                              <input type="checkbox" class="export-notes" checked> Notes
-                            </label>
-                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                              <input type="checkbox" class="export-lists" checked> Lists
-                            </label>
-                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                              <input type="checkbox" class="export-tasks" checked> Tasks
-                            </label>
-                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                              <input type="checkbox" class="export-reminders" checked> Reminders
-                            </label>
-                          </div>     
-                          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var sec=btn.closest('.jt-settings-section');var filename=sec.querySelector('.export-filename').value.trim()||'jottick_calendar';var includeNotes=sec.querySelector('.export-notes').checked;var includeLists=sec.querySelector('.export-lists').checked;var includeTasks=sec.querySelector('.export-tasks').checked;var includeReminders=sec.querySelector('.export-reminders').checked;btn.disabled=true;btn.textContent='Exporting...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','export_ical',{filename:filename,include_notes:includeNotes,include_lists:includeLists,include_tasks:includeTasks,include_reminders:includeReminders});var downloadDiv=sec.querySelector('.export-download-link');setTimeout(function(){btn.disabled=false;btn.textContent='Export to .ics File';var link=document.createElement('a');link.href='/api/jottick/calendar/'+filename+'.ics';link.download=filename+'.ics';link.style.cssText='display:inline-block;padding:8px 16px;background:var(--success-color,#10b981);color:white;border-radius:6px;text-decoration:none;font-size:0.9em;';link.textContent='⬇️ Download '+filename+'.ics';downloadDiv.innerHTML='';downloadDiv.appendChild(link);downloadDiv.style.display='block';},1500);})(this);">Export to .ics File</button>
-                          </div>                 
-                          <div class="export-download-link" style="display:none;text-align:center;margin-top:8px;"></div>                      
-                          <p style="font-size:0.75em;color:var(--secondary-text-color);margin:8px 0 0 0;">
-                            After exporting, click the download button or access the file at:<br>
-                            <code style="font-size:0.9em;">/api/jottick/calendar/{filename}.ics</code>
-                          </p>
+                      {% endif %}
+                    </div>
+                    <div class="jt-settings-section">
+                      <h4>Export Calendar</h4>
+                      <p style="font-size:0.8em;color:var(--secondary-text-color);margin:0 0 12px 0;">Export your JotTick data as an iCal file</p>
+
+                      <div class="jt-settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                        <input type="text" class="jt-settings-input export-filename" placeholder="Filename (without .ics)" value="{{ states('input_text.jottick_calendar_export_filename') | default('jottick_calendar') }}" oninput="var ha=document.querySelector('home-assistant');ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_calendar_export_filename',value:this.value});">
+
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.85em;">
+                          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" class="export-notes" checked> Notes
+                          </label>
+                          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" class="export-lists" checked> Lists
+                          </label>
+                          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" class="export-tasks" checked> Tasks
+                          </label>
+                          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                            <input type="checkbox" class="export-reminders" checked> Reminders
+                          </label>
                         </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                          <button class="jt-settings-btn primary" style="flex:1;" onclick="(function(btn){var sec=btn.closest('.jt-settings-section');var filename=sec.querySelector('.export-filename').value.trim()||'jottick_calendar';var includeNotes=sec.querySelector('.export-notes').checked;var includeLists=sec.querySelector('.export-lists').checked;var includeTasks=sec.querySelector('.export-tasks').checked;var includeReminders=sec.querySelector('.export-reminders').checked;btn.disabled=true;btn.textContent='Exporting...';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','export_ical',{filename:filename,include_notes:includeNotes,include_lists:includeLists,include_tasks:includeTasks,include_reminders:includeReminders});var downloadDiv=sec.querySelector('.export-download-link');setTimeout(function(){btn.disabled=false;btn.textContent='Export to .ics File';var link=document.createElement('a');link.href='/api/jottick/calendar/'+filename+'.ics';link.download=filename+'.ics';link.style.cssText='display:inline-block;padding:8px 16px;background:var(--success-color,#10b981);color:white;border-radius:6px;text-decoration:none;font-size:0.9em;';link.textContent='Download '+filename+'.ics';downloadDiv.innerHTML='';downloadDiv.appendChild(link);downloadDiv.style.display='block';},1500);})(this);">Export to .ics File</button>
+                        </div>
+                        <div class="export-download-link" style="display:none;text-align:center;margin-top:8px;"></div>
+                        <p style="font-size:0.75em;color:var(--secondary-text-color);margin:8px 0 0 0;">
+                          After exporting, click the download button or access the file at:<br>
+                          <code style="font-size:0.9em;">/api/jottick/calendar/{filename}.ics</code>
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+  - title: Points
+    path: points
+    icon: mdi:star-circle
+    sections:
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: >
+              <style>
+                .jt-points-card{background:var(--card-background-color);border-radius:12px;padding:16px;border:1px solid var(--divider-color);margin-bottom:16px;}
+                .jt-points-card h3{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1.1em;display:flex;align-items:center;gap:8px;}
+                .jt-points-form{display:flex;flex-direction:column;gap:10px;}
+                .jt-points-input{width:100%;padding:10px 12px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:1em;box-sizing:border-box;}
+                .jt-points-input:focus{outline:none;border-color:var(--primary-color);}
+                .jt-points-btn{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;transition:all 0.2s;}
+                .jt-points-btn.primary{background:var(--primary-color);color:var(--text-primary-color,white);}
+                .jt-points-btn.secondary{background:var(--secondary-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);}
+                .jt-points-btn.danger{background:#EF4444;color:white;}
+                .jt-points-btn:hover{opacity:0.9;}
+                .jt-user-actions{display:flex;gap:6px;flex-wrap:wrap;}
+                .jt-user-action-btn{padding:6px 12px;font-size:0.8em;border-radius:4px;}
+                .jt-empty{text-align:center;padding:40px 20px;color:var(--secondary-text-color);}
+                .jt-empty-icon{font-size:3em;margin-bottom:12px;opacity:0.5;}
+              </style>
+
+              {% set points_users = state_attr('sensor.jottick_points_users',
+              'users') or {} %}
+
+              {% set points_prizes = state_attr('sensor.jottick_points_prizes',
+              'prizes') or [] %}
+
+              {% set points_admins = state_attr('sensor.jottick_points_admins',
+              'admins') or [] %}
+
+              {% set current_user = states('sensor.current_user_id') |
+              default('') %}
+
+              {% set is_admin = current_user in points_admins or points_admins |
+              length == 0 %}
+
+              {% set sorted_users = points_users.values() | list |
+              sort(attribute='points', reverse=true) %}
+
+              {% set achievements = state_attr('sensor.jottick_achievements',
+              'achievements') or [] %}
+
+              {% set user_achievements =
+              state_attr('sensor.jottick_user_achievements',
+              'user_achievements') or {} %}
+
+              {% if is_admin %}
+
+              <div class="jt-points-card">
+                <h3>Manage Points Users</h3>
+                <div class="jt-points-form" style="margin-bottom:16px;">
+                  <input type="text" class="jt-points-input new-user-name" placeholder="New user name">
+                  <button class="jt-points-btn primary" onclick="(function(btn){var input=btn.closest('.jt-points-form').querySelector('.new-user-name');var name=input.value.trim();if(!name){alert('Please enter a name');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','create_points_user',{name:name});input.value='';btn.textContent='Added!';setTimeout(function(){btn.textContent='Add User';},1500);})(this);">Add User</button>
+                </div>
+                {% if sorted_users | length > 0 %}
+                <div style="margin-top:16px;">
+                  {% for user in sorted_users %}
+                  <div style="display:flex;align-items:center;padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:120px;">
+                      <div style="font-weight:600;color:var(--primary-text-color);">{{ user.name }}</div>
+                      <div style="font-size:0.85em;color:var(--secondary-text-color);">{{ user.points }} pts</div>
+                    </div>
+                    <div class="jt-user-actions">
+                      <button class="jt-points-btn secondary jt-user-action-btn" onclick="(function(){var amt=prompt('Enter amount to add (positive number):');if(!amt)return;var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','adjust_user_points',{user_id:'{{ user.id }}',amount:parseInt(amt),reason:'Admin bonus'});})();">+Add</button>
+                      <button class="jt-points-btn secondary jt-user-action-btn" style="background:#FEE2E2;color:#991B1B;" onclick="(function(){var amt=prompt('Enter amount to deduct:');if(!amt)return;var reason=prompt('Reason for deduction:');if(!reason)reason='Penalty';var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','deduct_user_points',{user_id:'{{ user.id }}',amount:Math.abs(parseInt(amt)),reason:reason});})();">-Deduct</button>
+                      <button class="jt-points-btn secondary jt-user-action-btn" onclick="if(confirm('Reset points for {{ user.name }}?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','reset_user_points',{user_id:'{{ user.id }}'});}">Reset</button>
+                      <button class="jt-points-btn danger jt-user-action-btn" onclick="if(confirm('Delete user {{ user.name }}? This cannot be undone.')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','delete_points_user',{user_id:'{{ user.id }}'});}">Delete</button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="jt-points-card">
+                <h3>Manage Points Prizes</h3>
+                <div class="jt-points-form" style="margin-bottom:16px;">
+                  <input type="text" class="jt-points-input new-prize-name" placeholder="Prize name">
+                  <input type="text" class="jt-points-input new-prize-desc" placeholder="Description (optional)">
+                  <div style="display:flex;gap:10px;">
+                    <input type="number" class="jt-points-input new-prize-cost" placeholder="Cost (points)" min="1" value="100" style="flex:1;">
+                    <input type="number" class="jt-points-input new-prize-qty" placeholder="Quantity (-1=unlimited)" value="-1" style="flex:1;">
+                  </div>
+                  <button class="jt-points-btn primary" onclick="(function(btn){var form=btn.closest('.jt-points-form');var name=form.querySelector('.new-prize-name').value.trim();var desc=form.querySelector('.new-prize-desc').value.trim();var cost=parseInt(form.querySelector('.new-prize-cost').value)||100;var qty=parseInt(form.querySelector('.new-prize-qty').value)||-1;if(!name){alert('Please enter a prize name');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','create_prize',{name:name,description:desc,cost:cost,quantity:qty});form.querySelector('.new-prize-name').value='';form.querySelector('.new-prize-desc').value='';btn.textContent='Added!';setTimeout(function(){btn.textContent='Add Prize';},1500);})(this);">Add Prize</button>
+                </div>
+                {% if points_prizes | length > 0 %}
+                <div style="margin-top:16px;">
+                  {% for prize in points_prizes %}
+                  <div style="display:flex;align-items:center;padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+                    {% if prize.get('image') %}
+                    <img src="{{ prize.get('image') }}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;" onerror="this.style.display='none'">
+                    {% endif %}
+                    <div style="flex:1;min-width:120px;">
+                      <div style="font-weight:600;color:var(--primary-text-color);">{{ prize.name }}</div>
+                      <div style="font-size:0.85em;color:var(--secondary-text-color);">{{ prize.cost }} pts{% if prize.quantity != -1 %} • {{ prize.quantity - (prize.redeemed_count | default(0)) }} left{% endif %}</div>
+                    </div>
+                    <div class="jt-user-actions">
+                      <label class="jt-points-btn secondary jt-user-action-btn" style="cursor:pointer;">
+                        Upload Image
+                        <input type="file" accept="image/*" style="display:none;" onchange="(function(inp){if(!inp.files[0])return;var fd=new FormData();fd.append('prize_id','{{ prize.id }}');fd.append('file',inp.files[0]);fetch('/api/jottick/prize-upload',{method:'POST',body:fd,headers:{'Authorization':'Bearer '+document.querySelector('home-assistant').hass.auth.data.access_token}}).then(r=>r.json()).then(d=>{if(d.success){var img=inp.closest('div').querySelector('img');if(img){img.src=d.image_url+'?t='+Date.now();}}else alert('Upload failed: '+d.error);}).catch(e=>alert('Error: '+e));})(this);">
+                      </label>
+                      <button class="jt-points-btn danger jt-user-action-btn" onclick="if(confirm('Delete prize {{ prize.name }}?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','delete_prize',{prize_id:'{{ prize.id }}'});}">Delete</button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="jt-points-card">
+                <h3>Manage Points Achievements</h3>
+                <div class="jt-points-form" style="margin-bottom:16px;">
+                  <input type="text" class="jt-points-input new-ach-name" placeholder="Achievement name">
+                  <input type="text" class="jt-points-input new-ach-desc" placeholder="Description">
+                  <input type="number" class="jt-points-input new-ach-threshold" placeholder="Auto at lifetime points (0 = manual)" min="0" value="0" title="Auto-award when user reaches this lifetime points">
+                  <button class="jt-points-btn primary" onclick="(function(btn){var form=btn.closest('.jt-points-form');var name=form.querySelector('.new-ach-name').value.trim();var desc=form.querySelector('.new-ach-desc').value.trim();var threshold=parseInt(form.querySelector('.new-ach-threshold').value)||0;if(!name){alert('Please enter an achievement name');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','create_achievement',{name:name,description:desc,points_threshold:threshold});form.querySelector('.new-ach-name').value='';form.querySelector('.new-ach-desc').value='';btn.textContent='Added!';setTimeout(function(){btn.textContent='Add Achievement';},1500);})(this);">Add Achievement</button>
+                </div>
+                {% if achievements | length > 0 %}
+                <div style="margin-top:16px;max-height:400px;overflow-y:auto;">
+                  {% for ach in achievements %}
+                  <div style="display:flex;align-items:center;padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+                    {% if ach.get('image') %}
+                    <img src="{{ ach.get('image') }}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div style="display:none;width:40px;height:40px;border-radius:8px;background:var(--primary-color);align-items:center;justify-content:center;color:white;font-size:20px;">🏆</div>
+                    {% else %}
+                    <div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--primary-color),var(--accent-color,#6366f1));display:flex;align-items:center;justify-content:center;color:white;font-size:20px;">🏆</div>
+                    {% endif %}
+                    <div style="flex:1;min-width:120px;">
+                      <div style="font-weight:600;color:var(--primary-text-color);">{{ ach.name }}</div>
+                      <div style="font-size:0.8em;color:var(--secondary-text-color);">{{ ach.description }}</div>
+                      <div style="font-size:0.75em;color:var(--primary-color);">{% if ach.get('points_threshold', 0) > 0 %}Auto @ {{ ach.points_threshold }} pts{% else %}Manual award{% endif %}</div>
+                    </div>
+                    <div class="jt-user-actions">
+                      <label class="jt-points-btn secondary jt-user-action-btn" style="cursor:pointer;font-size:0.75em;">
+                        Image
+                        <input type="file" accept="image/*" style="display:none;" onchange="(function(inp){if(!inp.files[0])return;var fd=new FormData();fd.append('achievement_id','{{ ach.id }}');fd.append('file',inp.files[0]);fetch('/api/jottick/achievement-upload',{method:'POST',body:fd,headers:{'Authorization':'Bearer '+document.querySelector('home-assistant').hass.auth.data.access_token}}).then(r=>r.json()).then(d=>{if(!d.success)alert('Upload failed: '+d.error);}).catch(e=>alert('Error: '+e));})(this);">
+                      </label>
+                      <select class="jt-user-action-btn" style="padding:4px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.75em;" onchange="(function(sel){if(!sel.value)return;if(confirm('Award {{ ach.name }} to '+sel.options[sel.selectedIndex].text+'?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','award_achievement',{user_id:sel.value,achievement_id:'{{ ach.id }}'});}sel.value='';})(this);">
+                        <option value="">Award to...</option>
+                        {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                      </select>
+                      <button class="jt-points-btn danger jt-user-action-btn" style="font-size:0.75em;" onclick="if(confirm('Delete achievement {{ ach.name }}?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','delete_achievement',{achievement_id:'{{ ach.id }}'});}">Delete</button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">🏅</div>
+                  <p>No achievements yet. Add one above!</p>
+                </div>
+                {% endif %}
+              </div>
+              <div class="jt-points-card">
+                <h3>User Achievements</h3>
+                {% if sorted_users | length > 0 %}
+                <div style="margin-top:8px;">
+                  {% for user in sorted_users %}
+                  {% set user_ach_list = user_achievements.get(user.id, []) %}
+                  <div style="padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;">
+                    <div style="font-weight:600;color:var(--primary-text-color);margin-bottom:8px;">{{ user.name }}</div>
+                    {% if user_ach_list | length > 0 %}
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                      {% for ua in user_ach_list %}
+                      {% set ach_info = achievements | selectattr('id', 'eq', ua.achievement_id) | first | default({}) %}
+                      <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--card-background-color);border-radius:4px;font-size:0.85em;" title="Awarded {{ ua.awarded_at | as_timestamp | timestamp_custom('%b %d') }}">
+                        {% if ach_info.get('image') %}
+                        <img src="{{ ach_info.get('image') }}" style="width:20px;height:20px;border-radius:4px;object-fit:cover;">
+                        {% else %}
+                        <span style="font-size:16px;">🏆</span>
+                        {% endif %}
+                        <span>{{ ach_info.name | default('Achievement') }}</span>
+                        <button style="border:none;background:none;color:var(--error-color);cursor:pointer;padding:0 2px;font-size:0.9em;" onclick="if(confirm('Revoke this achievement?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','revoke_achievement',{user_id:'{{ user.id }}',achievement_id:'{{ ua.achievement_id }}'});}">×</button>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <div style="font-size:0.85em;color:var(--secondary-text-color);">No achievements yet</div>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">👥</div>
+                  <p>Add users first to award achievements.</p>
+                </div>
+                {% endif %}
+              </div>
+              {% endif %}
+            grid_options:
+              columns: full
+              rows: auto
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: >
+              <style>
+                .jt-points-card{background:var(--card-background-color);border-radius:12px;padding:16px;border:1px solid var(--divider-color);}
+                .jt-points-card h3{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1.1em;display:flex;align-items:center;gap:8px;}
+                .jt-prizes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+                .jt-prize-card{background:var(--secondary-background-color);border-radius:10px;padding:16px;text-align:center;border:2px solid transparent;transition:all 0.2s;}
+                .jt-prize-card:hover{border-color:var(--primary-color);}
+                .jt-prize-icon{font-size:2.5em;margin-bottom:8px;}
+                .jt-prize-name{font-weight:600;color:var(--primary-text-color);margin-bottom:4px;}
+                .jt-prize-desc{font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;min-height:40px;}
+                .jt-prize-cost{font-size:1.1em;font-weight:700;color:var(--primary-color);margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:4px;}
+                .jt-prize-stock{font-size:0.8em;color:var(--secondary-text-color);margin-bottom:8px;}
+                .jt-points-btn{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:0.95em;transition:all 0.2s;}
+                .jt-points-btn.primary{background:var(--primary-color);color:var(--text-primary-color,white);}
+                .jt-empty{text-align:center;padding:40px 20px;color:var(--secondary-text-color);}
+                .jt-empty-icon{font-size:3em;margin-bottom:12px;opacity:0.5;}
+              </style>
+
+              {% set points_users = state_attr('sensor.jottick_points_users',
+              'users') or {} %}
+
+              {% set points_prizes = state_attr('sensor.jottick_points_prizes',
+              'prizes') or [] %}
+
+              <div class="jt-points-card">
+                <h3>Prizes</h3>
+                {% if points_prizes | length > 0 %}
+                <div class="jt-prizes-grid">
+                  {% for prize in points_prizes %}
+                  <div class="jt-prize-card">
+                    {% if prize.get('image') %}
+                    <div class="jt-prize-image" style="width:100%;height:100px;margin-bottom:8px;border-radius:8px;overflow:hidden;">
+                      <img src="{{ prize.get('image') }}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=font-size:2.5em;text-align:center;padding:16px>🎁</div>'">
+                    </div>
+                    {% else %}
+                    <div class="jt-prize-icon">🎁</div>
+                    {% endif %}
+                    <div class="jt-prize-name">{{ prize.name }}</div>
+                    <div class="jt-prize-desc">{{ prize.description | default('No description') }}</div>
+                    <div class="jt-prize-cost"><span>⭐</span> {{ prize.cost }}</div>
+                    {% if prize.quantity != -1 %}
+                    <div class="jt-prize-stock">{{ prize.quantity - (prize.redeemed_count | default(0)) }} left</div>
+                    {% else %}
+                    <div class="jt-prize-stock">Unlimited</div>
+                    {% endif %}
+                    <div style="margin-top:8px;">
+                      <select class="jt-redeem-user" style="width:100%;padding:8px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.9em;margin-bottom:8px;">
+                        <option value="">Select who's buying...</option>
+                        {% for uid, user in points_users.items() %}
+                        <option value="{{ uid }}" data-points="{{ user.points }}">{{ user.name }} ({{ user.points }} pts)</option>
+                        {% endfor %}
+                      </select>
+                      <button class="jt-points-btn primary" style="width:100%;" onclick="(function(btn){var sel=btn.closest('.jt-prize-card').querySelector('.jt-redeem-user');if(!sel.value){alert('Please select a user');return;}var userPts=parseInt(sel.options[sel.selectedIndex].dataset.points);if(userPts<{{ prize.cost }}){alert('Not enough points! '+sel.options[sel.selectedIndex].text.split('(')[0].trim()+' has '+userPts+' points but needs {{ prize.cost }}.');return;}if(!confirm('Redeem {{ prize.name }} for '+sel.options[sel.selectedIndex].text.split('(')[0].trim()+'?'))return;var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','redeem_prize',{user_id:sel.value,prize_id:'{{ prize.id }}'});sel.value='';btn.textContent='Redeemed!';setTimeout(function(){btn.textContent='Redeem';},2000);})(this);">Redeem</button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">🎁</div>
+                  <p>No prizes available yet. Add prizes in Admin below.</p>
+                </div>
+                {% endif %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: >
+              <style>
+                .jt-points-card{background:var(--card-background-color);border-radius:12px;padding:16px;border:1px solid var(--divider-color);}
+                .jt-points-card h3{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1.1em;display:flex;align-items:center;gap:8px;}
+                .jt-points-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:16px;}
+                .jt-points-stat{background:var(--secondary-background-color);border-radius:10px;padding:12px;text-align:center;}
+                .jt-points-stat-value{font-size:1.5em;font-weight:700;color:var(--primary-color);}
+                .jt-points-stat-label{font-size:0.8em;color:var(--secondary-text-color);margin-top:4px;}
+                .jt-leaderboard{list-style:none;padding:0;margin:0;}
+                .jt-leaderboard-item{display:flex;align-items:center;padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;gap:12px;}
+                .jt-leaderboard-rank{width:32px;height:32px;border-radius:50%;background:var(--primary-color);color:var(--text-primary-color,white);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9em;}
+                .jt-leaderboard-rank.gold{background:linear-gradient(135deg,#FFD700,#FFA500);}
+                .jt-leaderboard-rank.silver{background:linear-gradient(135deg,#C0C0C0,#A0A0A0);}
+                .jt-leaderboard-rank.bronze{background:linear-gradient(135deg,#CD7F32,#8B4513);}
+                .jt-leaderboard-info{flex:1;}
+                .jt-leaderboard-name{font-weight:600;color:var(--primary-text-color);}
+                .jt-leaderboard-lifetime{font-size:0.8em;color:var(--secondary-text-color);}
+                .jt-leaderboard-points{font-size:1.2em;font-weight:700;color:var(--primary-color);display:flex;align-items:center;gap:4px;}
+                .jt-admin-badge{display:inline-block;padding:2px 8px;background:#A855F7;color:white;border-radius:4px;font-size:0.7em;margin-left:8px;text-transform:uppercase;}
+                .jt-empty{text-align:center;padding:40px 20px;color:var(--secondary-text-color);}
+                .jt-empty-icon{font-size:3em;margin-bottom:12px;opacity:0.5;}
+              </style>
+
+              {% set points_users = state_attr('sensor.jottick_points_users',
+              'users') or {} %}
+
+              {% set points_admins = state_attr('sensor.jottick_points_admins',
+              'admins') or [] %}
+
+              {% set sorted_users = points_users.values() | list |
+              sort(attribute='points', reverse=true) %}
+
+              {% set total_points = points_users.values() |
+              map(attribute='points') | sum %}
+
+              {% set total_lifetime = points_users.values() |
+              map(attribute='lifetime_points') | sum %}
+
+              {% set points_prizes = state_attr('sensor.jottick_points_prizes',
+              'prizes') or [] %}
+
+              <div class="jt-points-card">
+                <h3>Leaderboard</h3>
+                <div class="jt-points-stats">
+                  <div class="jt-points-stat">
+                    <div class="jt-points-stat-value">{{ points_users | length }}</div>
+                    <div class="jt-points-stat-label">Users</div>
+                  </div>
+                  <div class="jt-points-stat">
+                    <div class="jt-points-stat-value">{{ total_points }}</div>
+                    <div class="jt-points-stat-label">Total Pts</div>
+                  </div>
+                  <div class="jt-points-stat">
+                    <div class="jt-points-stat-value">{{ points_prizes | length }}</div>
+                    <div class="jt-points-stat-label">Prizes</div>
+                  </div>
+                  <div class="jt-points-stat">
+                    <div class="jt-points-stat-value">{{ total_lifetime }}</div>
+                    <div class="jt-points-stat-label">Lifetime</div>
+                  </div>
+                </div>
+                {% if sorted_users | length > 0 %}
+                <ul class="jt-leaderboard">
+                  {% for user in sorted_users %}
+                  <li class="jt-leaderboard-item">
+                    <div class="jt-leaderboard-rank {% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">{{ loop.index }}</div>
+                    <div class="jt-leaderboard-info">
+                      <div class="jt-leaderboard-name">{{ user.name }}{% if user.id in points_admins %}<span class="jt-admin-badge">Admin</span>{% endif %}</div>
+                      <div class="jt-leaderboard-lifetime">Lifetime: {{ user.lifetime_points | default(0) }} pts</div>
+                    </div>
+                    <div class="jt-leaderboard-points"><span>⭐</span> {{ user.points }}</div>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">👥</div>
+                  <p>No users yet. Add users in Admin to get started!</p>
+                </div>
+                {% endif %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: >
+              <style>
+                .jt-points-card{background:var(--card-background-color);border-radius:12px;padding:16px;border:1px solid var(--divider-color);}
+                .jt-points-card h3{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1.1em;display:flex;align-items:center;gap:8px;}
+                .jt-history-list{max-height:300px;overflow-y:auto;}
+                .jt-history-item{display:flex;align-items:center;padding:10px 12px;background:var(--secondary-background-color);border-radius:6px;margin-bottom:6px;gap:12px;}
+                .jt-history-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9em;}
+                .jt-history-icon.earn{background:#10B981;color:white;}
+                .jt-history-icon.spend{background:#EF4444;color:white;}
+                .jt-history-icon.adjust{background:#F59E0B;color:white;}
+                .jt-history-info{flex:1;}
+                .jt-history-reason{font-size:0.9em;color:var(--primary-text-color);}
+                .jt-history-meta{font-size:0.75em;color:var(--secondary-text-color);}
+                .jt-history-amount{font-weight:700;font-size:0.95em;}
+                .jt-history-amount.positive{color:#10B981;}
+                .jt-history-amount.negative{color:#EF4444;}
+                .jt-empty{text-align:center;padding:40px 20px;color:var(--secondary-text-color);}
+                .jt-empty-icon{font-size:3em;margin-bottom:12px;opacity:0.5;}
+              </style>
+
+              {% set points_history =
+              state_attr('sensor.jottick_points_history', 'history') or [] %}
+
+              <div class="jt-points-card">
+                <h3>History</h3>
+                {% if points_history | length > 0 %}
+                <div class="jt-history-list">
+                  {% for entry in points_history | reverse %}
+                  {% if loop.index <= 50 %}
+                  <div class="jt-history-item">
+                    <div class="jt-history-icon {% if entry.amount > 0 %}earn{% elif entry.type == 'adjustment' %}adjust{% else %}spend{% endif %}">
+                      {% if entry.amount > 0 %}+{% elif entry.type == 'redemption' %}🎁{% else %}−{% endif %}
+                    </div>
+                    <div class="jt-history-info">
+                      <div class="jt-history-reason">{{ entry.reason | default('Points update') }}</div>
+                      <div class="jt-history-meta">{{ entry.get('user_name', 'Unknown') }} • {{ entry.timestamp | as_timestamp | timestamp_custom('%b %d, %H:%M') }}</div>
+                    </div>
+                    <div class="jt-history-amount {% if entry.amount > 0 %}positive{% else %}negative{% endif %}">
+                      {% if entry.amount > 0 %}+{% endif %}{{ entry.amount }}
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">📜</div>
+                  <p>No points history yet. Complete tasks to earn points!</p>
+                </div>
+                {% endif %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+      - type: grid
+        cards:
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <div class="jt-points-card">
+                <h3>User Achievements</h3>
+                {% if sorted_users | length > 0 %}
+                <div style="margin-top:8px;">
+                  {% for user in sorted_users %}
+                  {% set user_ach_list = user_achievements.get(user.id, []) %}
+                  <div style="padding:12px;background:var(--secondary-background-color);border-radius:8px;margin-bottom:8px;">
+                    <div style="font-weight:600;color:var(--primary-text-color);margin-bottom:8px;">{{ user.name }}</div>
+                    {% if user_ach_list | length > 0 %}
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                      {% for ua in user_ach_list %}
+                      {% set ach_info = achievements | selectattr('id', 'eq', ua.achievement_id) | first | default({}) %}
+                      <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--card-background-color);border-radius:4px;font-size:0.85em;" title="Awarded {{ ua.awarded_at | as_timestamp | timestamp_custom('%b %d') }}">
+                        {% if ach_info.get('image') %}
+                        <img src="{{ ach_info.get('image') }}" style="width:20px;height:20px;border-radius:4px;object-fit:cover;">
+                        {% else %}
+                        <span style="font-size:16px;">🏆</span>
+                        {% endif %}
+                        <span>{{ ach_info.name | default('Achievement') }}</span>
+                        <button style="border:none;background:none;color:var(--error-color);cursor:pointer;padding:0 2px;font-size:0.9em;" onclick="if(confirm('Revoke this achievement?')){var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','revoke_achievement',{user_id:'{{ user.id }}',achievement_id:'{{ ua.achievement_id }}'});}">×</button>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <div style="font-size:0.85em;color:var(--secondary-text-color);">No achievements yet</div>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="jt-empty">
+                  <div class="jt-empty-icon">👥</div>
+                  <p>Add users first to award achievements.</p>
+                </div>
+                {% endif %}
+              </div>
+            grid_options:
+              columns: full
+              rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <style>
+                .jt-points-card{background:var(--card-background-color);border-radius:12px;padding:16px;border:1px solid var(--divider-color);}
+                .jt-points-card h3{margin:0 0 12px 0;color:var(--primary-text-color);font-size:1.1em;display:flex;align-items:center;gap:8px;}
+                .jt-points-input{width:100%;padding:10px 12px;border:1px solid var(--divider-color);border-radius:6px;background:var(--card-background-color);color:var(--primary-text-color);font-size:1em;box-sizing:border-box;}
+                .jt-points-input:focus{outline:none;border-color:var(--primary-color);}
+                .jt-settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--divider-color);}
+                .jt-settings-row:last-child{border-bottom:none;}
+                .jt-settings-label{color:var(--primary-text-color);font-size:0.95em;}
+                .jt-settings-toggle{position:relative;width:44px;height:24px;}
+                .jt-settings-toggle input{opacity:0;width:0;height:0;}
+                .jt-settings-toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--divider-color);border-radius:24px;transition:0.3s;}
+                .jt-settings-toggle .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;}
+                .jt-settings-toggle input:checked + .slider{background:var(--primary-color);}
+                .jt-settings-toggle input:checked + .slider:before{transform:translateX(20px);}
+              </style>
+              <div class="jt-points-card">
+                <h3>Settings</h3>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Enable Points System</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_enabled', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_enabled'});"><span class="slider"></span></label>
+                </div>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Show points on list items</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_show_on_lists', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_show_on_lists'});"><span class="slider"></span></label>
+                </div>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Show points on task items</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_show_on_tasks', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_show_on_tasks'});"><span class="slider"></span></label>
+                </div>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Allow self-claim</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_allow_self_claim', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_allow_self_claim'});"><span class="slider"></span></label>
+                </div>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Show leaderboard</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_show_leaderboard', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_show_leaderboard'});"><span class="slider"></span></label>
+                </div>
+                <div class="jt-settings-row">
+                  <span class="jt-settings-label">Show history</span>
+                  <label class="jt-settings-toggle"><input type="checkbox" {% if is_state('input_boolean.jottick_points_show_history', 'on') %}checked{% endif %} onchange="var ha=document.querySelector('home-assistant');ha.hass.callService('input_boolean',this.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_points_show_history'});"><span class="slider"></span></label>
+                </div>
+              </div>
+            grid_options:
+              columns: full
+              rows: auto

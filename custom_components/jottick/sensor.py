@@ -3,7 +3,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from .const import DOMAIN
@@ -238,8 +238,8 @@ class JotTickSensor(CoordinatorEntity, SensorEntity):
         
         elif self._sensor_type == "imported_events":
             return {
-                "events": self.coordinator.data.get("imported_events", []),
                 "sources": self.coordinator.data.get("ical_sources", []),
+                "event_count": len(self.coordinator.data.get("imported_events", [])),
             }
         
         return None
@@ -468,7 +468,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = "JotTick Calendar Events"
         self._attr_unique_id = "jottick_calendar_events"
         self._attr_icon = "mdi:calendar"
-        
         self._colors = {
             'note_created': '#9CCAEB',
             'note_edited': '#6BA5D4',
@@ -480,6 +479,7 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
             'task_edited': '#7C3AED',
             'task_due': '#F9E900',
             'overdue': '#EF4444',
+            'completed': '#6B7280',
             'recurring': '#22C55E',
             'reminder': '#F59E0B',
             'imported': '#8B5CF6',
@@ -492,16 +492,32 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        events = self._compute_all_events()
-        today = datetime.now().strftime("%Y-%m-%d")
-        
-        dates_with_events = list(events.keys())
-        
+        all_events = self._compute_all_events()
+        today = datetime.now()
+        today_str = today.strftime("%Y-%m-%d")
+
+        first_of_month = today.replace(day=1)
+        if today.month == 12:
+            last_of_next_month = today.replace(year=today.year + 1, month=2, day=1) - timedelta(days=1)
+        elif today.month == 11:
+            last_of_next_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            last_of_next_month = today.replace(month=today.month + 2, day=1) - timedelta(days=1)
+
+        start_str = first_of_month.strftime("%Y-%m-%d")
+        end_str = last_of_next_month.strftime("%Y-%m-%d")
+
+        filtered_events = {
+            date: evts for date, evts in all_events.items()
+            if start_str <= date <= end_str
+        }
+
         return {
-            "events": events,
-            "dates_with_events": dates_with_events,
-            "today": today,
+            "events": filtered_events,
+            "dates_with_events": list(filtered_events.keys()),
+            "today": today_str,
             "last_updated": datetime.now().isoformat(),
+            "total_events": sum(len(v) for v in all_events.values()),
         }
 
     def _get_color(self, color_input_entity: str, default_key: str) -> str:
@@ -532,7 +548,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
     def _compute_all_events(self) -> dict:
         events = {}
         today_str = datetime.now().strftime("%Y-%m-%d")
-        
         show_note_created = self._get_toggle('input_boolean.jottick_calendar_show_note_created', True)
         show_note_edited = self._get_toggle('input_boolean.jottick_calendar_show_note_edited', True)
         show_note_reminders = self._get_toggle('input_boolean.jottick_calendar_show_note_reminders', True)
@@ -541,7 +556,8 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
         show_list_due = self._get_toggle('input_boolean.jottick_calendar_show_list_due', True)
         show_task_due = self._get_toggle('input_boolean.jottick_calendar_show_task_due', True)
         show_imported = self._get_toggle('input_boolean.jottick_calendar_show_imported', True)
-        
+        show_overdue = self._get_toggle('input_boolean.jottick_calendar_show_overdue', True)
+        show_completed = self._get_toggle('input_boolean.jottick_calendar_show_completed', False)
         color_note_created = self._get_color('input_text.jottick_calendar_color_note_created', 'note_created')
         color_note_edited = self._get_color('input_text.jottick_calendar_color_note_edited', 'note_edited')
         color_note_reminder = self._get_color('input_text.jottick_calendar_color_note_reminder', 'note_reminder')
@@ -552,17 +568,16 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
         color_task_edited = self._colors['task_edited']
         color_task_due = self._get_color('input_text.jottick_calendar_color_task_due', 'task_due')
         color_overdue = self._get_color('input_text.jottick_calendar_color_task_overdue', 'overdue')
+        color_completed = self._get_color('input_text.jottick_calendar_color_completed', 'completed')
         color_recurring = self._colors['recurring']
         color_reminder = self._colors['reminder']
         color_imported = self._get_color('input_text.jottick_calendar_color_imported', 'imported')
-
         notes = self.coordinator.data.get("notes", [])
         for note in notes:
             note_id = note.get("id", "")
             note_title = note.get("title", "Untitled Note")
             created = note.get("createdAt", "")
             updated = note.get("updatedAt", "")
-            
             if show_note_created and created:
                 cdate = created[:10]
                 self._add_event(events, cdate, {
@@ -573,7 +588,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     'item_id': note_id,
                     'item_type': 'note'
                 })
-            
             if show_note_edited and updated and created and updated[:10] != created[:10]:
                 udate = updated[:10]
                 self._add_event(events, udate, {
@@ -584,7 +598,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     'item_id': note_id,
                     'item_type': 'note'
                 })
-        
         if show_note_reminders:
             try:
                 sched_sensor = self._hass.states.get('sensor.jottick_scheduled_notes')
@@ -605,7 +618,7 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                                 self._add_event(events, sched_date, {
                                     'type': 'note_reminder',
                                     'color': color_note_reminder,
-                                    'title': '🔔 ' + note_title,
+                                    'title': note_title,
                                     'date': sched_date,
                                     'time': sched_time_only,
                                     'item_id': note_id,
@@ -613,7 +626,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                                 })
             except Exception as e:
                 _LOGGER.debug(f"Error getting scheduled notes: {e}")
-        
         checklists = self.coordinator.data.get("checklists", [])
         for checklist in checklists:
             list_id = checklist.get("id", "")
@@ -621,7 +633,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
             created = checklist.get("createdAt", "")
             updated = checklist.get("updatedAt", "")
             items = checklist.get("items", [])
-            
             if show_list_created and created:
                 cdate = created[:10]
                 self._add_event(events, cdate, {
@@ -632,7 +643,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     'item_id': list_id,
                     'item_type': 'list'
                 })
-            
             if show_list_edited and updated and created and updated[:10] != created[:10]:
                 udate = updated[:10]
                 self._add_event(events, udate, {
@@ -643,7 +653,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     'item_id': list_id,
                     'item_type': 'list'
                 })
-            
             if show_list_due:
                 due_items = get_items_with_due_dates(items, today_str)
                 for item in due_items:
@@ -651,9 +660,20 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     if ddate:
                         is_overdue = item.get('isOverdue', False)
                         is_completed = item.get('isCompleted', False)
-                        evt_type = 'list_overdue' if is_overdue and not is_completed else 'list_due'
-                        evt_color = color_overdue if is_overdue and not is_completed else color_list_due
-                        status_icon = '✅ ' if is_completed else ('⚠️ ' if is_overdue else '📅 ')
+                        if is_completed and not show_completed:
+                            continue
+                        if is_overdue and not is_completed and not show_overdue:
+                            continue
+                        if is_completed:
+                            evt_type = 'list_completed'
+                            evt_color = color_completed
+                        elif is_overdue:
+                            evt_type = 'list_overdue'
+                            evt_color = color_overdue
+                        else:
+                            evt_type = 'list_due'
+                            evt_color = color_list_due
+                        status_icon = '' if is_completed else ('' if is_overdue else '')
                         self._add_event(events, ddate, {
                             'type': evt_type,
                             'color': evt_color,
@@ -665,7 +685,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             'item_type': 'list',
                             'is_completed': is_completed
                         })
-        
         tasks = self.coordinator.data.get("tasks", [])
         for task in tasks:
             task_id = task.get("id", "")
@@ -673,29 +692,26 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
             created = task.get("createdAt", "")
             updated = task.get("updatedAt", "")
             items = task.get("items", [])
-            
             if show_list_created and created:
                 cdate = created[:10]
                 self._add_event(events, cdate, {
                     'type': 'task_created',
                     'color': color_task_created,
-                    'title': '📌 ' + task_title,
+                    'title': task_title,
                     'date': cdate,
                     'item_id': task_id,
                     'item_type': 'task'
                 })
-            
             if show_list_edited and updated and created and updated[:10] != created[:10]:
                 udate = updated[:10]
                 self._add_event(events, udate, {
                     'type': 'task_edited',
                     'color': color_task_edited,
-                    'title': '📌 ' + task_title + ' (edited)',
+                    'title': task_title + ' (edited)',
                     'date': udate,
                     'item_id': task_id,
                     'item_type': 'task'
                 })
-            
             if show_task_due:
                 due_items = get_items_with_due_dates(items, today_str)
                 for item in due_items:
@@ -703,9 +719,20 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     if ddate:
                         is_overdue = item.get('isOverdue', False)
                         is_completed = item.get('isCompleted', False)
-                        evt_type = 'task_overdue' if is_overdue and not is_completed else 'task_due'
-                        evt_color = color_overdue if is_overdue and not is_completed else color_task_due
-                        status_icon = '✅ ' if is_completed else ('⚠️ ' if is_overdue else '📅 ')
+                        if is_completed and not show_completed:
+                            continue
+                        if is_overdue and not is_completed and not show_overdue:
+                            continue
+                        if is_completed:
+                            evt_type = 'task_completed'
+                            evt_color = color_completed
+                        elif is_overdue:
+                            evt_type = 'task_overdue'
+                            evt_color = color_overdue
+                        else:
+                            evt_type = 'task_due'
+                            evt_color = color_task_due
+                        status_icon = '' if is_completed else ('' if is_overdue else '')
                         self._add_event(events, ddate, {
                             'type': evt_type,
                             'color': evt_color,
@@ -717,7 +744,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             'item_type': 'task',
                             'is_completed': is_completed
                         })
-        
         try:
             rec_sensor = self._hass.states.get('sensor.jottick_recurring')
             if rec_sensor and rec_sensor.attributes:
@@ -726,7 +752,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     today_dow = datetime.now().weekday()
                     is_weekday = today_dow < 5
                     is_weekend = today_dow >= 5
-                    
                     for item_id, config in recurring_configs.items():
                         reset_times = config.get('reset_times', [])
                         days_setting = config.get('days', 'every_day')
@@ -735,7 +760,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             (days_setting == 'weekdays' and is_weekday) or
                             (days_setting == 'weekends' and is_weekend)
                         )
-                        
                         if applies_today and reset_times:
                             item_title = 'Recurring Reset'
                             for c in checklists:
@@ -747,12 +771,11 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                                     if t.get('id') == item_id:
                                         item_title = t.get('title', item_title)
                                         break
-                            
                             times_str = ', '.join(reset_times) if isinstance(reset_times, list) else str(reset_times)
                             self._add_event(events, today_str, {
                                 'type': 'recurring',
                                 'color': color_recurring,
-                                'title': '🔄 ' + item_title,
+                                'title': item_title,
                                 'date': today_str,
                                 'time': times_str,
                                 'item_id': item_id,
@@ -760,7 +783,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             })
         except Exception as e:
             _LOGGER.debug(f"Error getting recurring configs: {e}")
-        
         try:
             rem_sensor = self._hass.states.get('sensor.jottick_reminders')
             if rem_sensor and rem_sensor.attributes:
@@ -769,7 +791,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     today_dow = datetime.now().weekday()
                     is_weekday = today_dow < 5
                     is_weekend = today_dow >= 5
-                    
                     for item_id, config in reminder_configs.items():
                         days_setting = config.get('days', 'weekdays')
                         applies_today = (
@@ -777,7 +798,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             (days_setting == 'weekdays' and is_weekday) or
                             (days_setting == 'weekends' and is_weekend)
                         )
-                        
                         if applies_today:
                             item_title = 'Reminder'
                             for c in checklists:
@@ -789,14 +809,13 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                                     if t.get('id') == item_id:
                                         item_title = t.get('title', item_title)
                                         break
-                            
                             interval = config.get('interval', '1 hour')
                             start_time = config.get('start', '09:00')
                             end_time = config.get('end', '21:00')
                             self._add_event(events, today_str, {
                                 'type': 'reminder',
                                 'color': color_reminder,
-                                'title': '⏰ ' + item_title,
+                                'title': item_title,
                                 'date': today_str,
                                 'time': start_time + '-' + end_time,
                                 'item_id': item_id,
@@ -804,7 +823,6 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                             })
         except Exception as e:
             _LOGGER.debug(f"Error getting reminder configs: {e}")
-        
         if show_imported:
             imported_events = self.coordinator.data.get("imported_events", [])
             for evt in imported_events:
@@ -813,12 +831,11 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     self._add_event(events, evt_date, {
                         'type': 'imported',
                         'color': color_imported,
-                        'title': '📅 ' + evt.get('title', 'Imported Event'),
+                        'title': evt.get('title', 'Imported Event'),
                         'date': evt_date,
                         'time': evt.get('time', ''),
                         'location': evt.get('location', ''),
                         'item_type': 'imported',
                         'item_id': evt.get('id', '')
                     })
-        
         return events

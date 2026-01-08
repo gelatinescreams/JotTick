@@ -24,18 +24,29 @@ A notes, checklists, task management and calendar integration for Home Assistant
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 1.5.1 12/29/25
-- **Version 1.5.1** [changelog.md](changelog.md)
-- **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
-- **Version 1.5** Added iCAL import and export for JotTick
-- **Version 1.5** Custom calendar dashboard added to JotTick
-- **Version 1.5** Much More [changelog.md](changelog.md)
-- **Version 1.4** Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
-- **Version 1.3** Assist, reminders and aliases oh my
-- **Natural Language Assist Reminders**: No LLM needed
+### New 1.5.2 1/08/26
+- Version 1.5.2 Added Points and Rewards system for gamification/chores
+  - Achievements: Trophies that auto award based on lifetime points. Create achievements with image upload.
+  - Rewards/Prizes: Create an awards/prizes store with image upload.
+  - Full History: Track points earned, spent, achievements and more. 
+  - Admin Controls: Full admin controls including creating users, adding and removing points, and much more.
+  - Full featured dashboard.  
+- Version 1.5.2 Upgraded the calendar. Now imports into standard Home Assistant calendar.
+  - Jottick Notes, Lists and Tasks now show up in Home Assistant calendar.
+  - Use any calendar card you want now!
+  - Full admin calendar settings on dashboard.
+- Version 1.5.2 Clear Data buttons added to Quick Actions tab
+- Version 1.5.2 [changelog.md](changelog.md)
+- Version 1.5 Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
+- Version 1.5 Added iCAL import and export for JotTick
+- Version 1.5 Custom calendar dashboard added to JotTick
+- Version 1.5 Much More [changelog.md](changelog.md)
+- Version 1.4 Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
+- Version 1.3 Assist, reminders and aliases oh my
+- Natural Language Assist Reminders: No LLM needed
   - Add aliases (nicknames) for each device "Remind (alias) to X in an hour thirty" and [many more variations here](assist_README.md)
   - Add "me" for each device : "Remind me to X in 30 minutes" and [many more variations here](assist_README.md)
-- **Easy to Use Dashboard **: Easily link devices and add aliases. [see here](assets/preview-reminders.png) 
+- Easy to Use Dashboard: Easily link devices and add aliases. [see here](assets/preview-reminders.png)
 - Upgrade information and more changes available via [changelog.md](changelog.md)
 
 ### Notes
@@ -66,9 +77,19 @@ A notes, checklists, task management and calendar integration for Home Assistant
 - Inlcudes notes, lists, tasks and imported events
 - List and task items can now have due dates
 - Import unlimited iCal calendars
-- **Full built dashboard**
+- Full built dashboard
 - Export HA calendar as .iCal
 
+### Points and Rewards
+- Gamification system for lists and tasks
+- Create users for Points and Rewards
+- Assign point values to list and task items
+- Users claim points when completing items. Automated if set to user, manual if open bounty.
+- Achievements auto award based on lifetime points
+- Prizes with cost tracking and redemption
+- Leaderboard shows rankings and lifetime points
+- History tracks all point transactions
+- Admin controls for managing users, prizes and achievements
 
 ### Dashboard
 - Prebuilt dashboard with all features
@@ -282,6 +303,26 @@ When you mark a task as "Completed", all its direct subtasks are also marked com
 | `jottick.remove_ical_import` | Remove imported calendar |
 | `jottick.refresh_ical_imports` | Manually refresh all imports |
 | `jottick.export_ical` | Export JotTick data as iCal |
+
+### Points and Rewards
+| Service | Description |
+|---------|-------------|
+| `jottick.create_points_user` | Create a points user |
+| `jottick.delete_points_user` | Delete a points user |
+| `jottick.adjust_user_points` | Add or remove points from user |
+| `jottick.reset_user_points` | Reset user points to zero |
+| `jottick.set_item_points` | Set point value on list or task item |
+| `jottick.claim_item_points` | Claim points for completing item |
+| `jottick.create_prize` | Create a redeemable prize |
+| `jottick.delete_prize` | Delete a prize |
+| `jottick.redeem_prize` | Redeem prize for user |
+| `jottick.create_achievement` | Create an achievement trophy |
+| `jottick.update_achievement` | Update achievement details |
+| `jottick.delete_achievement` | Delete an achievement |
+| `jottick.award_achievement` | Award achievement to user |
+| `jottick.revoke_achievement` | Remove achievement from user |
+| `jottick.add_points_admin` | Add user as points admin |
+| `jottick.remove_points_admin` | Remove user from points admins |
 
 ---
 

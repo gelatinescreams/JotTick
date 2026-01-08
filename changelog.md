@@ -1,9 +1,31 @@
 ### Changelog
 
+### New 1.5.2 1/08/26
+- Version 1.5.2 Added Points and Rewards system for gamification/chores
+  - Achievements: Trophies that auto award based on lifetime points. Create achievements with image upload.
+  - Rewards/Prizes: Create an awards/prizes store with image upload.
+  - Full History: Track points earned, spent, achievements and more. 
+  - Admin Controls: Full admin controls including creating users, adding and removing points, and much more.
+  - Full featured dashboard.  
+- Version 1.5.2 Upgraded the calendar. Now imports into standard Home Assistant calendar.
+  - Jottick Notes, Lists and Tasks now show up in Home Assistant calendar.
+  - Use any calendar card you want now!
+  - Full admin calendar settings on dashboard.
+- Version 1.5.2 Clear Data buttons added to Quick Actions tab
+  - File paths updated to www/community/jottick per HACS documentation
+  - Fixed YAML indentation errors in packages file causing integration not found errors
+
+- **Upgrade Information**
+  - This is a major rewrite
+  - Core plugin files changed in 1.5.2, replace them all
+  - Replace all scripts, automations and inputs
+  - Replace packages/jottick.yaml if using packages
+  - If you have uploaded images from the previous version, move them from www/jottick/ to www/community/jottick
+
 ### New 1.5.1 12/29/25
-  - **Added missing automations not transferred from the test install**
+  - Added missing automations not transferred from the test install
   - Fixed 5 automations
-- **Services created and will be added to dashboard later**
+- Services created and will be added to dashboard later
   - Added Check All to mark all items in a checklist as complete with one click
   - Added Uncheck All to reset all items in a checklist to unchecked
   - Edit checklist item text without deleting and readding
@@ -12,14 +34,14 @@
   - Reorder task items via service call
   - Duplicate notes (with all content and images)
   - Duplicate checklists (with all items and settings)
-  - Duplicate task lists (with all items, subtasks, and custom columns) 
-  - **Updated README with all available services**
-  - **Fixed inconsistent datetime(s)**
-  - **Fixed multi level nested tasks**
+  - Duplicate task lists (with all items, subtasks, and custom columns)
+  - Updated README with all available services
+  - Fixed inconsistent datetime(s)
+  - Fixed multi level nested tasks
   - Fixed multi level nested completion cascade
-  - **Fixed reminder interval automation**
+  - Fixed reminder interval automation
   - Better validation for item indexes and invalid formats now show helpful error messages instead of crashing
-  - Out of range indexes are now caught with clear error messages    
+  - Out of range indexes are now caught with clear error messages
 
 - **Upgrade Information**
   - Core plugin file(s) are changed in 1.5.1, please replace them all

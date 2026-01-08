@@ -5,8 +5,9 @@
 # Create each helper exactly as specified below
 # =============================================================================
 
+#under input_text
 input_text:
-
+#under input_text
   jottick_due_date_action_data:
     name: "Due Date Action Data"
     initial: ""
@@ -223,6 +224,12 @@ input_text:
     max: 20
     icon: mdi:palette
 
+  jottick_calendar_color_completed:
+    name: "Calendar Color - Completed Items"
+    initial: "#6B7280"
+    max: 20
+    icon: mdi:palette
+
   jottick_calendar_popup_event_data:
     name: "Calendar Popup Event Data"
     initial: ""
@@ -247,8 +254,55 @@ input_text:
     max: 100
     icon: mdi:calendar
 
+  jottick_points_new_user_name:
+    name: "New Points User Name"
+    initial: ""
+    max: 100
+    icon: mdi:account-plus
 
-#under input_select  
+  jottick_points_adjust_amount:
+    name: "Points Adjust Amount"
+    initial: ""
+    max: 20
+    icon: mdi:plus-minus
+
+  jottick_points_adjust_reason:
+    name: "Points Adjust Reason"
+    initial: ""
+    max: 255
+    icon: mdi:text
+
+  jottick_points_new_prize_name:
+    name: "New Prize Name"
+    initial: ""
+    max: 100
+    icon: mdi:gift
+
+  jottick_points_new_prize_description:
+    name: "New Prize Description"
+    initial: ""
+    max: 255
+    icon: mdi:text
+
+  jottick_points_action_data:
+    name: "Points Action Data"
+    initial: ""
+    max: 255
+    icon: mdi:star
+
+  jottick_points_selected_user_id:
+    name: "Selected Points User ID"
+    initial: ""
+    max: 100
+    icon: mdi:account
+
+  jottick_points_selected_prize_id:
+    name: "Selected Prize ID"
+    initial: ""
+    max: 100
+    icon: mdi:gift
+
+#under input_select
 input_select:
 #under input_select
   jottick_reminder_target:
@@ -376,6 +430,20 @@ input_select:
     initial: "all_day"
     icon: mdi:clock-outline
 
+  jottick_points_user_picker:
+    name: "Points User Picker"
+    options:
+      - "-- Select user --"
+    initial: "-- Select user --"
+    icon: mdi:account
+
+  jottick_points_claim_user:
+    name: "Claim For User"
+    options:
+      - "-- Select user --"
+    initial: "-- Select user --"
+    icon: mdi:account-check
+
 #under input_number 
 input_number:
 #under input_number 
@@ -414,7 +482,34 @@ input_number:
     step: 15
     mode: box
     icon: mdi:clock-outline
-    
+
+  jottick_points_default_list_item:
+    name: "Default Points - List Items"
+    initial: 0
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    icon: mdi:star
+
+  jottick_points_default_task_item:
+    name: "Default Points - Task Items"
+    initial: 0
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    icon: mdi:star
+
+  jottick_points_new_prize_cost:
+    name: "New Prize Cost"
+    initial: 100
+    min: 1
+    max: 100000
+    step: 1
+    mode: box
+    icon: mdi:currency-usd
+
 #under input_boolean    
 input_boolean:
 #under input_boolean  
@@ -459,10 +554,15 @@ input_boolean:
     initial: true
     icon: mdi:calendar-import
 
-  jottick_show_calendar_settings:
-    name: "Show Calendar Settings"
+  jottick_calendar_show_overdue:
+    name: "Show Overdue Items"
+    initial: true
+    icon: mdi:calendar-alert
+
+  jottick_calendar_show_completed:
+    name: "Show Completed Items"
     initial: false
-    icon: mdi:cog
+    icon: mdi:check-circle
 
   jottick_show_calendar_event_popup:
     name: "Show Calendar Event Popup"
@@ -487,6 +587,50 @@ input_boolean:
     name: "Show Reminder Popup"
     initial: false
     icon: mdi:popup
+
+  jottick_points_enabled:
+    name: "Enable Points System"
+    icon: mdi:star-circle
+
+  jottick_points_show_on_lists:
+    name: "Show Points on List Items"
+    initial: true
+    icon: mdi:format-list-checks
+
+  jottick_points_show_on_tasks:
+    name: "Show Points on Task Items"
+    initial: true
+    icon: mdi:clipboard-list
+
+  jottick_points_allow_self_claim:
+    name: "Allow Self-Claim"
+    initial: true
+    icon: mdi:hand-pointing-up
+
+  jottick_points_show_leaderboard:
+    name: "Show Leaderboard"
+    initial: true
+    icon: mdi:podium
+
+  jottick_points_show_history:
+    name: "Show Points History"
+    initial: true
+    icon: mdi:history
+
+  jottick_points_show_edit_user_popup:
+    name: "Show Edit User Popup"
+    initial: false
+    icon: mdi:account-edit
+
+  jottick_points_show_add_prize_popup:
+    name: "Show Add Prize Popup"
+    initial: false
+    icon: mdi:gift-outline
+
+  jottick_points_show_redeem_popup:
+    name: "Show Redeem Popup"
+    initial: false
+    icon: mdi:gift-open
 
 #under input_datetime    
 input_datetime:    
@@ -654,6 +798,162 @@ template:
               {{ trigger.event.data.aliases }}
             {% elif this.attributes is defined and this.attributes.aliases is defined %}
               {{ this.attributes.aliases }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_users_update
+    sensor:
+      - name: "JotTick Points Users"
+        unique_id: jottick_points_users
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.users is defined %}
+            {{ trigger.event.data.users | length }} users
+          {% elif this.attributes is defined and this.attributes.users is defined %}
+            {{ this.attributes.users | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          users: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.users is defined %}
+              {{ trigger.event.data.users }}
+            {% elif this.attributes is defined and this.attributes.users is defined %}
+              {{ this.attributes.users }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_history_update
+    sensor:
+      - name: "JotTick Points History"
+        unique_id: jottick_points_history
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.history is defined %}
+            {{ trigger.event.data.history | length }} entries
+          {% elif this.attributes is defined and this.attributes.history is defined %}
+            {{ this.attributes.history | length }} entries
+          {% else %}
+            0 entries
+          {% endif %}
+        attributes:
+          history: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.history is defined %}
+              {{ trigger.event.data.history }}
+            {% elif this.attributes is defined and this.attributes.history is defined %}
+              {{ this.attributes.history }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_prizes_update
+    sensor:
+      - name: "JotTick Points Prizes"
+        unique_id: jottick_points_prizes
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.prizes is defined %}
+            {{ trigger.event.data.prizes | length }} prizes
+          {% elif this.attributes is defined and this.attributes.prizes is defined %}
+            {{ this.attributes.prizes | length }} prizes
+          {% else %}
+            0 prizes
+          {% endif %}
+        attributes:
+          prizes: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.prizes is defined %}
+              {{ trigger.event.data.prizes }}
+            {% elif this.attributes is defined and this.attributes.prizes is defined %}
+              {{ this.attributes.prizes }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_admins_update
+    sensor:
+      - name: "JotTick Points Admins"
+        unique_id: jottick_points_admins
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.admins is defined %}
+            {{ trigger.event.data.admins | length }} admins
+          {% elif this.attributes is defined and this.attributes.admins is defined %}
+            {{ this.attributes.admins | length }} admins
+          {% else %}
+            0 admins
+          {% endif %}
+        attributes:
+          admins: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.admins is defined %}
+              {{ trigger.event.data.admins }}
+            {% elif this.attributes is defined and this.attributes.admins is defined %}
+              {{ this.attributes.admins }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_achievements_update
+    sensor:
+      - name: "JotTick Achievements"
+        unique_id: jottick_achievements
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.achievements is defined %}
+            {{ trigger.event.data.achievements | length }} achievements
+          {% elif this.attributes is defined and this.attributes.achievements is defined %}
+            {{ this.attributes.achievements | length }} achievements
+          {% else %}
+            0 achievements
+          {% endif %}
+        attributes:
+          achievements: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.achievements is defined %}
+              {{ trigger.event.data.achievements }}
+            {% elif this.attributes is defined and this.attributes.achievements is defined %}
+              {{ this.attributes.achievements }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_user_achievements_update
+    sensor:
+      - name: "JotTick User Achievements"
+        unique_id: jottick_user_achievements
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_achievements is defined %}
+            {{ trigger.event.data.user_achievements | length }} users
+          {% elif this.attributes is defined and this.attributes.user_achievements is defined %}
+            {{ this.attributes.user_achievements | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          user_achievements: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_achievements is defined %}
+              {{ trigger.event.data.user_achievements }}
+            {% elif this.attributes is defined and this.attributes.user_achievements is defined %}
+              {{ this.attributes.user_achievements }}
             {% else %}
               {}
             {% endif %}

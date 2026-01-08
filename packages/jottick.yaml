@@ -1,0 +1,4100 @@
+# JotTick Package : All JotTick helpers, automations, and scripts
+input_text:
+
+  jottick_due_date_action_data:
+    name: "Due Date Action Data"
+    initial: ""
+    max: 255
+    icon: mdi:calendar-edit
+
+  jottick_editing_reminder_id:
+    name: "Editing Reminder ID"
+    initial: ""
+    max: 255
+
+  jottick_editing_reminder_type:
+    name: "Editing Reminder Type"
+    initial: ""
+    max: 20
+
+  jottick_editing_reminder_title:
+    name: "Editing Reminder Title"
+    initial: ""
+    max: 255
+    
+  jottick_note_id:
+    name: "Note ID"
+    initial: ""
+    max: 255
+
+  jottick_quick_action_data:
+    name: Quick Action Data
+    max: 255
+    icon: mdi:cog
+
+  jottick_note_title:
+    name: "Note Title"
+    initial: ""
+    max: 255
+
+  jottick_note_content:
+    name: "Note Content"
+    initial: ""
+    max: 255
+    mode: text
+
+  jottick_edit_note_content:
+    name: "Edit Note Content"
+    initial: ""
+    max: 255
+    mode: text
+
+  jottick_edit_note_title:
+    name: "Edit Note Title"
+    initial: ""
+    max: 255
+
+  jottick_checklist_id:
+    name: "Checklist ID"
+    initial: ""
+    max: 255
+
+  jottick_checklist_title:
+    name: "Checklist Title"
+    initial: ""
+    max: 255
+
+  jottick_task_title:
+    name: "Task Title"
+    initial: ""
+    max: 255
+    
+  jottick_selected_checklist_id:
+    name: "Selected Checklist ID"
+    initial: ""
+    max: 255
+
+  jottick_selected_checklist_title:
+    name: "Selected Checklist Title"
+    initial: ""
+    max: 255
+
+  jottick_selected_checklist_type:
+    name: "Selected Checklist Type"
+    initial: "simple"
+    max: 50
+
+  jottick_item_text:
+    name: "Item Text"
+    initial: ""
+    max: 255
+
+  jottick_loading_item:
+    name: "Loading Item"
+    initial: ""
+    max: 100
+
+  jottick_quick_task_action_data:
+    name: Quick Task Action Data
+    max: 255
+    icon: mdi:clipboard-list
+
+  jottick_quick_delete_item_data:
+    name: Quick Delete Item Data
+    max: 255
+    icon: mdi:delete
+
+  jottick_selected_task_id:
+    name: "Selected Task ID"
+    initial: ""
+    max: 255
+
+  jottick_selected_task_title:
+    name: "Selected Task Title"
+    initial: ""
+    max: 255
+
+  jottick_task_item_text:
+    name: "Task Item Text"
+    initial: ""
+    max: 255
+
+  jottick_new_status_id:
+    name: "New Status ID"
+    initial: ""
+    max: 50
+    icon: mdi:identifier
+
+  jottick_new_status_label:
+    name: "New Status Label"
+    initial: ""
+    max: 100
+    icon: mdi:label
+
+  jottick_new_status_color:
+    name: "New Status Color"
+    initial: "#3b82f6"
+    max: 20
+    icon: mdi:palette
+
+  jottick_edit_status_id:
+    name: "Edit Status ID"
+    initial: ""
+    max: 50
+
+  jottick_edit_status_label:
+    name: "Edit Status Label"
+    initial: ""
+    max: 100
+
+  jottick_edit_status_color:
+    name: "Edit Status Color"
+    initial: ""
+    max: 20
+
+  jottick_kanban_action_data:
+    name: Kanban Action Data
+    max: 255
+    icon: mdi:view-column
+
+  jottick_parent_item_index:
+    name: "Parent Item Index"
+    initial: ""
+    max: 50
+    icon: mdi:file-tree    
+
+  jottick_calendar_color_note_created:
+    name: "Calendar Color - Note Created"
+    initial: "#9CCAEB"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_note_edited:
+    name: "Calendar Color - Note Edited"
+    initial: "#6BA5D4"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_note_reminder:
+    name: "Calendar Color - Note Reminder"
+    initial: "#F7A700"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_created:
+    name: "Calendar Color - List Created"
+    initial: "#99C66D"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_edited:
+    name: "Calendar Color - List Edited"
+    initial: "#7AAD52"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_list_due:
+    name: "Calendar Color - List Due"
+    initial: "#10B981"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_task_due:
+    name: "Calendar Color - Task Due"
+    initial: "#F9E900"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_task_overdue:
+    name: "Calendar Color - Task Overdue"
+    initial: "#EF4444"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_imported:
+    name: "Calendar Color - Imported Events"
+    initial: "#A855F7"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_color_completed:
+    name: "Calendar Color - Completed Items"
+    initial: "#6B7280"
+    max: 20
+    icon: mdi:palette
+
+  jottick_calendar_popup_event_data:
+    name: "Calendar Popup Event Data"
+    initial: ""
+    max: 255
+    icon: mdi:calendar
+
+  jottick_calendar_export_filename:
+    name: "Calendar Export Filename"
+    initial: "jottick_calendar"
+    max: 100
+    icon: mdi:file-export
+
+  jottick_ical_import_url:
+    name: "iCal Import URL"
+    initial: ""
+    max: 255
+    icon: mdi:calendar-import
+
+  jottick_ical_import_name:
+    name: "iCal Import Name"
+    initial: ""
+    max: 100
+    icon: mdi:calendar
+
+  jottick_points_new_user_name:
+    name: "New Points User Name"
+    initial: ""
+    max: 100
+    icon: mdi:account-plus
+
+  jottick_points_adjust_amount:
+    name: "Points Adjust Amount"
+    initial: ""
+    max: 20
+    icon: mdi:plus-minus
+
+  jottick_points_adjust_reason:
+    name: "Points Adjust Reason"
+    initial: ""
+    max: 255
+    icon: mdi:text
+
+  jottick_points_new_prize_name:
+    name: "New Prize Name"
+    initial: ""
+    max: 100
+    icon: mdi:gift
+
+  jottick_points_new_prize_description:
+    name: "New Prize Description"
+    initial: ""
+    max: 255
+    icon: mdi:text
+
+  jottick_points_action_data:
+    name: "Points Action Data"
+    initial: ""
+    max: 255
+    icon: mdi:star
+
+  jottick_points_selected_user_id:
+    name: "Selected Points User ID"
+    initial: ""
+    max: 100
+    icon: mdi:account
+
+  jottick_points_selected_prize_id:
+    name: "Selected Prize ID"
+    initial: ""
+    max: 100
+    icon: mdi:gift
+
+#under input_select
+input_select:
+#under input_select
+  jottick_reminder_target:
+    name: "Remind Who"
+    options:
+      - "Nobody"
+    initial: "Nobody"
+    icon: mdi:account-bell
+
+  jottick_reminder_interval:
+    name: "Remind Every"
+    options:
+      - "30 minutes"
+      - "1 hour"
+      - "2 hours"
+      - "4 hours"
+      - "8 hours"
+      - "12 hours"
+      - "Once a day"
+    initial: "1 hour"
+    icon: mdi:timer-outline
+
+  jottick_reminder_days:
+    name: "On Days"
+    options:
+      - "Weekdays"
+      - "Weekends"
+      - "Every day"
+    initial: "Weekdays"
+    icon: mdi:calendar-week
+    
+  jottick_status_picker:
+    name: "Status Column Picker"
+    options:
+      - "-- Select status --"
+    initial: "-- Select status --"
+    icon: mdi:view-column
+
+  jottick_checklist_type:
+    name: "Checklist Type"
+    options:
+      - "simple"
+      - "task"
+    initial: "simple"
+
+  jottick_task_status:
+    name: "Task Status"
+    options:
+      - "todo"
+      - "in_progress"
+      - "paused"
+      - "completed"
+    initial: "todo"
+
+  jottick_note_picker:
+    name: "Note Picker"
+    options:
+      - "-- Pick a note --"
+    initial: "-- Pick a note --"
+
+  jottick_checklist_picker:
+    name: "Checklist Picker"
+    options:
+      - "-- Pick a checklist --"
+    initial: "-- Pick a checklist --"
+
+  jottick_item_picker:
+    name: "Item Picker"
+    options:
+      - "-- Select item --"
+    initial: "-- Select item --"
+
+  jottick_task_picker:
+    name: "Task Picker"
+    options:
+      - "-- Pick a task list --"
+    initial: "-- Pick a task list --"
+
+  jottick_task_item_picker:
+    name: "Task Item Picker"
+    options:
+      - "-- Select task item --"
+    initial: "-- Select task item --"
+
+  jottick_new_task_item_status:
+    name: "New Task Item Status"
+    options:
+      - "todo"
+      - "in_progress"
+      - "completed"
+    initial: "todo"
+    
+  jottick_item_status:
+    name: "Item Status"
+    options:
+      - "-- Select status --"
+      - "todo"
+      - "in_progress"
+      - "paused"
+      - "completed"
+    initial: "-- Select status --"
+
+  jottick_calendar_view:
+    name: "Calendar View"
+    options:
+      - "month"
+      - "week"
+    initial: "month"
+    icon: mdi:calendar-month
+
+  jottick_calendar_week_start:
+    name: "Calendar Week Start"
+    options:
+      - "sunday"
+      - "monday"
+    initial: "sunday"
+    icon: mdi:calendar-week
+
+  jottick_calendar_default_event_display:
+    name: "Default Event Display"
+    options:
+      - "all_day"
+      - "morning"
+      - "custom"
+    initial: "all_day"
+    icon: mdi:clock-outline
+
+  jottick_points_user_picker:
+    name: "Points User Picker"
+    options:
+      - "-- Select user --"
+    initial: "-- Select user --"
+    icon: mdi:account
+
+  jottick_points_claim_user:
+    name: "Claim For User"
+    options:
+      - "-- Select user --"
+    initial: "-- Select user --"
+    icon: mdi:account-check
+
+#under input_number 
+input_number:
+#under input_number 
+
+  jottick_selected_item_index:
+    name: "Selected Item Index"
+    min: 0
+    max: 1000
+    step: 1
+    initial: 0
+    mode: box
+
+  jottick_new_status_order:
+    name: "New Status Order"
+    initial: 0
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:sort-numeric-ascending  
+
+  jottick_calendar_default_time_hour:
+    name: "Default Event Time (Hour)"
+    initial: 9
+    min: 0
+    max: 23
+    step: 1
+    mode: box
+    icon: mdi:clock-outline
+
+  jottick_calendar_default_time_minute:
+    name: "Default Event Time (Minute)"
+    initial: 0
+    min: 0
+    max: 59
+    step: 15
+    mode: box
+    icon: mdi:clock-outline
+
+  jottick_points_default_list_item:
+    name: "Default Points - List Items"
+    initial: 0
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    icon: mdi:star
+
+  jottick_points_default_task_item:
+    name: "Default Points - Task Items"
+    initial: 0
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    icon: mdi:star
+
+  jottick_points_new_prize_cost:
+    name: "New Prize Cost"
+    initial: 100
+    min: 1
+    max: 100000
+    step: 1
+    mode: box
+    icon: mdi:currency-usd
+
+#under input_boolean    
+input_boolean:
+#under input_boolean  
+
+  jottick_calendar_show_note_created:
+    name: "Show Note Created"
+    initial: true
+    icon: mdi:note-plus
+
+  jottick_calendar_show_note_edited:
+    name: "Show Note Edited"
+    initial: true
+    icon: mdi:note-edit
+
+  jottick_calendar_show_note_reminders:
+    name: "Show Note Reminders"
+    initial: true
+    icon: mdi:bell
+
+  jottick_calendar_show_list_created:
+    name: "Show List Created"
+    initial: true
+    icon: mdi:playlist-plus
+
+  jottick_calendar_show_list_edited:
+    name: "Show List Edited"
+    initial: true
+    icon: mdi:playlist-edit
+
+  jottick_calendar_show_list_due:
+    name: "Show List Due Dates"
+    initial: true
+    icon: mdi:calendar-check
+
+  jottick_calendar_show_task_due:
+    name: "Show Task Due Dates"
+    initial: true
+    icon: mdi:calendar-clock
+
+  jottick_calendar_show_imported:
+    name: "Show Imported Events"
+    initial: true
+    icon: mdi:calendar-import
+
+  jottick_calendar_show_overdue:
+    name: "Show Overdue Items"
+    initial: true
+    icon: mdi:calendar-alert
+
+  jottick_calendar_show_completed:
+    name: "Show Completed Items"
+    initial: false
+    icon: mdi:check-circle
+
+  jottick_show_calendar_event_popup:
+    name: "Show Calendar Event Popup"
+    initial: false
+    icon: mdi:popup
+
+  jottick_item_completed:
+    name: "Item Completed"
+    initial: false
+
+  jottick_is_loading:
+    name: "Is Loading"
+    initial: false
+    icon: mdi:loading
+
+  jottick_enable_reminder:
+    name: "Enable Reminder"
+    initial: false
+    icon: mdi:bell-plus
+
+  jottick_show_reminder_popup:
+    name: "Show Reminder Popup"
+    initial: false
+    icon: mdi:popup
+
+  jottick_points_enabled:
+    name: "Enable Points System"
+    icon: mdi:star-circle
+
+  jottick_points_show_on_lists:
+    name: "Show Points on List Items"
+    initial: true
+    icon: mdi:format-list-checks
+
+  jottick_points_show_on_tasks:
+    name: "Show Points on Task Items"
+    initial: true
+    icon: mdi:clipboard-list
+
+  jottick_points_allow_self_claim:
+    name: "Allow Self-Claim"
+    initial: true
+    icon: mdi:hand-pointing-up
+
+  jottick_points_show_leaderboard:
+    name: "Show Leaderboard"
+    initial: true
+    icon: mdi:podium
+
+  jottick_points_show_history:
+    name: "Show Points History"
+    initial: true
+    icon: mdi:history
+
+  jottick_points_show_edit_user_popup:
+    name: "Show Edit User Popup"
+    initial: false
+    icon: mdi:account-edit
+
+  jottick_points_show_add_prize_popup:
+    name: "Show Add Prize Popup"
+    initial: false
+    icon: mdi:gift-outline
+
+  jottick_points_show_redeem_popup:
+    name: "Show Redeem Popup"
+    initial: false
+    icon: mdi:gift-open
+
+#under input_datetime    
+input_datetime:    
+#under input_datetime 
+  jottick_reminder_start:
+    name: "From Time"
+    has_date: false
+    has_time: true
+
+  jottick_reminder_end:
+    name: "Until Time"
+    has_date: false
+    has_time: true
+
+  jottick_calendar_selected_date:
+    name: "Selected Calendar Date"
+    has_date: true
+    has_time: false
+
+    
+template:
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_reminder_update
+    sensor:
+      - name: "JotTick Reminders"
+        unique_id: jottick_reminders_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
+            {{ trigger.event.data.configs | length }}
+          {% else %}
+            {{ this.attributes.configs | default({}) | length }}
+          {% endif %}
+        attributes:
+          configs: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
+              {{ trigger.event.data.configs }}
+            {% else %}
+              {{ this.attributes.configs | default({}) }}
+            {% endif %}
+            
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: time_pattern
+        minutes: "/30"
+    sensor:
+      - name: "JotTick Available Notifiers"
+        unique_id: jottick_available_notifiers
+        state: "{{ this.attributes.notifiers | default([]) | length }}"
+        attributes:
+          notifiers: >
+            {% set ns = namespace(services=[]) %}
+            {% for state in states.device_tracker %}
+              {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
+                {% set device_name = state.name | slugify %}
+                {% set service_name = 'notify.mobile_app_' ~ device_name %}
+                {% set ns.services = ns.services + [service_name] %}
+              {% endif %}
+            {% endfor %}
+            {% if ns.services | length == 0 %}
+              {% for state in states.device_tracker %}
+                {% set eid = state.entity_id | lower %}
+                {% if 'iphone' in eid or 'phone' in eid or 'pixel' in eid or 'samsung' in eid or 'galaxy' in eid %}
+                  {% set device_name = state.object_id %}
+                  {% set service_name = 'notify.mobile_app_' ~ device_name %}
+                  {% set ns.services = ns.services + [service_name] %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {{ ns.services | unique | list }}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_recurring_update
+    sensor:
+      - name: "JotTick Recurring"
+        unique_id: jottick_recurring_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
+            {{ trigger.event.data.configs | length }}
+          {% else %}
+            {{ this.attributes.configs | default({}) | length }}
+          {% endif %}
+        attributes:
+          configs: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.configs is defined %}
+              {{ trigger.event.data.configs }}
+            {% else %}
+              {{ this.attributes.configs | default({}) }}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_scheduled_notes_update
+    sensor:
+      - name: "JotTick Scheduled Notes"
+        unique_id: jottick_scheduled_notes_storage
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.schedules is defined %}
+            {{ trigger.event.data.schedules | length }}
+          {% else %}
+            {{ this.attributes.schedules | default({}) | length }}
+          {% endif %}
+        attributes:
+          schedules: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.schedules is defined %}
+              {{ trigger.event.data.schedules }}
+            {% else %}
+              {{ this.attributes.schedules | default({}) }}
+            {% endif %}          
+            
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_user_devices_update
+    sensor:
+      - name: "JotTick User Devices"
+        unique_id: jottick_user_devices
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_devices is defined %}
+            {{ trigger.event.data.user_devices | length }} users
+          {% elif this.attributes is defined and this.attributes.user_devices is defined %}
+            {{ this.attributes.user_devices | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          user_devices: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_devices is defined %}
+              {{ trigger.event.data.user_devices }}
+            {% elif this.attributes is defined and this.attributes.user_devices is defined %}
+              {{ this.attributes.user_devices }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_aliases_update
+    sensor:
+      - name: "JotTick Reminder Aliases"
+        unique_id: jottick_reminder_aliases
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.aliases is defined %}
+            {{ trigger.event.data.aliases | length }} aliases
+          {% elif this.attributes is defined and this.attributes.aliases is defined %}
+            {{ this.attributes.aliases | length }} aliases
+          {% else %}
+            0 aliases
+          {% endif %}
+        attributes:
+          aliases: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.aliases is defined %}
+              {{ trigger.event.data.aliases }}
+            {% elif this.attributes is defined and this.attributes.aliases is defined %}
+              {{ this.attributes.aliases }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_users_update
+    sensor:
+      - name: "JotTick Points Users"
+        unique_id: jottick_points_users
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.users is defined %}
+            {{ trigger.event.data.users | length }} users
+          {% elif this.attributes is defined and this.attributes.users is defined %}
+            {{ this.attributes.users | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          users: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.users is defined %}
+              {{ trigger.event.data.users }}
+            {% elif this.attributes is defined and this.attributes.users is defined %}
+              {{ this.attributes.users }}
+            {% else %}
+              {}
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_history_update
+    sensor:
+      - name: "JotTick Points History"
+        unique_id: jottick_points_history
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.history is defined %}
+            {{ trigger.event.data.history | length }} entries
+          {% elif this.attributes is defined and this.attributes.history is defined %}
+            {{ this.attributes.history | length }} entries
+          {% else %}
+            0 entries
+          {% endif %}
+        attributes:
+          history: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.history is defined %}
+              {{ trigger.event.data.history }}
+            {% elif this.attributes is defined and this.attributes.history is defined %}
+              {{ this.attributes.history }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_prizes_update
+    sensor:
+      - name: "JotTick Points Prizes"
+        unique_id: jottick_points_prizes
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.prizes is defined %}
+            {{ trigger.event.data.prizes | length }} prizes
+          {% elif this.attributes is defined and this.attributes.prizes is defined %}
+            {{ this.attributes.prizes | length }} prizes
+          {% else %}
+            0 prizes
+          {% endif %}
+        attributes:
+          prizes: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.prizes is defined %}
+              {{ trigger.event.data.prizes }}
+            {% elif this.attributes is defined and this.attributes.prizes is defined %}
+              {{ this.attributes.prizes }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_points_admins_update
+    sensor:
+      - name: "JotTick Points Admins"
+        unique_id: jottick_points_admins
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.admins is defined %}
+            {{ trigger.event.data.admins | length }} admins
+          {% elif this.attributes is defined and this.attributes.admins is defined %}
+            {{ this.attributes.admins | length }} admins
+          {% else %}
+            0 admins
+          {% endif %}
+        attributes:
+          admins: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.admins is defined %}
+              {{ trigger.event.data.admins }}
+            {% elif this.attributes is defined and this.attributes.admins is defined %}
+              {{ this.attributes.admins }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_achievements_update
+    sensor:
+      - name: "JotTick Achievements"
+        unique_id: jottick_achievements
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.achievements is defined %}
+            {{ trigger.event.data.achievements | length }} achievements
+          {% elif this.attributes is defined and this.attributes.achievements is defined %}
+            {{ this.attributes.achievements | length }} achievements
+          {% else %}
+            0 achievements
+          {% endif %}
+        attributes:
+          achievements: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.achievements is defined %}
+              {{ trigger.event.data.achievements }}
+            {% elif this.attributes is defined and this.attributes.achievements is defined %}
+              {{ this.attributes.achievements }}
+            {% else %}
+              []
+            {% endif %}
+
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: jottick_user_achievements_update
+    sensor:
+      - name: "JotTick User Achievements"
+        unique_id: jottick_user_achievements
+        state: >
+          {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_achievements is defined %}
+            {{ trigger.event.data.user_achievements | length }} users
+          {% elif this.attributes is defined and this.attributes.user_achievements is defined %}
+            {{ this.attributes.user_achievements | length }} users
+          {% else %}
+            0 users
+          {% endif %}
+        attributes:
+          user_achievements: >
+            {% if trigger.platform == 'event' and trigger.event is defined and trigger.event.data is defined and trigger.event.data.user_achievements is defined %}
+              {{ trigger.event.data.user_achievements }}
+            {% elif this.attributes is defined and this.attributes.user_achievements is defined %}
+              {{ this.attributes.user_achievements }}
+            {% else %}
+              {}
+            {% endif %}
+
+#automation
+automation:
+#automation
+- id: jottick_auto_update_note_picker_fixed
+  alias: 'JotTick: Auto Update Note Picker'
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.jottick_total_notes
+  - platform: homeassistant
+    event: start
+  action:
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_note_picker
+    data:
+      options: "{%- set ns = namespace(items=['-- Pick a note --'], titles={}) -%}
+        {%- set notes = states.sensor | selectattr('name', 'search', '^JotTick Note:')
+        | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in notes
+        -%}\n  {%- set title = state.state -%}\n  {%- if title in ns.titles -%}\n
+        \   {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}\n
+        \ {%- else -%}\n    {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}\n
+        \ {%- endif -%}\n{%- endfor -%} {%- set ns2 = namespace(counts={}) -%} {%-
+        for state in notes | sort(attribute='attributes.updated', reverse=true) -%}\n
+        \ {%- set title = state.state -%}\n  {%- set note_id = state_attr(state.entity_id,
+        'note_id') -%}\n  {%- if ns.titles[title] > 1 -%}\n    {%- set current_count
+        = ns2.counts.get(title, 0) + 1 -%}\n    {%- set ns2.counts = dict(ns2.counts,
+        **{title: current_count}) -%}\n    {%- set display_title = title ~ ' (' ~
+        note_id[-6:] ~ ')' -%}\n  {%- else -%}\n    {%- set display_title = title
+        -%}\n  {%- endif -%}\n  {%- set ns.items = ns.items + [display_title] -%}\n{%-
+        endfor -%} {{ ns.items }}"
+
+- id: jottick_auto_update_checklist_picker_fixed
+  alias: 'JotTick: Auto Update Checklist Picker'
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.jottick_total_checklists
+  - platform: homeassistant
+    event: start
+  action:
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_checklist_picker
+    data:
+      options: "{%- set ns = namespace(items=['-- Pick a checklist --'], titles={})
+        -%} {%- set lists = states.sensor | selectattr('name', 'search', '^JotTick List:')
+        | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in lists
+        -%}\n  {%- set title = state_attr(state.entity_id, 'title') -%}\n  {%- if
+        title -%}\n    {%- if title in ns.titles -%}\n      {%- set ns.titles = dict(ns.titles,
+        **{title: ns.titles[title] + 1}) -%}\n    {%- else -%}\n      {%- set ns.titles
+        = dict(ns.titles, **{title: 1}) -%}\n    {%- endif -%}\n  {%- endif -%}\n{%-
+        endfor -%} {%- set ns2 = namespace(counts={}) -%} {%- for state in lists |
+        sort(attribute='attributes.updated', reverse=true) -%}\n  {%- set title =
+        state_attr(state.entity_id, 'title') -%}\n  {%- if title -%}\n    {%- set
+        list_id = state_attr(state.entity_id, 'checklist_id') -%}\n    {%- if ns.titles[title]
+        > 1 -%}\n      {%- set current_count = ns2.counts.get(title, 0) + 1 -%}\n
+        \     {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}\n
+        \     {%- set display_title = title ~ ' (' ~ list_id[-6:] ~ ')' -%}\n    {%-
+        else -%}\n      {%- set display_title = title -%}\n    {%- endif -%}\n    {%-
+        set ns.items = ns.items + [display_title] -%}\n  {%- endif -%}\n{%- endfor
+        -%} {{ ns.items }}"
+
+- id: jottick_load_note_when_picked
+  alias: 'JotTick: Load Note When Picked'
+  trigger:
+  - platform: state
+    entity_id: input_select.jottick_note_picker
+  condition:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'',
+      ''-- Pick a note --''] }}'
+  action:
+  - variables:
+      selected_option: '{{ states(''input_select.jottick_note_picker'') }}'
+      selected_title: "{%- if '(' in selected_option and selected_option.endswith(')')
+        -%}\n  {{ selected_option.split(' (')[0] }}\n{%- else -%}\n  {{ selected_option
+        }}\n{%- endif -%}"
+      note_id_hint: "{%- if '(' in selected_option and selected_option.endswith(')')
+        -%}\n  {{ selected_option.split('(')[-1].rstrip(')') }}\n{%- else -%}\n  \n{%-
+        endif -%}"
+      note_entity: "{%- for s in states.sensor -%}\n  {%- if s.name.startswith('JotTick
+        Note:') -%}\n    {%- if note_id_hint and state_attr(s.entity_id, 'note_id')
+        and state_attr(s.entity_id, 'note_id').endswith(note_id_hint) -%}\n      {{
+        s.entity_id }}\n    {%- elif not note_id_hint and s.state == selected_title
+        -%}\n      {{ s.entity_id }}\n    {%- endif -%}\n  {%- endif -%}\n{%- endfor
+        -%}"
+  - condition: template
+    value_template: '{{ note_entity | trim != '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_note_id
+    data:
+      value: '{{ state_attr(note_entity, ''note_id'') or '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_edit_note_title
+    data:
+      value: '{{ states(note_entity) }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_edit_note_content
+    data:
+      value: '{{ state_attr(note_entity, ''content'') or '''' }}'
+      
+- id: jottick_load_checklist_when_picked
+  alias: 'JotTick: Load Checklist When Picked'
+  trigger:
+  - platform: state
+    entity_id: input_select.jottick_checklist_picker
+  condition:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'',
+      ''-- Pick a checklist --''] }}'
+  action:
+  - variables:
+      selected_option: '{{ states(''input_select.jottick_checklist_picker'') }}'
+      selected_title: "{%- if '(' in selected_option and selected_option.endswith(')')
+        -%}\n  {{ selected_option.split(' (')[0] }}\n{%- else -%}\n  {{ selected_option
+        }}\n{%- endif -%}"
+      list_id_hint: "{%- if '(' in selected_option and selected_option.endswith(')')
+        -%}\n  {{ selected_option.split('(')[-1].rstrip(')') }}\n{%- else -%}\n  \n{%-
+        endif -%}"
+      list_entity: "{%- for s in states.sensor -%}\n  {%- if s.name.startswith('JotTick
+        List:') -%}\n    {%- set title = state_attr(s.entity_id, 'title') -%}\n    {%-
+        set list_id = state_attr(s.entity_id, 'checklist_id') -%}\n    {%- if list_id_hint
+        and list_id and list_id.endswith(list_id_hint) -%}\n      {{ s.entity_id }}\n
+        \   {%- elif not list_id_hint and title == selected_title -%}\n      {{ s.entity_id
+        }}\n    {%- endif -%}\n  {%- endif -%}\n{%- endfor -%}"
+  - condition: template
+    value_template: '{{ list_entity | trim != '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_checklist_id
+    data:
+      value: '{{ state_attr(list_entity, ''checklist_id'') or '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_checklist_title
+    data:
+      value: '{{ state_attr(list_entity, ''title'') or '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_checklist_type
+    data:
+      value: '{{ state_attr(list_entity, ''type'') or ''simple'' }}'
+      
+- id: jottick_load_checklist_items
+  alias: 'JotTick: Load Checklist Items'
+  trigger:
+  - platform: state
+    entity_id: input_text.jottick_selected_checklist_id
+  condition:
+  - condition: template
+    value_template: '{{ states(''input_text.jottick_selected_checklist_id'') not in
+      ['''', ''unknown'', ''unavailable''] }}'
+  action:
+  - variables:
+      checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+      list_entity: "{%- for s in states.sensor -%}\n  {%- if s.name.startswith('JotTick
+        List:') -%}\n    {%- if state_attr(s.entity_id, 'checklist_id') == checklist_id
+        -%}\n      {{ s.entity_id }}\n    {%- endif -%}\n  {%- endif -%}\n{%- endfor
+        -%}"
+  - condition: template
+    value_template: '{{ list_entity | trim != '''' }}'
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_item_picker
+    data:
+      options: "{%- set items = state_attr(list_entity, 'items') or [] -%}\n{%- set
+        ns = namespace(options=['-- Select item --']) -%}\n{%- for item in items -%}\n
+        \ {%- set text = item.text | default('') -%}\n  {%- if text -%}\n    {%- set
+        display = '[✓] ' ~ text if item.completed else '[ ] ' ~ text -%}\n    {%- set
+        ns.options = ns.options + [display] -%}\n  {%- endif -%}\n{%- endfor -%}\n{{
+        ns.options }}"
+
+- id: jottick_check_reminder_notifications
+  alias: "JotTick: Check Reminder Notifications"
+  mode: single
+  trigger:
+    - platform: time_pattern
+      minutes: "/5"
+  condition:
+    - condition: template
+      value_template: "{{ (state_attr('sensor.jottick_reminders', 'configs') or {}) | length > 0 }}"
+  action:
+    - variables:
+        configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+        current_hour: "{{ now().hour }}"
+        current_minute: "{{ now().minute }}"
+        current_day: "{{ now().strftime('%A') }}"
+        is_weekday: "{{ current_day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] }}"
+    - repeat:
+        for_each: "{{ configs.keys() | list if configs is mapping else [] }}"
+        sequence:
+          - variables:
+              item_id: "{{ repeat.item }}"
+              config: "{{ configs[item_id] if configs[repeat.item] is defined else {} }}"
+              item_type: "{{ config.type | default('checklist') }}"
+              days: "{{ config.days | default('every_day') }}"
+              start_time: "{{ config.start | default('08:00') }}"
+              end_time: "{{ config.end | default('20:00') }}"
+              interval_str: "{{ config.interval | default('1 hour') }}"
+              last_sent: "{{ config.last_sent | default(0) }}"
+              interval_minutes: >
+                {% set i = interval_str %}
+                {% if i == '30 minutes' %}30
+                {% elif i == '1 hour' %}60
+                {% elif i == '2 hours' %}120
+                {% elif i == '4 hours' %}240
+                {% elif i == '8 hours' %}480
+                {% elif i == '12 hours' %}720
+                {% elif i == 'Once a day' %}1440
+                {% else %}60{% endif %}
+              should_run_today: >
+                {% if days == 'weekdays' %}
+                  {{ is_weekday }}
+                {% elif days == 'weekends' %}
+                  {{ not is_weekday }}
+                {% else %}
+                  true
+                {% endif %}
+              start_parts: "{{ start_time.split(':') }}"
+              end_parts: "{{ end_time.split(':') }}"
+              start_minutes: "{{ (start_parts[0] | int) * 60 + (start_parts[1] | int) }}"
+              end_minutes: "{{ (end_parts[0] | int) * 60 + (end_parts[1] | int) }}"
+              current_minutes: "{{ current_hour * 60 + current_minute }}"
+              in_time_window: "{{ current_minutes >= start_minutes | int and current_minutes <= end_minutes | int }}"
+              minutes_since_last: "{{ ((as_timestamp(now()) - (last_sent | float(0))) / 60) | int if last_sent else 9999 }}"
+              should_send: "{{ should_run_today and in_time_window and minutes_since_last >= interval_minutes | int }}"
+          - condition: template
+            value_template: "{{ should_send }}"
+          - variables:
+              sensor_entity: >
+                {% set ns = namespace(found='') %}
+                {% if item_type == 'task' %}
+                  {% for s in states.sensor %}
+                    {% if s.attributes.task_id is defined and s.attributes.task_id == item_id %}
+                      {% set ns.found = s.entity_id %}
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  {% for s in states.sensor %}
+                    {% if s.attributes.checklist_id is defined and s.attributes.checklist_id == item_id %}
+                      {% set ns.found = s.entity_id %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                {{ ns.found }}
+          - condition: template
+            value_template: "{{ sensor_entity | trim != '' }}"
+          - variables:
+              total_items: "{{ state_attr(sensor_entity, 'total') | int(0) }}"
+              completed_items: "{{ state_attr(sensor_entity, 'completed') | int(0) }}"
+              has_incomplete: "{{ total_items > completed_items }}"
+              item_title: "{{ state_attr(sensor_entity, 'title') | default('Reminder') }}"
+              incomplete_count: "{{ total_items - completed_items }}"
+          - condition: template
+            value_template: "{{ has_incomplete }}"
+          - variables:
+              custom_title: "{{ config.custom_title | default('') }}"
+              custom_message: "{{ config.custom_message | default('') }}"
+              targets: "{{ config.targets | default(config.target | default('')) }}"
+              target_list: "{{ targets.split(',') if targets else [] }}"
+              notification_title: "{% if custom_title != '' %}{{ custom_title }}{% else %}{{ item_title }}{% endif %}"
+              incomplete_items_list: >
+                {% if item_type == 'task' %}
+                  {% set items = (state_attr(sensor_entity, 'flat_items') or []) %}
+                  {% set incomplete = items | rejectattr('status', 'eq', 'completed') | map(attribute='text') | list %}
+                {% else %}
+                  {% set items = (state_attr(sensor_entity, 'items') or []) %}
+                  {% set incomplete = items | selectattr('completed', 'eq', false) | map(attribute='text') | list %}
+                {% endif %}
+                {{ incomplete | join('\n• ') }}
+              notification_message: >
+                {% if custom_message != '' %}
+                  {{ custom_message }}
+                {% else %}
+                  • {{ incomplete_items_list | trim }}
+                {% endif %}
+          - repeat:
+              count: "{{ target_list | length }}"
+              sequence:
+                - service: "{{ target_list[repeat.index - 1] }}"
+                  data:
+                    title: "{{ notification_title }}"
+                    message: "{{ notification_message }}"
+                    data:
+                      tag: "jottick_{{ item_id }}"
+                      actions:
+                        - action: "JotTick_OPEN_{{ item_id }}"
+                          title: "Open"
+                        - action: "JotTick_SNOOZE_{{ item_id }}"
+                          title: "Snooze"
+          - service: script.jottick_update_last_sent
+            data:
+              item_id: "{{ item_id }}"
+- id: jottick_handle_notification_actions
+  alias: "JotTick: Handle Notification Actions"
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+  condition:
+    - condition: template
+      value_template: "{{ trigger.event.data.action.startswith('JotTick_') }}"
+  action:
+    - variables:
+        action: "{{ trigger.event.data.action }}"
+        item_id: "{{ action.split('_', 2)[2] if action.split('_') | length > 2 else '' }}"
+    - choose:
+        - conditions: "{{ 'SNOOZE' in action }}"
+          sequence:
+            - service: script.jottick_update_last_sent
+              data:
+                item_id: "{{ item_id }}"
+        - conditions: "{{ 'OPEN' in action }}"
+          sequence:
+            - service: persistent_notification.create
+              data:
+                title: "JotTick Item"
+                message: "Open your JotTick dashboard to view this item."
+                notification_id: "jottick_open_{{ item_id }}"        
+
+- id: jottick_check_recurring_resets
+  alias: "JotTick: Check Recurring Resets"
+  trigger:
+    - platform: time_pattern
+      minutes: "/1"
+  action:
+    - variables:
+        configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
+        current_time: "{{ now().strftime('%H:%M') }}"
+        current_day: "{{ now().strftime('%A') }}"
+        is_weekday: "{{ current_day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] }}"
+    - condition: template
+      value_template: "{{ configs is mapping and configs | length > 0 }}"
+    - repeat:
+        for_each: "{{ configs.keys() | list if configs is mapping else [] }}"
+        sequence:
+          - variables:
+              item_id: "{{ repeat.item }}"
+              config: "{{ configs[item_id] if configs[repeat.item] is defined else {} }}"
+              item_type: "{{ config.type | default('checklist') }}"
+              days: "{{ config.days | default('every_day') }}"
+              reset_times: "{{ config.reset_times | default([]) if config.reset_times is defined else [] }}"
+              should_run_today: >
+                {% if days == 'weekdays' %}
+                  {{ is_weekday }}
+                {% elif days == 'weekends' %}
+                  {{ not is_weekday }}
+                {% else %}
+                  true
+                {% endif %}
+              time_matches: "{{ current_time in reset_times }}"
+          - condition: template
+            value_template: "{{ should_run_today and time_matches }}"
+          - choose:
+              - conditions: "{{ item_type == 'task' }}"
+                sequence:
+                  - service: script.jottick_reset_task
+                    data:
+                      task_id: "{{ item_id }}"
+              - conditions: "{{ item_type == 'checklist' }}"
+                sequence:
+                  - service: script.jottick_reset_checklist
+                    data:
+                      checklist_id: "{{ item_id }}"
+
+- id: jottick_process_scheduled_notes
+  alias: "JotTick Process Scheduled Notes"
+  mode: single
+  trigger:
+    - platform: time_pattern
+      minutes: "/1"
+  condition:
+    - condition: template
+      value_template: "{{ (state_attr('sensor.jottick_scheduled_notes', 'schedules') or {}) | length > 0 }}"
+  action:
+    - variables:
+        schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+        now_ts: "{{ as_timestamp(now()) }}"
+    - repeat:
+        for_each: "{{ schedules.keys() | list }}"
+        sequence:
+          - variables:
+              sched_id: "{{ repeat.item }}"
+              sched: "{{ schedules[sched_id] }}"
+              sched_time: "{{ sched.scheduled_time | default('') }}"
+              sched_ts: "{{ as_timestamp(sched_time) if sched_time else 0 }}"
+          - condition: template
+            value_template: "{{ sched_ts > 0 and sched_ts <= now_ts }}"
+          - service: script.jottick_send_scheduled_note
+            data:
+              schedule_id: "{{ sched_id }}"
+              title: "{{ sched.title | default('Reminder') }}"
+              message: "{{ sched.message | default('') }}"
+              targets: "{{ sched.targets | default('') }}"
+              auto_delete: "{{ sched.auto_delete | default(false) }}"  
+              
+- id: jottick_process_quick_action
+  alias: "JotTick: Process Quick Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        list_id: "{{ parts[0] }}"
+        action: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'delete' }}"
+          sequence:
+            - service: jottick.delete_checklist
+              data:
+                checklist_id: "{{ list_id }}"
+        - conditions: "{{ action == 'add' }}"
+          sequence:
+            - variables:
+                list_entity: >
+                  {% for s in states.sensor %}
+                    {% if s.name.startswith('JotTick List:') %}
+                      {% if state_attr(s.entity_id, 'checklist_id') == list_id %}
+                        {{ s.entity_id }}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                current_items: "{{ state_attr(list_entity | trim, 'items') | default([]) | length }}"
+                item_text: "{{ parts[2] }}"
+                due_date: "{{ parts[3] | default('') }}"
+                due_time: "{{ parts[4] | default('') }}"
+                item_points: "{{ parts[5] | default('') }}"
+                assigned_to: "{{ parts[6] | default('') }}"
+            - service: jottick.add_checklist_item
+              data:
+                checklist_id: "{{ list_id }}"
+                text: "{{ item_text }}"
+                points: >
+                  {% if item_points != '' %}{{ item_points | int }}{% endif %}
+                assigned_to: >
+                  {% if assigned_to != '' %}{{ assigned_to }}{% endif %}
+            - condition: template
+              value_template: "{{ due_date != '' }}"
+            - delay:
+                milliseconds: 500
+            - service: jottick.set_checklist_item_due_date
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ current_items }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
+        - conditions: "{{ action == 'check' }}"
+          sequence:
+            - service: jottick.check_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+        - conditions: "{{ action == 'uncheck' }}"
+          sequence:
+            - service: jottick.uncheck_item
+              data:
+                checklist_id: "{{ list_id }}"
+                item_index: "{{ parts[2] }}"
+      default:
+        - variables:
+            item_index: "{{ action }}"
+            check_action: "{{ parts[2] }}"
+        - choose:
+            - conditions: "{{ check_action == 'check' }}"
+              sequence:
+                - service: jottick.check_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
+            - conditions: "{{ check_action == 'uncheck' }}"
+              sequence:
+                - service: jottick.uncheck_item
+                  data:
+                    checklist_id: "{{ list_id }}"
+                    item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_action_data
+      data:
+        value: ""
+        
+        
+- id: jottick_process_quick_task_action
+  alias: "JotTick: Process Quick Task Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_task_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        task_id: "{{ parts[0] }}"
+        action: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'delete' }}"
+          sequence:
+            - service: jottick.delete_task
+              data:
+                task_id: "{{ task_id }}"
+                
+        - conditions: "{{ action == 'add' }}"
+          sequence:
+            - variables:
+                task_entity: >
+                  {% for s in states.sensor %}
+                    {% if s.name.startswith('JotTick Task:') %}
+                      {% if state_attr(s.entity_id, 'task_id') == task_id %}
+                        {{ s.entity_id }}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                current_items: "{{ (state_attr(task_entity | trim, 'items') or []) | length }}"
+                item_text: "{{ parts[2] }}"
+                item_status: "{{ parts[3] | default('todo') }}"
+                due_date: "{{ parts[4] | default('') }}"
+                due_time: "{{ parts[5] | default('') }}"
+                item_points: "{{ parts[6] | default('') }}"
+                assigned_to: "{{ parts[7] | default('') }}"
+
+            - service: jottick.add_task_item
+              data:
+                task_id: "{{ task_id }}"
+                text: "{{ item_text }}"
+                status: "{{ item_status }}"
+                points: >
+                  {% if item_points != '' %}{{ item_points | int }}{% endif %}
+                assigned_to: >
+                  {% if assigned_to != '' %}{{ assigned_to }}{% endif %}
+
+            - condition: template
+              value_template: "{{ due_date != '' }}"
+            - delay:
+                milliseconds: 500
+            - service: jottick.set_task_item_due_date
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ current_items }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
+        - conditions: "{{ parts[2] | default('') == 'status' }}"
+          sequence:
+            - service: jottick.update_task_item_status
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ action }}"
+                status: "{{ parts[3] }}"
+        - conditions: "{{ parts[2] | default('') == 'delete_item' }}"
+          sequence:
+            - service: jottick.delete_task_item
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ action }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_task_action_data
+      data:
+        value: ""
+- id: jottick_process_due_date_action
+  alias: "JotTick: Process Due Date Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_due_date_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        item_type: "{{ parts[0] }}"
+        item_id: "{{ parts[1] }}"
+        item_index: "{{ parts[2] }}"
+        action: "{{ parts[3] }}"
+        due_date: "{{ parts[4] | default('') }}"
+        due_time: "{{ parts[5] | default('') }}"
+    - choose:
+        - conditions: "{{ item_type == 'list' and action == 'set' }}"
+          sequence:
+            - service: jottick.set_checklist_item_due_date
+              data:
+                checklist_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"
+        
+        - conditions: "{{ item_type == 'list' and action == 'clear' }}"
+          sequence:
+            - service: jottick.clear_checklist_item_due_date
+              data:
+                checklist_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+        
+        - conditions: "{{ item_type == 'task' and action == 'set' }}"
+          sequence:
+            - service: jottick.set_task_item_due_date
+              data:
+                task_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+                due_date: "{{ due_date }}"
+                due_time: "{{ due_time if due_time != '' else none }}"        
+        - conditions: "{{ item_type == 'task' and action == 'clear' }}"
+          sequence:
+            - service: jottick.clear_task_item_due_date
+              data:
+                task_id: "{{ item_id }}"
+                item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_due_date_action_data
+      data:
+        value: "" 
+- id: jottick_process_kanban_action
+  alias: "JotTick: Process Kanban Action"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_kanban_action_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        action: "{{ parts[0] }}"
+        task_id: "{{ parts[1] }}"
+    - choose:
+        - conditions: "{{ action == 'create_status' }}"
+          sequence:
+            - service: jottick.create_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+                label: "{{ parts[3] }}"
+                color: "{{ parts[4] | default('#6b7280') }}"
+        - conditions: "{{ action == 'update_status' }}"
+          sequence:
+            - service: jottick.update_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+                label: "{{ parts[3] }}"
+        - conditions: "{{ action == 'delete_status' }}"
+          sequence:
+            - service: jottick.delete_task_status
+              data:
+                task_id: "{{ task_id }}"
+                status_id: "{{ parts[2] }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_kanban_action_data
+      data:
+        value: ""
+        
+- id: jottick_process_quick_delete_item
+  alias: "JotTick: Process Quick Delete Item"
+  trigger:
+    - platform: state
+      entity_id: input_text.jottick_quick_delete_item_data
+  condition:
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['', 'unknown', 'unavailable'] }}"
+  action:
+    - variables:
+        parts: "{{ trigger.to_state.state.split('|||') }}"
+        list_id: "{{ parts[0] }}"
+        item_index: "{{ parts[1] }}"
+    - service: jottick.delete_checklist_item
+      data:
+        checklist_id: "{{ list_id }}"
+        item_index: "{{ item_index }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_quick_delete_item_data
+      data:
+        value: ""        
+
+- id: jottick_refresh_ical_imports
+  alias: 'JotTick: Auto Refresh iCal Imports'
+  trigger:
+    - platform: time_pattern
+      minutes: "/30"
+    - platform: homeassistant
+      event: start
+  condition:
+    - condition: template
+      value_template: "{{ (state_attr('sensor.jottick_imported_events', 'sources') or []) | length > 0 }}"
+  action:
+    - service: jottick.refresh_ical_imports
+
+- id: jottick_regenerate_ical_export
+  alias: 'JotTick: Regenerate iCal Export on Changes'
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.jottick_total_notes
+        - sensor.jottick_total_checklists
+        - sensor.jottick_total_tasks
+  action:
+    - delay: "00:00:02"
+    - service: jottick.export_ical
+
+- id: jottick_init_calendar_date
+  alias: 'JotTick: Initialize Calendar Date'
+  trigger:
+    - platform: homeassistant
+      event: start
+  action:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.jottick_calendar_selected_date
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"                
+        
+- id: jottick_auto_update_task_picker_fixed
+  alias: 'JotTick: Auto Update Task Picker'
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.jottick_total_tasks
+  - platform: homeassistant
+    event: start
+  action:
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_task_picker
+    data:
+      options: >
+        {%- set ns = namespace(items=['-- Pick a task list --'], titles={}) -%}
+        {%- set tasks = states.sensor | selectattr('name', 'search', '^JotTick Task:')
+        | rejectattr('state', 'eq', 'unavailable') | list -%}
+        {%- for state in tasks -%}
+          {%- set title = state_attr(state.entity_id, 'title') -%}
+          {%- if title -%}
+            {%- if title in ns.titles -%}
+              {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}
+            {%- else -%}
+              {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- set ns2 = namespace(counts={}) -%}
+        {%- for state in tasks | sort(attribute='attributes.updated', reverse=true) -%}
+          {%- set title = state_attr(state.entity_id, 'title') -%}
+          {%- if title -%}
+            {%- set task_id = state_attr(state.entity_id, 'task_id') -%}
+            {%- if ns.titles[title] > 1 -%}
+              {%- set current_count = ns2.counts.get(title, 0) + 1 -%}
+              {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}
+              {%- set display_title = title ~ ' (' ~ task_id[-6:] ~ ')' -%}
+            {%- else -%}
+              {%- set display_title = title -%}
+            {%- endif -%}
+            {%- set ns.items = ns.items + [display_title] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.items }}        
+        
+- id: jottick_load_task_when_picked
+  alias: 'JotTick: Load Task When Picked'
+  trigger:
+  - platform: state
+    entity_id: input_select.jottick_task_picker
+  condition:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'', ''-- Pick a task list --''] }}'
+  action:
+  - variables:
+      selected_option: '{{ states(''input_select.jottick_task_picker'') }}'
+      selected_title: >
+        {%- if '(' in selected_option and selected_option.endswith(')') -%}
+          {{ selected_option.split(' (')[0] }}
+        {%- else -%}
+          {{ selected_option }}
+        {%- endif -%}
+      task_id_hint: >
+        {%- if '(' in selected_option and selected_option.endswith(')') -%}
+          {{ selected_option.split('(')[-1].rstrip(')') }}
+        {%- else -%}
+        {%- endif -%}
+      task_entity: >
+        {%- for s in states.sensor -%}
+          {%- if s.name.startswith('JotTick Task:') -%}
+            {%- set title = state_attr(s.entity_id, 'title') -%}
+            {%- set task_id = state_attr(s.entity_id, 'task_id') -%}
+            {%- if task_id_hint and task_id and task_id.endswith(task_id_hint) -%}
+              {{ s.entity_id }}
+            {%- elif not task_id_hint and title == selected_title -%}
+              {{ s.entity_id }}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+  - condition: template
+    value_template: '{{ task_entity | trim != '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_task_id
+    data:
+      value: '{{ state_attr(task_entity, ''task_id'') or '''' }}'
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.jottick_selected_task_title
+    data:
+      value: '{{ state_attr(task_entity, ''title'') or '''' }}'     
+
+- id: jottick_load_task_items
+  alias: 'JotTick: Load Task Items'
+  trigger:
+  - platform: state
+    entity_id: input_text.jottick_selected_task_id
+  condition:
+  - condition: template
+    value_template: '{{ states(''input_text.jottick_selected_task_id'') not in ['''', ''unknown'', ''unavailable''] }}'
+  action:
+  - variables:
+      task_id: '{{ states(''input_text.jottick_selected_task_id'') }}'
+      task_entity: >
+        {%- for s in states.sensor -%}
+          {%- if s.name.startswith('JotTick Task:') -%}
+            {%- if state_attr(s.entity_id, 'task_id') == task_id -%}
+              {{ s.entity_id }}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+  - condition: template
+    value_template: '{{ task_entity | trim != '''' }}'
+  - service: input_select.set_options
+    target:
+      entity_id: input_select.jottick_task_item_picker
+    data:
+      options: >
+        {%- set items = state_attr(task_entity, 'items') or [] -%}
+        {%- set ns = namespace(opts=['-- Select task item --']) -%}
+        {%- for item in items -%}
+          {%- set ns.opts = ns.opts + [item.text | default('Item ' ~ loop.index)] -%}
+        {%- endfor -%}
+        {{ ns.opts }}
+
+- id: jottick_refresh_calendar_on_settings_change
+  alias: 'JotTick: Refresh Calendar on Settings Change'
+  mode: restart
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.jottick_calendar_show_note_created
+    - input_boolean.jottick_calendar_show_note_edited
+    - input_boolean.jottick_calendar_show_note_reminders
+    - input_boolean.jottick_calendar_show_list_created
+    - input_boolean.jottick_calendar_show_list_edited
+    - input_boolean.jottick_calendar_show_list_due
+    - input_boolean.jottick_calendar_show_task_due
+    - input_boolean.jottick_calendar_show_imported
+    - input_boolean.jottick_calendar_show_overdue
+    - input_boolean.jottick_calendar_show_completed
+    - input_text.jottick_calendar_color_note_created
+    - input_text.jottick_calendar_color_note_edited
+    - input_text.jottick_calendar_color_note_reminder
+    - input_text.jottick_calendar_color_list_created
+    - input_text.jottick_calendar_color_list_edited
+    - input_text.jottick_calendar_color_list_due
+    - input_text.jottick_calendar_color_task_due
+    - input_text.jottick_calendar_color_task_overdue
+    - input_text.jottick_calendar_color_completed
+    - input_text.jottick_calendar_color_imported
+  action:
+  - service: homeassistant.update_entity
+    target:
+      entity_id: sensor.jottick_calendar_events
+
+#script
+script:
+  jottick_create_note:
+    alias: 'JotTick: Create Note'
+    icon: mdi:note-plus
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.create_note
+      data:
+        title: '{{ states(''input_text.jottick_note_title'') }}'
+        content: '{{ states(''input_text.jottick_note_content'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_note_title
+      data:
+        value: ''
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_note_content
+      data:
+        value: ''
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Created
+        message: Your note has been created!
+  jottick_update_note:
+    alias: 'JotTick: Update Note'
+    icon: mdi:content-save
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.update_note
+      data:
+        note_id: '{{ states(''input_text.jottick_note_id'') }}'
+        title: '{{ states(''input_text.jottick_note_title'') }}'
+        content: '{{ states(''input_text.jottick_note_content'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Updated
+        message: Your note has been updated!
+  jottick_delete_note:
+    alias: 'JotTick: Delete Note'
+    icon: mdi:delete
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.delete_note
+      data:
+        note_id: '{{ states(''input_text.jottick_note_id'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_text.set_value
+      target:
+        entity_id:
+        - input_text.jottick_note_id
+        - input_text.jottick_note_title
+        - input_text.jottick_note_content
+      data:
+        value: ''
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Deleted
+        message: Your note has been deleted!
+  jottick_create_checklist:
+    alias: 'JotTick: Create Checklist'
+    icon: mdi:playlist-plus
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.create_checklist
+      data:
+        title: '{{ states(''input_text.jottick_checklist_title'') }}'
+        type: '{{ states(''input_select.jottick_checklist_type'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_checklists
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_checklist_title
+      data:
+        value: ''
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Checklist Created
+        message: Your checklist has been created!
+  jottick_add_item:
+    alias: 'JotTick: Add Item'
+    icon: mdi:plus
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.add_checklist_item
+      data:
+        checklist_id: '{{ states(''input_text.jottick_checklist_id'') }}'
+        text: '{{ states(''input_text.jottick_item_text'') }}'
+        status: "{% if states('input_select.jottick_checklist_type') == 'task' %}\n  {{
+          states('input_select.jottick_task_status') }}\n{% endif %}\n"
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_items
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_item_text
+      data:
+        value: ''
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Item Added
+        message: Item added to checklist!
+  jottick_check_item:
+    alias: 'JotTick: Check Item'
+    icon: mdi:check-circle
+    sequence:
+    - service: jottick.check_item
+      data:
+        checklist_id: '{{ states(''input_text.jottick_checklist_id'') }}'
+        item_index: '{{ states(''input_number.jottick_selected_item_index'') | int }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id:
+        - sensor.jottick_completed_items
+        - sensor.jottick_pending_items
+        - sensor.jottick_completion_rate
+    - service: persistent_notification.create
+      data:
+        title: Item Checked
+        message: Item marked as completed!
+  jottick_uncheck_item:
+    alias: 'JotTick: Uncheck Item'
+    icon: mdi:checkbox-blank-circle-outline
+    sequence:
+    - service: jottick.uncheck_item
+      data:
+        checklist_id: '{{ states(''input_text.jottick_checklist_id'') }}'
+        item_index: '{{ states(''input_number.jottick_selected_item_index'') | int }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id:
+        - sensor.jottick_completed_items
+        - sensor.jottick_pending_items
+        - sensor.jottick_completion_rate
+    - service: persistent_notification.create
+      data:
+        title: Item Unchecked
+        message: Item marked as incomplete!
+  jottick_delete_checklist:
+    alias: 'JotTick: Delete Checklist'
+    icon: mdi:delete
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.delete_checklist
+      data:
+        checklist_id: '{{ states(''input_text.jottick_checklist_id'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_checklists
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_checklist_id
+      data:
+        value: ''
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Checklist Deleted
+        message: Your checklist has been deleted!
+  jottick_force_update_note_picker:
+    alias: 'JotTick: Force Update Note Picker'
+    icon: mdi:sync
+    sequence:
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_select.set_options
+      target:
+        entity_id: input_select.jottick_note_picker
+      data:
+        options: "{%- set ns = namespace(items=['-- Pick a note --'], titles={}) -%}
+          {%- set notes = states.sensor | selectattr('name', 'search', '^JotTick Note:')
+          | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in notes
+          -%}\n  {%- set title = state.state -%}\n  {%- if title in ns.titles -%}\n
+          \   {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}\n
+          \ {%- else -%}\n    {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}\n
+          \ {%- endif -%}\n{%- endfor -%} {%- set ns2 = namespace(counts={}) -%} {%-
+          for state in notes | sort(attribute='attributes.updated', reverse=true) -%}\n
+          \ {%- set title = state.state -%}\n  {%- set note_id = state_attr(state.entity_id,
+          'note_id') -%}\n  {%- if ns.titles[title] > 1 -%}\n    {%- set current_count
+          = ns2.counts.get(title, 0) + 1 -%}\n    {%- set ns2.counts = dict(ns2.counts,
+          **{title: current_count}) -%}\n    {%- set display_title = title ~ ' (' ~
+          note_id[-6:] ~ ')' -%}\n  {%- else -%}\n    {%- set display_title = title
+          -%}\n  {%- endif -%}\n  {%- set ns.items = ns.items + [display_title] -%}\n{%-
+          endfor -%} {{ ns.items }}"
+  jottick_force_update_checklist_picker:
+    alias: 'JotTick: Force Update Checklist Picker'
+    icon: mdi:sync
+    sequence:
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_checklists
+    - service: input_select.set_options
+      target:
+        entity_id: input_select.jottick_checklist_picker
+      data:
+        options: "{%- set ns = namespace(items=['-- Pick a checklist --'], titles={})
+          -%} {%- set lists = states.sensor | selectattr('name', 'search', '^JotTick List:')
+          | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in lists
+          -%}\n  {%- set title = state_attr(state.entity_id, 'title') -%}\n  {%- if
+          title -%}\n    {%- if title in ns.titles -%}\n      {%- set ns.titles = dict(ns.titles,
+          **{title: ns.titles[title] + 1}) -%}\n    {%- else -%}\n      {%- set ns.titles
+          = dict(ns.titles, **{title: 1}) -%}\n    {%- endif -%}\n  {%- endif -%}\n{%-
+          endfor -%} {%- set ns2 = namespace(counts={}) -%} {%- for state in lists |
+          sort(attribute='attributes.updated', reverse=true) -%}\n  {%- set title =
+          state_attr(state.entity_id, 'title') -%}\n  {%- if title -%}\n    {%- set
+          list_id = state_attr(state.entity_id, 'checklist_id') -%}\n    {%- if ns.titles[title]
+          > 1 -%}\n      {%- set current_count = ns2.counts.get(title, 0) + 1 -%}\n
+          \     {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}\n
+          \     {%- set display_title = title ~ ' (' ~ list_id[-6:] ~ ')' -%}\n    {%-
+          else -%}\n      {%- set display_title = title -%}\n    {%- endif -%}\n    {%-
+          set ns.items = ns.items + [display_title] -%}\n  {%- endif -%}\n{%- endfor
+          -%} {{ ns.items }}"
+  jottick_update_both_dropdowns:
+    alias: "JotTick: Update All Dropdowns"
+    icon: mdi:sync-circle
+    sequence:
+      - service: script.jottick_force_update_note_picker
+      - service: script.jottick_force_update_checklist_picker
+      - service: script.jottick_force_update_task_picker
+  jottick_save_edited_note:
+    alias: 'JotTick: Save Edited Note'
+    icon: mdi:content-save
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.update_note
+      data:
+        note_id: '{{ states(''input_text.jottick_note_id'') }}'
+        title: '{{ states(''input_text.jottick_edit_note_title'') }}'
+        content: '{{ states(''input_text.jottick_edit_note_content'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Saved
+        message: Your changes have been saved!
+  jottick_delete_edited_note:
+    alias: 'JotTick: Delete Edited Note'
+    icon: mdi:delete
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.delete_note
+      data:
+        note_id: '{{ states(''input_text.jottick_note_id'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: input_text.set_value
+      target:
+        entity_id:
+        - input_text.jottick_note_id
+        - input_text.jottick_edit_note_title
+        - input_text.jottick_edit_note_content
+      data:
+        value: ''
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.jottick_note_picker
+      data:
+        option: -- Pick a note --
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Deleted
+        message: Note has been deleted!
+  jottick_toggle_item_completion:
+    alias: 'JotTick: Toggle Item Completion'
+    icon: mdi:checkbox-marked-circle-outline
+    sequence:
+    - variables:
+        checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+        item_index: '{{ states(''input_number.jottick_selected_item_index'') | int }}'
+        is_completed: '{{ states(''input_boolean.jottick_item_completed'') == ''on'' }}'
+    - condition: template
+      value_template: '{{ checklist_id != '''' and item_index >= 0 }}'
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ is_completed }}'
+        sequence:
+        - service: jottick.check_item
+          data:
+            checklist_id: '{{ checklist_id }}'
+            item_index: '{{ item_index }}'
+      default:
+      - service: jottick.uncheck_item
+        data:
+          checklist_id: '{{ checklist_id }}'
+          item_index: '{{ item_index }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id:
+        - sensor.jottick_completed_items
+        - sensor.jottick_pending_items
+        - sensor.jottick_completion_rate
+    - service: automation.trigger
+      target:
+        entity_id: automation.jottick_load_checklist_items
+    - service: persistent_notification.create
+      data:
+        title: Item Updated
+        message: Item marked as {{ 'completed' if is_completed else 'incomplete' }}
+  jottick_update_task_status:
+    alias: 'JotTick: Update Task Status'
+    icon: mdi:list-status
+    sequence:
+    - variables:
+        checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+        item_index: '{{ states(''input_number.jottick_selected_item_index'') | int }}'
+        new_status: '{{ states(''input_select.jottick_item_status'') }}'
+        list_type: '{{ states(''input_text.jottick_selected_checklist_type'') }}'
+    - condition: template
+      value_template: "{{ checklist_id != '' and \n   item_index >= 0 and \n   list_type
+        == 'task' and\n   new_status not in ['-- Select status --', ''] }}\n"
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ new_status == ''completed'' }}'
+        sequence:
+        - service: jottick.check_item
+          data:
+            checklist_id: '{{ checklist_id }}'
+            item_index: '{{ item_index }}'
+      - conditions:
+        - condition: template
+          value_template: '{{ new_status in [''todo'', ''in_progress'', ''paused'']
+            }}'
+        sequence:
+        - service: jottick.uncheck_item
+          data:
+            checklist_id: '{{ checklist_id }}'
+            item_index: '{{ item_index }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id:
+        - sensor.jottick_completed_items
+        - sensor.jottick_pending_items
+    - service: automation.trigger
+      target:
+        entity_id: automation.jottick_load_checklist_items
+    - service: persistent_notification.create
+      data:
+        title: Task Status Updated
+        message: Task status changed to {{ new_status }}
+  jottick_add_item_to_selected_list:
+    alias: 'JotTick: Add Item to Selected List'
+    icon: mdi:plus-box
+    sequence:
+    - variables:
+        checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+        list_type: '{{ states(''input_text.jottick_selected_checklist_type'') }}'
+    - condition: template
+      value_template: '{{ checklist_id != '''' and states(''input_text.jottick_item_text'')
+        != '''' }}'
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ list_type == ''task'' }}'
+        sequence:
+        - service: jottick.add_checklist_item
+          data:
+            checklist_id: '{{ checklist_id }}'
+            text: '{{ states(''input_text.jottick_item_text'') }}'
+            status: '{{ states(''input_select.jottick_task_status'') if states(''input_select.jottick_task_status'')
+              != '''' else ''todo'' }}'
+      default:
+      - service: jottick.add_checklist_item
+        data:
+          checklist_id: '{{ checklist_id }}'
+          text: '{{ states(''input_text.jottick_item_text'') }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_items
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_item_text
+      data:
+        value: ''
+    - service: automation.trigger
+      target:
+        entity_id: automation.jottick_load_checklist_items
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Item Added
+        message: New item added to {{ states('input_text.jottick_selected_checklist_title')
+          }}
+  jottick_quick_check_item:
+    alias: 'JotTick: Quick Check Item'
+    icon: mdi:check
+    fields:
+      item_index:
+        description: Index of the item to check
+        example: 0
+    sequence:
+    - variables:
+        checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+    - condition: template
+      value_template: '{{ checklist_id != '''' }}'
+    - service: jottick.check_item
+      data:
+        checklist_id: '{{ checklist_id }}'
+        item_index: '{{ item_index }}'
+    - service: automation.trigger
+      target:
+        entity_id: automation.jottick_load_checklist_items
+  jottick_quick_uncheck_item:
+    alias: 'JotTick: Quick Uncheck Item'
+    icon: mdi:checkbox-blank-outline
+    fields:
+      item_index:
+        description: Index of the item to uncheck
+        example: 0
+    sequence:
+    - variables:
+        checklist_id: '{{ states(''input_text.jottick_selected_checklist_id'') }}'
+    - condition: template
+      value_template: '{{ checklist_id != '''' }}'
+    - service: jottick.uncheck_item
+      data:
+        checklist_id: '{{ checklist_id }}'
+        item_index: '{{ item_index }}'
+    - service: automation.trigger
+      target:
+        entity_id: automation.jottick_load_checklist_items
+  jottick_refresh_dashboard_data:
+    alias: 'JotTick: Refresh Dashboard Data'
+    icon: mdi:refresh
+    sequence:
+    - service: homeassistant.update_entity
+      target:
+        entity_id:
+        - sensor.jottick_total_notes
+        - sensor.jottick_total_checklists
+        - sensor.jottick_total_items
+        - sensor.jottick_completed_items
+        - sensor.jottick_pending_items
+        - sensor.jottick_completion_rate
+        - sensor.jottick_total_tasks
+    - service: input_select.set_options
+      target:
+        entity_id: input_select.jottick_note_picker
+      data:
+        options: "{%- set ns = namespace(items=['-- Pick a note --'], titles={}) -%}
+          {%- set notes = states.sensor | selectattr('name', 'search', '^JotTick Note:')
+          | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in notes
+          -%}\n  {%- set title = state.state -%}\n  {%- if title in ns.titles -%}\n
+          \   {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}\n
+          \ {%- else -%}\n    {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}\n
+          \ {%- endif -%}\n{%- endfor -%} {%- set ns2 = namespace(counts={}) -%} {%-
+          for state in notes | sort(attribute='attributes.updated', reverse=true) -%}\n
+          \ {%- set title = state.state -%}\n  {%- set note_id = state_attr(state.entity_id,
+          'note_id') -%}\n  {%- if ns.titles[title] > 1 -%}\n    {%- set current_count
+          = ns2.counts.get(title, 0) + 1 -%}\n    {%- set ns2.counts = dict(ns2.counts,
+          **{title: current_count}) -%}\n    {%- set display_title = title ~ ' (' ~
+          note_id[-6:] ~ ')' -%}\n  {%- else -%}\n    {%- set display_title = title
+          -%}\n  {%- endif -%}\n  {%- set ns.items = ns.items + [display_title] -%}\n{%-
+          endfor -%} {{ ns.items }}"
+    - service: input_select.set_options
+      target:
+        entity_id: input_select.jottick_checklist_picker
+      data:
+        options: "{%- set ns = namespace(items=['-- Pick a checklist --'], titles={})
+          -%} {%- set lists = states.sensor | selectattr('name', 'search', '^JotTick List:')
+          | rejectattr('state', 'eq', 'unavailable') | list -%} {%- for state in lists
+          -%}\n  {%- set title = state_attr(state.entity_id, 'title') -%}\n  {%- if
+          title -%}\n    {%- if title in ns.titles -%}\n      {%- set ns.titles = dict(ns.titles,
+          **{title: ns.titles[title] + 1}) -%}\n    {%- else -%}\n      {%- set ns.titles
+          = dict(ns.titles, **{title: 1}) -%}\n    {%- endif -%}\n  {%- endif -%}\n{%-
+          endfor -%} {%- set ns2 = namespace(counts={}) -%} {%- for state in lists |
+          sort(attribute='attributes.updated', reverse=true) -%}\n  {%- set title =
+          state_attr(state.entity_id, 'title') -%}\n  {%- if title -%}\n    {%- set
+          list_id = state_attr(state.entity_id, 'checklist_id') -%}\n    {%- if ns.titles[title]
+          > 1 -%}\n      {%- set current_count = ns2.counts.get(title, 0) + 1 -%}\n
+          \     {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}\n
+          \     {%- set display_title = title ~ ' (' ~ list_id[-6:] ~ ')' -%}\n    {%-
+          else -%}\n      {%- set display_title = title -%}\n    {%- endif -%}\n    {%-
+          set ns.items = ns.items + [display_title] -%}\n  {%- endif -%}\n{%- endfor
+          -%} {{ ns.items }}"
+    - service: persistent_notification.create
+      data:
+        title: JotTick Refreshed
+        message: Data and dropdowns updated!
+  jottick_delete_note_by_id:
+    alias: 'JotTick: Delete Note by ID (Direct)'
+    icon: mdi:delete
+    fields:
+      note_id:
+        description: The unique ID of the note to delete
+        example: abc123
+    sequence:
+    - service: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: jottick.delete_note
+      data:
+        note_id: '{{ note_id }}'
+    - service: homeassistant.update_entity
+      target:
+        entity_id: sensor.jottick_total_notes
+    - service: script.jottick_refresh_dashboard_data
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_is_loading
+    - service: persistent_notification.create
+      data:
+        title: Note Deleted
+        message: Note has been deleted successfully!
+  jottick_create_task:
+    alias: "JotTick: Create Task List"
+    icon: mdi:clipboard-plus
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.create_task
+        data:
+          title: "{{ states('input_text.jottick_task_title') }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_task_title
+        data:
+          value: ""
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: persistent_notification.create
+        data:
+          title: "Task List Created"
+          message: "Your task list has been created!"
+  jottick_delete_task:
+    alias: "JotTick: Delete Task List"
+    icon: mdi:clipboard-remove
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.delete_task
+        data:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: input_text.set_value
+        target:
+          entity_id:
+            - input_text.jottick_selected_task_id
+            - input_text.jottick_selected_task_title
+        data:
+          value: ""
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jottick_task_picker
+        data:
+          option: "-- Pick a task list --"
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: persistent_notification.create
+        data:
+          title: "Task List Deleted"
+          message: "Your task list has been deleted!"
+  jottick_add_task_item:
+    alias: "JotTick: Add Task Item"
+    icon: mdi:clipboard-text-play
+    sequence:
+      - variables:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+      - condition: template
+        value_template: "{{ task_id != '' and states('input_text.jottick_task_item_text') != '' }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.add_task_item
+        data:
+          task_id: "{{ task_id }}"
+          text: "{{ states('input_text.jottick_task_item_text') }}"
+          status: "{{ states('input_select.jottick_new_task_item_status') }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_task_item_text
+        data:
+          value: ""
+      - service: automation.trigger
+        target:
+          entity_id: automation.jottick_load_task_items
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: persistent_notification.create
+        data:
+          title: "Task Item Added"
+          message: "New task item added!"
+  jottick_update_task_item_status:
+    alias: "JotTick: Update Task Item Status"
+    icon: mdi:list-status
+    fields:
+      task_id:
+        description: "Task list ID"
+      item_index:
+        description: "Item index"
+      status:
+        description: "New status"
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.update_task_item_status
+        data:
+          task_id: "{{ task_id }}"
+          item_index: "{{ item_index }}"
+          status: "{{ status }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+  jottick_delete_task_item:
+    alias: "JotTick: Delete Task Item"
+    icon: mdi:clipboard-minus
+    fields:
+      task_id:
+        description: "Task list ID"
+      item_index:
+        description: "Item index"
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.delete_task_item
+        data:
+          task_id: "{{ task_id }}"
+          item_index: "{{ item_index }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: automation.trigger
+        target:
+          entity_id: automation.jottick_load_task_items
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: persistent_notification.create
+        data:
+          title: "Task Item Deleted"
+          message: "Task item has been deleted!"
+  jottick_delete_checklist_item:
+    alias: "JotTick: Delete Checklist Item"
+    icon: mdi:delete
+    fields:
+      checklist_id:
+        description: "Checklist ID"
+      item_index:
+        description: "Item index"
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.delete_checklist_item
+        data:
+          checklist_id: "{{ checklist_id }}"
+          item_index: "{{ item_index }}"
+      - service: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.jottick_total_items
+            - sensor.jottick_completed_items
+      - service: automation.trigger
+        target:
+          entity_id: automation.jottick_load_checklist_items
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: persistent_notification.create
+        data:
+          title: "Item Deleted"
+          message: "Checklist item has been deleted!"
+  jottick_force_update_task_picker:
+    alias: "JotTick: Force Update Task Picker"
+    icon: mdi:sync
+    sequence:
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_total_tasks
+      - service: input_select.set_options
+        target:
+          entity_id: input_select.jottick_task_picker
+        data:
+          options: >-
+            {%- set ns = namespace(items=['-- Pick a task list --'], titles={}) -%}
+            {%- set tasks = states.sensor | selectattr('name', 'search', '^JotTick Task:') | rejectattr('state', 'eq', 'unavailable') | list -%}
+            {%- for state in tasks -%}
+              {%- set title = state_attr(state.entity_id, 'title') -%}
+              {%- if title -%}
+                {%- if title in ns.titles -%}
+                  {%- set ns.titles = dict(ns.titles, **{title: ns.titles[title] + 1}) -%}
+                {%- else -%}
+                  {%- set ns.titles = dict(ns.titles, **{title: 1}) -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- set ns2 = namespace(counts={}) -%}
+            {%- for state in tasks | sort(attribute='attributes.updated', reverse=true) -%}
+              {%- set title = state_attr(state.entity_id, 'title') -%}
+              {%- if title -%}
+                {%- set task_id = state_attr(state.entity_id, 'task_id') -%}
+                {%- if ns.titles[title] > 1 -%}
+                  {%- set current_count = ns2.counts.get(title, 0) + 1 -%}
+                  {%- set ns2.counts = dict(ns2.counts, **{title: current_count}) -%}
+                  {%- set display_title = title ~ ' (' ~ task_id[-6:] ~ ')' -%}
+                {%- else -%}
+                  {%- set display_title = title -%}
+                {%- endif -%}
+                {%- set ns.items = ns.items + [display_title] -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {{ ns.items }}
+  jottick_load_task_statuses:
+    alias: "JotTick: Load Task Statuses"
+    sequence:
+      - variables:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+          status_options: >
+            {% set ns = namespace(options=['-- Select status --']) %}
+            {% for state in states.sensor %}
+              {% if state.name.startswith('JotTick Task:') %}
+                {% if state_attr(state.entity_id, 'task_id') == task_id %}
+                  {% set statuses = state_attr(state.entity_id, 'statuses') or [] %}
+                  {% for status in statuses | sort(attribute='order') %}
+                    {% set ns.options = ns.options + [status.name ~ ' (' ~ status.id ~ ')'] %}
+                  {% endfor %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.options }}
+      - service: input_select.set_options
+        target:
+          entity_id: input_select.jottick_status_picker
+        data:
+          options: "{{ status_options }}"
+  jottick_create_kanban_status:
+    alias: "JotTick: Create Kanban Status"
+    sequence:
+      - condition: template
+        value_template: >
+          {{ states('input_text.jottick_selected_task_id') | trim | length > 0 and
+             states('input_text.jottick_new_status_id') | trim | length > 0 and
+             states('input_text.jottick_new_status_label') | trim | length > 0 }}
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.create_task_status
+        data:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+          status_id: "{{ states('input_text.jottick_new_status_id') }}"
+          label: "{{ states('input_text.jottick_new_status_label') }}"
+          color: "{{ states('input_text.jottick_new_status_color') }}"
+          order: "{{ states('input_number.jottick_new_status_order') | int }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_new_status_id
+        data:
+          value: ""
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_new_status_label
+        data:
+          value: ""
+      - delay:
+          milliseconds: 500
+      - service: script.jottick_load_task_statuses
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+  jottick_update_kanban_status:
+    alias: "JotTick: Update Kanban Status"
+    sequence:
+      - condition: template
+        value_template: >
+          {{ states('input_text.jottick_selected_task_id') | trim | length > 0 and
+             states('input_text.jottick_edit_status_id') | trim | length > 0 }}
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.update_task_status
+        data:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+          status_id: "{{ states('input_text.jottick_edit_status_id') }}"
+          label: "{{ states('input_text.jottick_edit_status_label') if states('input_text.jottick_edit_status_label') | trim | length > 0 else none }}"
+          color: "{{ states('input_text.jottick_edit_status_color') if states('input_text.jottick_edit_status_color') | trim | length > 0 else none }}"
+      - delay:
+          milliseconds: 500
+      - service: script.jottick_load_task_statuses
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+  jottick_delete_kanban_status:
+    alias: "JotTick: Delete Kanban Status"
+    fields:
+      status_id:
+        description: "Status ID to delete"
+        example: "review"
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.jottick_selected_task_id') | trim | length > 0 }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_is_loading
+      - service: jottick.delete_task_status
+        data:
+          task_id: "{{ states('input_text.jottick_selected_task_id') }}"
+          status_id: "{{ status_id }}"
+      - delay:
+          milliseconds: 500
+      - service: script.jottick_load_task_statuses
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_is_loading
+  jottick_load_reminder:
+    alias: "JotTick: Load Reminder"
+    fields:
+      item_id:
+        description: "List/task ID"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+          config: "{{ configs.get(item_id, {}) if configs is mapping else {} }}"
+          has_reminder: "{{ configs is mapping and item_id in configs }}"
+      - service: input_boolean.turn_{{ 'on' if has_reminder else 'off' }}
+        target:
+          entity_id: input_boolean.jottick_enable_reminder
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jottick_reminder_target
+        data:
+          option: >
+            {% set target = config.get('target', 'Nobody') %}
+            {% set options = state_attr('input_select.jottick_reminder_target', 'options') | default(['Nobody']) %}
+            {{ target if target in options else 'Nobody' }}
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jottick_reminder_interval
+        data:
+          option: "{{ config.get('interval', '1 hour') }}"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jottick_reminder_days
+        data:
+          option: >
+            {% set d = config.get('days', 'weekdays') %}
+            {% if d == 'weekdays' %}Weekdays{% elif d == 'weekends' %}Weekends{% else %}Every day{% endif %}
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_reminder_start
+        data:
+          time: "{{ config.get('start', '09:00') }}"
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_reminder_end
+        data:
+          time: "{{ config.get('end', '22:00') }}"
+  jottick_save_reminder:
+    alias: "JotTick: Save Reminder"
+    sequence:
+      - variables:
+          item_id: "{{ states('input_text.jottick_editing_reminder_id') }}"
+          item_type: "{{ states('input_text.jottick_editing_reminder_type') }}"
+          item_title: "{{ states('input_text.jottick_editing_reminder_title') }}"
+          enabled: "{{ is_state('input_boolean.jottick_enable_reminder', 'on') }}"
+          target: "{{ states('input_select.jottick_reminder_target') }}"
+          interval: "{{ states('input_select.jottick_reminder_interval') }}"
+          days_raw: "{{ states('input_select.jottick_reminder_days') }}"
+          days: "{% if days_raw == 'Weekdays' %}weekdays{% elif days_raw == 'Weekends' %}weekends{% else %}every_day{% endif %}"
+          start_time: "{{ states('input_datetime.jottick_reminder_start') }}"
+          end_time: "{{ states('input_datetime.jottick_reminder_end') }}"
+          configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+          old_last_sent: "{{ (configs.get(item_id, {}) if configs is mapping else {}).get('last_sent', '') }}"
+      - condition: template
+        value_template: "{{ item_id != '' }}"
+      - choose:
+          - conditions: "{{ enabled }}"
+            sequence:
+              - variables:
+                  new_config:
+                    target: "{{ target }}"
+                    interval: "{{ interval }}"
+                    days: "{{ days }}"
+                    start: "{{ start_time }}"
+                    end: "{{ end_time }}"
+                    type: "{{ item_type }}"
+                    last_sent: "{{ old_last_sent }}"
+                  updated_configs: "{{ dict(configs, **{item_id: new_config}) }}"
+              - event: jottick_reminder_update
+                event_data:
+                  configs: "{{ updated_configs }}"
+              - service: persistent_notification.create
+                data:
+                  title: "Reminder Saved"
+                  message: "{{ item_title }}"
+                  notification_id: jottick_reminder_saved
+          - conditions: "{{ not enabled }}"
+            sequence:
+              - variables:
+                  updated_configs: >
+                    {% set safe_configs = configs if configs is mapping else {} %}
+                    {% set ns = namespace(result={}) %}
+                    {% for key, val in safe_configs.items() %}
+                      {% if key != item_id %}
+                        {% set ns.result = dict(ns.result, **{key: val}) %}
+                      {% endif %}
+                    {% endfor %}
+                    {{ ns.result }}
+              - event: jottick_reminder_update
+                event_data:
+                  configs: "{{ updated_configs }}"
+              - service: persistent_notification.create
+                data:
+                  title: "Reminder Removed"
+                  message: "{{ item_title }}"
+                  notification_id: jottick_reminder_saved
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_show_reminder_popup
+  jottick_open_reminder_for_list:
+    alias: "JotTick: Open Reminder For List"
+    fields:
+      list_id:
+        description: "Checklist ID"
+      list_title:
+        description: "Checklist title"
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_type
+        data:
+          value: "checklist"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_title
+        data:
+          value: "{{ list_title }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_id
+        data:
+          value: "{{ list_id }}"
+  jottick_open_reminder_for_task:
+    alias: "JotTick: Open Reminder For Task"
+    fields:
+      task_id:
+        description: "Task ID"
+      task_title:
+        description: "Task title"
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_type
+        data:
+          value: "task"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_title
+        data:
+          value: "{{ task_title }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_editing_reminder_id
+        data:
+          value: "{{ task_id }}"
+  jottick_refresh_notifiers:
+    alias: "JotTick: Refresh Notifiers"
+    sequence:
+      - service: homeassistant.update_entity
+        target:
+          entity_id: sensor.jottick_available_notifiers
+      - delay:
+          seconds: 2
+      - service: input_select.set_options
+        target:
+          entity_id: input_select.jottick_reminder_target
+        data:
+          options: "{{ state_attr('sensor.jottick_available_notifiers', 'notifiers') | default(['Nobody']) }}"
+  jottick_save_reminder_inline:
+    alias: "JotTick: Save Reminder (Inline)"
+    fields:
+      item_id:
+        description: "List/task ID"
+      item_type:
+        description: "checklist or task"
+      target:
+        description: "Comma-separated notify service targets"
+      interval:
+        description: "Reminder interval"
+      days:
+        description: "Days to remind"
+      start_time:
+        description: "Start time"
+      end_time:
+        description: "End time"
+      custom_title:
+        description: "Custom notification title (optional)"
+      custom_message:
+        description: "Custom notification message (optional)"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+          old_last_sent: "{{ (configs.get(item_id, {}) if configs is mapping else {}).get('last_sent', '') }}"
+      - condition: template
+        value_template: "{{ item_id != '' and target != '' }}"
+      - variables:
+          new_config:
+            targets: "{{ target }}"
+            interval: "{{ interval }}"
+            days: "{{ days }}"
+            start: "{{ start_time }}"
+            end: "{{ end_time }}"
+            type: "{{ item_type }}"
+            custom_title: "{{ custom_title | default('') }}"
+            custom_message: "{{ custom_message | default('') }}"
+            last_sent: "{{ old_last_sent }}"
+          safe_configs: "{{ configs if configs is mapping else {} }}"
+          updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"
+      - event: jottick_reminder_update
+        event_data:
+          configs: "{{ updated_configs }}"
+      - service: persistent_notification.create
+        data:
+          title: "Reminder Saved"
+          message: "Reminder configured for {{ target.split(',') | length }} device(s)"
+          notification_id: jottick_reminder_saved
+  jottick_remove_reminder_inline:
+    alias: "JotTick: Remove Reminder (Inline)"
+    fields:
+      item_id:
+        description: "List/task ID"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+      - condition: template
+        value_template: "{{ configs is mapping and item_id in configs }}"
+      - variables:
+          updated_configs: >
+            {% set safe_configs = configs if configs is mapping else {} %}
+            {% set ns = namespace(result={}) %}
+            {% for key, val in safe_configs.items() %}
+              {% if key != item_id %}
+                {% set ns.result = dict(ns.result, **{key: val}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+      - event: jottick_reminder_update
+        event_data:
+          configs: "{{ updated_configs }}"
+      - service: persistent_notification.create
+        data:
+          title: "Reminder Removed"
+          message: "Reminder has been removed"
+          notification_id: jottick_reminder_saved
+  jottick_update_last_sent:
+    alias: "JotTick: Update Last Sent"
+    fields:
+      item_id:
+        description: "List/task ID"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_reminders', 'configs') or {} }}"
+      - condition: template
+        value_template: "{{ configs is mapping and item_id in configs }}"
+      - variables:
+          current_config: "{{ configs[item_id] }}"
+          updated_config:
+            targets: "{{ current_config.targets | default(current_config.target | default('')) }}"
+            interval: "{{ current_config.interval }}"
+            days: "{{ current_config.days }}"
+            start: "{{ current_config.start }}"
+            end: "{{ current_config.end }}"
+            type: "{{ current_config.type }}"
+            custom_title: "{{ current_config.custom_title | default('') }}"
+            custom_message: "{{ current_config.custom_message | default('') }}"
+            last_sent: "{{ now().strftime('%Y-%m-%d %H:%M') }}"
+          updated_configs: "{{ dict(configs, **{item_id: updated_config}) }}"
+      - event: jottick_reminder_update
+        event_data:
+          configs: "{{ updated_configs }}"
+  jottick_send_note_to_devices:
+    alias: "JotTick: Send Note to Devices"
+    fields:
+      targets:
+        description: "Comma-separated notify service targets"
+      title:
+        description: "Note title"
+      message:
+        description: "Note content"
+    sequence:
+      - variables:
+          target_list: "{{ targets.split(',') }}"
+      - repeat:
+          count: "{{ target_list | length }}"
+          sequence:
+            - service: "{{ target_list[repeat.index - 1] }}"
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data:
+                  tag: "jottick_note_{{ title | slugify }}"
+      - service: persistent_notification.create
+        data:
+          title: "Note Sent"
+          message: "Sent '{{ title }}' to {{ target_list | length }} device(s)"
+          notification_id: jottick_note_sent
+  jottick_save_recurring:
+    alias: "JotTick: Save Recurring"
+    fields:
+      item_id:
+        description: "List/task ID"
+      item_type:
+        description: "checklist or task"
+      days:
+        description: "weekdays, weekends, or every_day"
+      reset_times:
+        description: "Comma-separated times like 06:00,14:00"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
+      - condition: template
+        value_template: "{{ item_id != '' and reset_times != '' }}"
+      - variables:
+          times_list: "{{ reset_times.split(',') | map('trim') | list }}"
+          new_config:
+            type: "{{ item_type }}"
+            days: "{{ days }}"
+            reset_times: "{{ times_list }}"
+          safe_configs: "{{ configs if configs is mapping else {} }}"
+          updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"
+      - event: jottick_recurring_update
+        event_data:
+          configs: "{{ updated_configs }}"
+      - service: persistent_notification.create
+        data:
+          title: "Recurring Reset Saved"
+          message: "Will reset at: {{ times_list | join(', ') }}"
+          notification_id: jottick_recurring_saved
+  jottick_remove_recurring:
+    alias: "JotTick: Remove Recurring"
+    fields:
+      item_id:
+        description: "List/task ID"
+    sequence:
+      - variables:
+          configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
+      - condition: template
+        value_template: "{{ configs is mapping and item_id in configs }}"
+      - variables:
+          updated_configs: >
+            {% set safe_configs = configs if configs is mapping else {} %}
+            {% set ns = namespace(result={}) %}
+            {% for key, val in safe_configs.items() %}
+              {% if key != item_id %}
+                {% set ns.result = dict(ns.result, **{key: val}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+      - event: jottick_recurring_update
+        event_data:
+          configs: "{{ updated_configs }}"
+      - service: persistent_notification.create
+        data:
+          title: "Recurring Reset Removed"
+          message: "Recurring reset has been removed"
+          notification_id: jottick_recurring_saved
+  jottick_reset_checklist:
+    alias: "JotTick: Reset Checklist Items"
+    fields:
+      checklist_id:
+        description: "Checklist ID to reset"
+    sequence:
+      - variables:
+          sensor_entity: >
+            {% set ns = namespace(found='') %}
+            {% for s in states.sensor %}
+              {% if s.attributes.checklist_id is defined and s.attributes.checklist_id == checklist_id %}
+                {% set ns.found = s.entity_id %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+      - condition: template
+        value_template: "{{ sensor_entity | trim != '' }}"
+      - variables:
+          items: "{{ state_attr(sensor_entity, 'items') | default([]) }}"
+      - repeat:
+          for_each: "{{ range(items | length) | list }}"
+          sequence:
+            - condition: template
+              value_template: "{{ items[repeat.item].completed | default(false) == true }}"
+            - service: jottick.uncheck_item
+              data:
+                checklist_id: "{{ checklist_id }}"
+                item_index: "{{ repeat.item }}"
+  jottick_reset_task:
+    alias: "JotTick: Reset Task Items"
+    fields:
+      task_id:
+        description: "Task ID to reset"
+    sequence:
+      - variables:
+          sensor_entity: >
+            {% set ns = namespace(found='') %}
+            {% for s in states.sensor %}
+              {% if s.attributes.task_id is defined and s.attributes.task_id == task_id %}
+                {% set ns.found = s.entity_id %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+      - condition: template
+        value_template: "{{ sensor_entity | trim != '' }}"
+      - variables:
+          flat_items: "{{ state_attr(sensor_entity, 'flat_items') | default([]) }}"
+      - repeat:
+          for_each: "{{ flat_items }}"
+          sequence:
+            - condition: template
+              value_template: "{{ repeat.item.status | default('todo') != 'todo' }}"
+            - service: jottick.update_task_item_status
+              data:
+                task_id: "{{ task_id }}"
+                item_index: "{{ repeat.item.index_path }}"
+                status: "todo"
+  jottick_schedule_note:
+    alias: "JotTick: Schedule Note"
+    fields:
+      note_id:
+        description: "Note ID"
+      title:
+        description: "Note title"
+      message:
+        description: "Note content"
+      targets:
+        description: "Comma-separated notify service targets"
+      scheduled_time:
+        description: "ISO datetime string for when to send"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          schedule_id: "{{ (now().timestamp() * 1000) | int | string ~ '_' ~ (range(1000, 9999) | random | string) }}"
+          new_schedule:
+            note_id: "{{ note_id }}"
+            title: "{{ title }}"
+            message: "{{ message }}"
+            targets: "{{ targets }}"
+            scheduled_time: "{{ scheduled_time }}"
+            created: "{{ now().isoformat() }}"
+            auto_delete: false
+          safe_schedules: "{{ schedules if schedules is mapping else {} }}"
+          updated_schedules: "{{ dict(safe_schedules, **{schedule_id: new_schedule}) }}"
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: "{{ updated_schedules }}"
+      - service: persistent_notification.create
+        data:
+          title: "Note Scheduled"
+          message: "{{ title }} scheduled for {{ as_timestamp(scheduled_time) | timestamp_custom('%b %d at %I:%M %p') }}"
+          notification_id: jottick_note_scheduled
+  jottick_cancel_scheduled_note:
+    alias: "JotTick: Cancel Scheduled Note"
+    fields:
+      schedule_id:
+        description: "Schedule ID to cancel"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          sched_data: "{{ schedules.get(schedule_id, {}) if schedules is mapping else {} }}"
+          should_delete_note: "{{ sched_data.get('auto_delete', false) }}"
+          note_id: "{{ sched_data.get('note_id', '') }}"
+          updated_schedules: >
+            {% set safe_schedules = schedules if schedules is mapping else {} %}
+            {% set ns = namespace(result={}) %}
+            {% for key, val in safe_schedules.items() %}
+              {% if key != schedule_id %}
+                {% set ns.result = dict(ns.result, **{key: val}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: "{{ updated_schedules }}"
+      - if:
+          - condition: template
+            value_template: "{{ should_delete_note and note_id != '' }}"
+        then:
+          - service: jottick.delete_note
+            data:
+              note_id: "{{ note_id }}"
+      - service: persistent_notification.create
+        data:
+          title: "Schedule Cancelled"
+          message: "Scheduled notification cancelled"
+          notification_id: jottick_schedule_cancelled
+  jottick_send_scheduled_note:
+    alias: "JotTick: Send Scheduled Note"
+    fields:
+      schedule_id:
+        description: "Schedule ID"
+      title:
+        description: "Note title"
+      message:
+        description: "Note content"
+      targets:
+        description: "Comma-separated notify service targets"
+      auto_delete:
+        description: "Whether to delete the note after sending"
+    sequence:
+      - variables:
+          target_list: "{{ targets.split(',') if ',' in targets else [targets] }}"
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          sched_data: "{{ schedules.get(schedule_id, {}) if schedules is mapping else {} }}"
+          should_delete: "{{ auto_delete | default(sched_data.get('auto_delete', false)) }}"
+          note_id: "{{ sched_data.get('note_id', '') }}"
+      - repeat:
+          count: "{{ target_list | length }}"
+          sequence:
+            - service: "{{ target_list[repeat.index - 1] | trim }}"
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data:
+                  tag: "jottick_scheduled_{{ schedule_id }}"
+      - variables:
+          updated_schedules: >
+            {% set safe_schedules = schedules if schedules is mapping else {} %}
+            {% set ns = namespace(result={}) %}
+            {% for key, val in safe_schedules.items() %}
+              {% if key != schedule_id %}
+                {% set ns.result = dict(ns.result, **{key: val}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: "{{ updated_schedules }}"
+      - if:
+          - condition: template
+            value_template: "{{ should_delete and note_id != '' }}"
+        then:
+          - service: jottick.delete_note
+            data:
+              note_id: "{{ note_id }}"
+  jottick_debug_scheduled_notes:
+    alias: "JotTick: Debug Scheduled Notes"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          schedules_count: "{{ schedules | length if schedules is mapping else 'NOT A MAPPING' }}"
+          schedules_keys: "{{ schedules | list if schedules is mapping else [] }}"
+          current_ts: "{{ now().timestamp() }}"
+      - service: persistent_notification.create
+        data:
+          title: "Scheduled Notes Debug"
+          message: >
+            Schedules count: {{ schedules_count }}
+
+            Keys: {{ schedules_keys }}
+
+            Current timestamp: {{ current_ts }}
+
+            Raw schedules: {{ schedules }}
+          notification_id: jottick_debug
+  jottick_force_send_scheduled:
+    alias: "JotTick: Force Send All Scheduled"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+      - condition: template
+        value_template: "{{ schedules is mapping and schedules | length > 0 }}"
+      - repeat:
+          for_each: "{{ schedules | list }}"
+          sequence:
+            - variables:
+                schedule_id: "{{ repeat.item }}"
+                schedule: "{{ schedules[repeat.item] }}"
+            - service: script.jottick_send_scheduled_note
+              data:
+                schedule_id: "{{ schedule_id }}"
+                title: "{{ schedule.title | default('Note') }}"
+                message: "{{ schedule.message | default('') }}"
+                targets: "{{ schedule.targets | default('') }}"
+  jottick_save_user_device:
+    alias: "JotTick: Save User Device"
+    mode: single
+    fields:
+      user_id:
+        description: "User ID"
+      user_name:
+        description: "User friendly name"
+      device:
+        description: "Notify service"
+    sequence:
+      - event: jottick_user_devices_update
+        event_data:
+          user_devices: >
+            {% set current = state_attr('sensor.jottick_user_devices', 'user_devices') or {} %}
+            {% set new_entry = {user_id: {'name': user_name, 'device': device}} %}
+            {{ dict(current, **new_entry) }}
+  jottick_delete_user_device:
+    alias: "JotTick: Delete User Device"
+    mode: single
+    fields:
+      user_id:
+        description: "User ID to delete"
+    sequence:
+      - event: jottick_user_devices_update
+        event_data:
+          user_devices: >
+            {% set current = state_attr('sensor.jottick_user_devices', 'user_devices') or {} %}
+            {% set ns = namespace(result={}) %}
+            {% for uid, data in current.items() %}
+              {% if uid != user_id %}
+                {% set ns.result = dict(ns.result, **{uid: data}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+  jottick_save_alias_direct:
+    alias: "JotTick: Save Alias Direct"
+    mode: single
+    fields:
+      names:
+        description: "Comma-separated names"
+      device:
+        description: "Notify service"
+    sequence:
+      - event: jottick_aliases_update
+        event_data:
+          aliases: >
+            {% set current = state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} %}
+            {% set name_list = names.split(',') %}
+            {% set ns = namespace(result=current) %}
+            {% for name in name_list %}
+              {% set clean_name = name | trim | lower %}
+              {% if clean_name %}
+                {% set ns.result = dict(ns.result, **{clean_name: device}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+  jottick_delete_alias_group:
+    alias: "JotTick: Delete Alias Group"
+    mode: single
+    fields:
+      device:
+        description: "Device to remove all aliases for"
+    sequence:
+      - event: jottick_aliases_update
+        event_data:
+          aliases: >
+            {% set current = state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} %}
+            {% set ns = namespace(result={}) %}
+            {% for name, dev in current.items() %}
+              {% if dev != device %}
+                {% set ns.result = dict(ns.result, **{name: dev}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+  jottick_set_reminder:
+    alias: "JotTick: Set Reminder"
+    mode: parallel
+    fields:
+      task:
+        description: "What to remind about"
+      target:
+        description: "Who to remind"
+      user_id:
+        description: "User ID of person speaking"
+      time_type:
+        description: "Type of time specification"
+      minutes:
+        description: "Minutes for relative time"
+      hours:
+        description: "Hours for relative time"
+      time_hour:
+        description: "Hour for absolute time"
+      time_minute:
+        description: "Minute for absolute time"
+      ampm:
+        description: "AM/PM indicator"
+    sequence:
+      - variables:
+          target_lower: "{{ (target | default('me')) | lower | trim | replace('_', ' ') }}"
+          aliases: "{{ state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} }}"
+          user_devices: "{{ state_attr('sensor.jottick_user_devices', 'user_devices') or {} }}"
+          resolved_device: >
+            {% if target_lower in ['me', 'myself', 'i'] %}
+              {% if user_id and user_id in user_devices %}
+                {{ user_devices[user_id].device }}
+              {% else %}
+                unknown
+              {% endif %}
+            {% elif target_lower in aliases %}
+              {{ aliases[target_lower] }}
+            {% elif target_lower | replace(' ', '') in aliases %}
+              {{ aliases[target_lower | replace(' ', '')] }}
+            {% else %}
+              {% set ns = namespace(found='unknown') %}
+              {% for alias_name, device in aliases.items() %}
+                {% if alias_name | lower | replace(' ', '') == target_lower | replace(' ', '') %}
+                  {% set ns.found = device %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.found }}
+            {% endif %}
+          mins_int: "{{ minutes | default(0) | int }}"
+          hrs_int: "{{ hours | default(0) | int }}"
+          hr_int: "{{ time_hour | default(0) | int }}"
+          min_int: "{{ time_minute | default(0) | int }}"
+          scheduled_time: >
+            {% set now_dt = now() %}
+            {% if time_type == 'relative_minutes' %}
+              {{ (now_dt + timedelta(minutes=mins_int)).isoformat() }}
+            {% elif time_type == 'relative_hours' %}
+              {{ (now_dt + timedelta(hours=hrs_int)).isoformat() }}
+            {% elif time_type == 'relative_hours_minutes' %}
+              {{ (now_dt + timedelta(hours=hrs_int, minutes=mins_int)).isoformat() }}
+            {% elif time_type in ['absolute', 'absolute_hour_only'] %}
+              {% set hour = hr_int %}
+              {% set minute = min_int %}
+              {% if ampm | default('') | lower == 'pm' and hour < 12 %}
+                {% set hour = hour + 12 %}
+              {% elif ampm | default('') | lower == 'am' and hour == 12 %}
+                {% set hour = 0 %}
+              {% endif %}
+              {% set target_dt = now_dt.replace(hour=hour, minute=minute, second=0, microsecond=0) %}
+              {% if target_dt < now_dt %}
+                {% set target_dt = target_dt + timedelta(days=1) %}
+              {% endif %}
+              {{ target_dt.isoformat() }}
+            {% elif time_type in ['tomorrow', 'tomorrow_hour_only'] %}
+              {% set hour = hr_int %}
+              {% set minute = min_int %}
+              {% if ampm | default('') | lower == 'pm' and hour < 12 %}
+                {% set hour = hour + 12 %}
+              {% elif ampm | default('') | lower == 'am' and hour == 12 %}
+                {% set hour = 0 %}
+              {% endif %}
+              {% set target_dt = (now_dt + timedelta(days=1)).replace(hour=hour, minute=minute, second=0, microsecond=0) %}
+              {{ target_dt.isoformat() }}
+            {% else %}
+              {{ (now_dt + timedelta(hours=1)).isoformat() }}
+            {% endif %}
+          clean_task: "{{ task | replace('_', ' ') }}"
+          reminder_note_id: "reminder_{{ (now().timestamp() * 1000) | int | string }}"
+          reminder_title: "Reminder ({{ as_timestamp(scheduled_time) | timestamp_custom('%b %d %I:%M %p') }})"
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ resolved_device == 'unknown' }}"
+            sequence:
+              - service: persistent_notification.create
+                data:
+                  title: "Reminder Setup Needed"
+                  message: >
+                    Could not find device for '{{ target }}'.
+                    {% if target_lower in ['me', 'myself', 'i'] %}
+                    Go to JotTick dashboard > Voice Reminder Settings > Save My Device.
+                    {% else %}
+                    Go to JotTick dashboard > Voice Reminder Settings > Save Alias for '{{ target }}'.
+                    {% endif %}
+        default:
+          - service: jottick.create_note
+            data:
+              note_id: "{{ reminder_note_id }}"
+              title: "{{ reminder_title }}"
+              content: "{{ clean_task }}"
+          - service: script.jottick_schedule_reminder_note
+            data:
+              note_id: "{{ reminder_note_id }}"
+              title: "{{ reminder_title }}"
+              message: "{{ clean_task }}"
+              targets: "{{ resolved_device }}"
+              scheduled_time: "{{ scheduled_time }}"
+  jottick_schedule_reminder_note:
+    alias: "JotTick: Schedule Reminder Note"
+    fields:
+      note_id:
+        description: "Note ID"
+      title:
+        description: "Note title"
+      message:
+        description: "Note content"
+      targets:
+        description: "Comma-separated notify service targets"
+      scheduled_time:
+        description: "ISO datetime string for when to send"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          schedule_id: "{{ note_id }}_sched"
+          new_schedule:
+            note_id: "{{ note_id }}"
+            title: "{{ title }}"
+            message: "{{ message }}"
+            targets: "{{ targets }}"
+            scheduled_time: "{{ scheduled_time }}"
+            created: "{{ now().isoformat() }}"
+            auto_delete: true
+          safe_schedules: "{{ schedules if schedules is mapping else {} }}"
+          updated_schedules: "{{ dict(safe_schedules, **{schedule_id: new_schedule}) }}"
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: "{{ updated_schedules }}"
+  jottick_debug_reminder_setup:
+    alias: "JotTick: Debug Reminder Setup"
+    sequence:
+      - variables:
+          user_devices: "{{ state_attr('sensor.jottick_user_devices', 'user_devices') or {} }}"
+          aliases: "{{ state_attr('sensor.jottick_reminder_aliases', 'aliases') or {} }}"
+          scheduled: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+      - service: persistent_notification.create
+        data:
+          title: "JotTick Reminder Debug"
+          message: >
+            USER DEVICES:
+            {{ user_devices | tojson }}
+
+            ALIASES:
+            {{ aliases | tojson }}
+
+            PENDING REMINDERS:
+            {{ scheduled | tojson }}
+          notification_id: jottick_reminder_debug
+  jottick_delete_note_with_schedules:
+    alias: "JotTick: Delete Note With Schedules"
+    fields:
+      note_id:
+        description: "Note ID to delete"
+    sequence:
+      - variables:
+          schedules: "{{ state_attr('sensor.jottick_scheduled_notes', 'schedules') or {} }}"
+          updated_schedules: >
+            {% set safe_schedules = schedules if schedules is mapping else {} %}
+            {% set ns = namespace(result={}) %}
+            {% for sched_id, sched in safe_schedules.items() %}
+              {% if sched.note_id != note_id %}
+                {% set ns.result = dict(ns.result, **{sched_id: sched}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.result }}
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: "{{ updated_schedules }}"
+      - service: jottick.delete_note
+        data:
+          note_id: "{{ note_id }}"
+  jottick_calendar_go_to_today:
+    alias: 'JotTick: Calendar Go To Today'
+    icon: mdi:calendar-today
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: "{{ now().strftime('%Y-%m-%d') }}"
+  jottick_calendar_previous_month:
+    alias: 'JotTick: Calendar Previous Month'
+    icon: mdi:chevron-left
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: >
+            {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+            {% set dt = strptime(current, '%Y-%m-%d') %}
+            {% set prev = dt.replace(day=1) - timedelta(days=1) %}
+            {{ prev.replace(day=1).strftime('%Y-%m-%d') }}
+  jottick_calendar_next_month:
+    alias: 'JotTick: Calendar Next Month'
+    icon: mdi:chevron-right
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: >
+            {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+            {% set dt = strptime(current, '%Y-%m-%d') %}
+            {% set last_of_month = (dt.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1) %}
+            {% set next = last_of_month + timedelta(days=1) %}
+            {{ next.strftime('%Y-%m-%d') }}
+  jottick_calendar_previous_week:
+    alias: 'JotTick: Calendar Previous Week'
+    icon: mdi:chevron-double-left
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: >
+            {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+            {% set dt = strptime(current, '%Y-%m-%d') %}
+            {{ (dt - timedelta(days=7)).strftime('%Y-%m-%d') }}
+  jottick_calendar_next_week:
+    alias: 'JotTick: Calendar Next Week'
+    icon: mdi:chevron-double-right
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: >
+            {% set current = states('input_datetime.jottick_calendar_selected_date') %}
+            {% set dt = strptime(current, '%Y-%m-%d') %}
+            {{ (dt + timedelta(days=7)).strftime('%Y-%m-%d') }}
+  jottick_calendar_select_day:
+    alias: 'JotTick: Calendar Select Day'
+    icon: mdi:calendar
+    fields:
+      date:
+        description: 'Date in YYYY-MM-DD format'
+        example: '2025-01-15'
+    sequence:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.jottick_calendar_selected_date
+        data:
+          date: "{{ date }}"
+  jottick_calendar_open_event_popup:
+    alias: 'JotTick: Open Event Popup'
+    icon: mdi:popup
+    fields:
+      event_data:
+        description: 'JSON string with event details'
+        example: '{"id":"note_xxx","type":"note_created","title":"My Note"}'
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_calendar_popup_event_data
+        data:
+          value: "{{ event_data }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jottick_show_calendar_event_popup
+  jottick_calendar_close_event_popup:
+    alias: 'JotTick: Close Event Popup'
+    icon: mdi:close
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_show_calendar_event_popup
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_calendar_popup_event_data
+        data:
+          value: ""
+  jottick_import_ical:
+    alias: 'JotTick: Import iCal'
+    icon: mdi:calendar-import
+    sequence:
+      - service: jottick.import_ical
+        data:
+          url: "{{ states('input_text.jottick_ical_import_url') }}"
+          name: "{{ states('input_text.jottick_ical_import_name') }}"
+      - service: input_text.set_value
+        target:
+          entity_id:
+            - input_text.jottick_ical_import_url
+            - input_text.jottick_ical_import_name
+        data:
+          value: ""
+  jottick_navigate_to_item:
+    alias: 'JotTick: Navigate to Item'
+    icon: mdi:arrow-right
+    fields:
+      item_type:
+        description: 'Type: note, list, or task'
+        example: 'note'
+      item_id:
+        description: 'The item ID'
+        example: 'abc-123'
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_show_calendar_event_popup
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ item_type == 'note' }}"
+            sequence:
+              - service: browser_mod.navigate
+                data:
+                  path: /jottick-dashboard/notes
+              - delay: "00:00:01"
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.jottick_note_id
+                data:
+                  value: "{{ item_id }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ item_type == 'list' }}"
+            sequence:
+              - service: browser_mod.navigate
+                data:
+                  path: /jottick-dashboard/lists
+              - delay: "00:00:01"
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.jottick_checklist_id
+                data:
+                  value: "{{ item_id }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ item_type == 'task' }}"
+            sequence:
+              - service: browser_mod.navigate
+                data:
+                  path: /jottick-dashboard/tasks
+              - delay: "00:00:01"
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.jottick_selected_task_id
+                data:
+                  value: "{{ item_id }}"
+  jottick_create_points_user:
+    alias: 'JotTick: Create Points User'
+    icon: mdi:account-plus
+    sequence:
+      - service: jottick.create_points_user
+        data:
+          name: "{{ states('input_text.jottick_points_new_user_name') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_points_new_user_name
+        data:
+          value: ""
+
+  jottick_delete_points_user:
+    alias: 'JotTick: Delete Points User'
+    icon: mdi:account-remove
+    fields:
+      user_id:
+        description: User ID to delete
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.delete_points_user
+        data:
+          user_id: "{{ user_id }}"
+
+  jottick_adjust_user_points:
+    alias: 'JotTick: Adjust User Points'
+    icon: mdi:plus-minus
+    fields:
+      user_id:
+        description: User ID
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.adjust_user_points
+        data:
+          user_id: "{{ user_id }}"
+          amount: "{{ states('input_text.jottick_points_adjust_amount') | int(0) }}"
+          reason: "{{ states('input_text.jottick_points_adjust_reason') }}"
+      - service: input_text.set_value
+        target:
+          entity_id:
+            - input_text.jottick_points_adjust_amount
+            - input_text.jottick_points_adjust_reason
+        data:
+          value: ""
+
+  jottick_claim_item_points:
+    alias: 'JotTick: Claim Item Points'
+    icon: mdi:star-check
+    fields:
+      user_id:
+        description: User ID claiming points
+        required: true
+        selector:
+          text:
+      item_type:
+        description: Type of item (checklist or task)
+        required: true
+        selector:
+          select:
+            options:
+              - checklist
+              - task
+      parent_id:
+        description: Parent ID (checklist or task ID)
+        required: true
+        selector:
+          text:
+      item_index:
+        description: Item index
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.claim_item_points
+        data:
+          user_id: "{{ user_id }}"
+          item_type: "{{ item_type }}"
+          parent_id: "{{ parent_id }}"
+          item_index: "{{ item_index }}"
+
+  jottick_set_item_points:
+    alias: 'JotTick: Set Item Points'
+    icon: mdi:star-settings
+    fields:
+      item_type:
+        description: Type of item (checklist or task)
+        required: true
+        selector:
+          select:
+            options:
+              - checklist
+              - task
+      parent_id:
+        description: Parent ID (checklist or task ID)
+        required: true
+        selector:
+          text:
+      item_index:
+        description: Item index
+        required: true
+        selector:
+          text:
+      points:
+        description: Points value
+        required: true
+        selector:
+          number:
+            min: 0
+            max: 1000
+    sequence:
+      - service: jottick.set_item_points
+        data:
+          item_type: "{{ item_type }}"
+          parent_id: "{{ parent_id }}"
+          item_index: "{{ item_index }}"
+          points: "{{ points }}"
+
+  jottick_create_prize:
+    alias: 'JotTick: Create Prize'
+    icon: mdi:gift
+    sequence:
+      - service: jottick.create_prize
+        data:
+          name: "{{ states('input_text.jottick_points_new_prize_name') }}"
+          cost: "{{ states('input_number.jottick_points_new_prize_cost') | int(100) }}"
+          description: "{{ states('input_text.jottick_points_new_prize_description') }}"
+      - service: input_text.set_value
+        target:
+          entity_id:
+            - input_text.jottick_points_new_prize_name
+            - input_text.jottick_points_new_prize_description
+        data:
+          value: ""
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.jottick_points_new_prize_cost
+        data:
+          value: 100
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_points_show_add_prize_popup
+
+  jottick_delete_prize:
+    alias: 'JotTick: Delete Prize'
+    icon: mdi:gift-off
+    fields:
+      prize_id:
+        description: Prize ID to delete
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.delete_prize
+        data:
+          prize_id: "{{ prize_id }}"
+
+  jottick_redeem_prize:
+    alias: 'JotTick: Redeem Prize'
+    icon: mdi:gift-open
+    fields:
+      user_id:
+        description: User ID redeeming prize
+        required: true
+        selector:
+          text:
+      prize_id:
+        description: Prize ID to redeem
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.redeem_prize
+        data:
+          user_id: "{{ user_id }}"
+          prize_id: "{{ prize_id }}"
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jottick_points_show_redeem_popup
+
+  jottick_reset_user_points:
+    alias: 'JotTick: Reset User Points'
+    icon: mdi:refresh
+    fields:
+      user_id:
+        description: User ID to reset
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.reset_user_points
+        data:
+          user_id: "{{ user_id }}"
+
+  jottick_add_points_admin:
+    alias: 'JotTick: Add Points Admin'
+    icon: mdi:shield-account
+    fields:
+      admin_id:
+        description: Home Assistant user ID to add as admin
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.add_points_admin
+        data:
+          admin_id: "{{ admin_id }}"
+
+  jottick_remove_points_admin:
+    alias: 'JotTick: Remove Points Admin'
+    icon: mdi:shield-off
+    fields:
+      admin_id:
+        description: Home Assistant user ID to remove from admins
+        required: true
+        selector:
+          text:
+    sequence:
+      - service: jottick.remove_points_admin
+        data:
+          admin_id: "{{ admin_id }}"
+
+  jottick_points_action:
+    alias: 'JotTick: Points Action Handler'
+    icon: mdi:star
+    sequence:
+      - variables:
+          action_data: "{{ states('input_text.jottick_points_action_data') }}"
+          action: "{{ action_data.split('|')[0] if '|' in action_data else '' }}"
+          params: "{{ action_data.split('|')[1:] if '|' in action_data else [] }}"
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'claim' }}"
+            sequence:
+              - service: script.jottick_claim_item_points
+                data:
+                  user_id: "{{ params[0] if params | length > 0 else '' }}"
+                  item_type: "{{ params[1] if params | length > 1 else '' }}"
+                  parent_id: "{{ params[2] if params | length > 2 else '' }}"
+                  item_index: "{{ params[3] if params | length > 3 else '' }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'redeem' }}"
+            sequence:
+              - service: script.jottick_redeem_prize
+                data:
+                  user_id: "{{ params[0] if params | length > 0 else '' }}"
+                  prize_id: "{{ params[1] if params | length > 1 else '' }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'adjust' }}"
+            sequence:
+              - service: script.jottick_adjust_user_points
+                data:
+                  user_id: "{{ params[0] if params | length > 0 else '' }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'reset' }}"
+            sequence:
+              - service: script.jottick_reset_user_points
+                data:
+                  user_id: "{{ params[0] if params | length > 0 else '' }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'delete_user' }}"
+            sequence:
+              - service: script.jottick_delete_points_user
+                data:
+                  user_id: "{{ params[0] if params | length > 0 else '' }}"
+          - conditions:
+              - condition: template
+                value_template: "{{ action == 'delete_prize' }}"
+            sequence:
+              - service: script.jottick_delete_prize
+                data:
+                  prize_id: "{{ params[0] if params | length > 0 else '' }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.jottick_points_action_data
+        data:
+          value: ""
+
+  jottick_clear_reminders:
+    alias: "JotTick: Clear Reminders"
+    icon: mdi:bell-off
+    sequence:
+      - event: jottick_reminder_update
+        event_data:
+          configs: {}
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All reminders cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_recurring:
+    alias: "JotTick: Clear Recurring"
+    icon: mdi:calendar-remove
+    sequence:
+      - event: jottick_recurring_update
+        event_data:
+          configs: {}
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All recurring resets cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_scheduled_notes:
+    alias: "JotTick: Clear Scheduled Notes"
+    icon: mdi:calendar-clock
+    sequence:
+      - event: jottick_scheduled_notes_update
+        event_data:
+          schedules: {}
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All scheduled notes cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_points_users:
+    alias: "JotTick: Clear Points Users"
+    icon: mdi:account-off
+    sequence:
+      - event: jottick_points_users_update
+        event_data:
+          users: {}
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All points users cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_points_history:
+    alias: "JotTick: Clear Points History"
+    icon: mdi:history
+    sequence:
+      - event: jottick_points_history_update
+        event_data:
+          history: []
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All points history cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_prizes:
+    alias: "JotTick: Clear Prizes"
+    icon: mdi:gift-off
+    sequence:
+      - event: jottick_points_prizes_update
+        event_data:
+          prizes: []
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All prizes cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_achievements:
+    alias: "JotTick: Clear Achievements"
+    icon: mdi:trophy-broken
+    sequence:
+      - event: jottick_achievements_update
+        event_data:
+          achievements: []
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All achievements cleared"
+          notification_id: jottick_clear
+
+  jottick_clear_user_achievements:
+    alias: "JotTick: Clear User Achievements"
+    icon: mdi:medal
+    sequence:
+      - event: jottick_user_achievements_update
+        event_data:
+          user_achievements: {}
+      - service: persistent_notification.create
+        data:
+          title: "JotTick"
+          message: "All user achievements cleared"
+          notification_id: jottick_clear

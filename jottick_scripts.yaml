@@ -1857,22 +1857,6 @@ jottick_calendar_close_event_popup:
       data:
         value: ""
 
-jottick_calendar_open_settings:
-  alias: 'JotTick: Open Calendar Settings'
-  icon: mdi:cog
-  sequence:
-    - service: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.jottick_show_calendar_settings
-
-jottick_calendar_close_settings:
-  alias: 'JotTick: Close Calendar Settings'
-  icon: mdi:close
-  sequence:
-    - service: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.jottick_show_calendar_settings
-
 jottick_import_ical:
   alias: 'JotTick: Import iCal'
   icon: mdi:calendar-import
@@ -1942,4 +1926,395 @@ jottick_navigate_to_item:
               target:
                 entity_id: input_text.jottick_selected_task_id
               data:
-                value: "{{ item_id }}"        
+                value: "{{ item_id }}"
+
+jottick_create_points_user:
+  alias: 'JotTick: Create Points User'
+  icon: mdi:account-plus
+  sequence:
+    - service: jottick.create_points_user
+      data:
+        name: "{{ states('input_text.jottick_points_new_user_name') }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_points_new_user_name
+      data:
+        value: ""
+
+jottick_delete_points_user:
+  alias: 'JotTick: Delete Points User'
+  icon: mdi:account-remove
+  fields:
+    user_id:
+      description: User ID to delete
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.delete_points_user
+      data:
+        user_id: "{{ user_id }}"
+
+jottick_adjust_user_points:
+  alias: 'JotTick: Adjust User Points'
+  icon: mdi:plus-minus
+  fields:
+    user_id:
+      description: User ID
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.adjust_user_points
+      data:
+        user_id: "{{ user_id }}"
+        amount: "{{ states('input_text.jottick_points_adjust_amount') | int(0) }}"
+        reason: "{{ states('input_text.jottick_points_adjust_reason') }}"
+    - service: input_text.set_value
+      target:
+        entity_id:
+          - input_text.jottick_points_adjust_amount
+          - input_text.jottick_points_adjust_reason
+      data:
+        value: ""
+
+jottick_claim_item_points:
+  alias: 'JotTick: Claim Item Points'
+  icon: mdi:star-check
+  fields:
+    user_id:
+      description: User ID claiming points
+      required: true
+      selector:
+        text:
+    item_type:
+      description: Type of item (checklist or task)
+      required: true
+      selector:
+        select:
+          options:
+            - checklist
+            - task
+    parent_id:
+      description: Parent ID (checklist or task ID)
+      required: true
+      selector:
+        text:
+    item_index:
+      description: Item index
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.claim_item_points
+      data:
+        user_id: "{{ user_id }}"
+        item_type: "{{ item_type }}"
+        parent_id: "{{ parent_id }}"
+        item_index: "{{ item_index }}"
+
+jottick_set_item_points:
+  alias: 'JotTick: Set Item Points'
+  icon: mdi:star-settings
+  fields:
+    item_type:
+      description: Type of item (checklist or task)
+      required: true
+      selector:
+        select:
+          options:
+            - checklist
+            - task
+    parent_id:
+      description: Parent ID (checklist or task ID)
+      required: true
+      selector:
+        text:
+    item_index:
+      description: Item index
+      required: true
+      selector:
+        text:
+    points:
+      description: Points value
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1000
+  sequence:
+    - service: jottick.set_item_points
+      data:
+        item_type: "{{ item_type }}"
+        parent_id: "{{ parent_id }}"
+        item_index: "{{ item_index }}"
+        points: "{{ points }}"
+
+jottick_create_prize:
+  alias: 'JotTick: Create Prize'
+  icon: mdi:gift
+  sequence:
+    - service: jottick.create_prize
+      data:
+        name: "{{ states('input_text.jottick_points_new_prize_name') }}"
+        cost: "{{ states('input_number.jottick_points_new_prize_cost') | int(100) }}"
+        description: "{{ states('input_text.jottick_points_new_prize_description') }}"
+    - service: input_text.set_value
+      target:
+        entity_id:
+          - input_text.jottick_points_new_prize_name
+          - input_text.jottick_points_new_prize_description
+      data:
+        value: ""
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.jottick_points_new_prize_cost
+      data:
+        value: 100
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_points_show_add_prize_popup
+
+jottick_delete_prize:
+  alias: 'JotTick: Delete Prize'
+  icon: mdi:gift-off
+  fields:
+    prize_id:
+      description: Prize ID to delete
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.delete_prize
+      data:
+        prize_id: "{{ prize_id }}"
+
+jottick_redeem_prize:
+  alias: 'JotTick: Redeem Prize'
+  icon: mdi:gift-open
+  fields:
+    user_id:
+      description: User ID redeeming prize
+      required: true
+      selector:
+        text:
+    prize_id:
+      description: Prize ID to redeem
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.redeem_prize
+      data:
+        user_id: "{{ user_id }}"
+        prize_id: "{{ prize_id }}"
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jottick_points_show_redeem_popup
+
+jottick_reset_user_points:
+  alias: 'JotTick: Reset User Points'
+  icon: mdi:refresh
+  fields:
+    user_id:
+      description: User ID to reset
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.reset_user_points
+      data:
+        user_id: "{{ user_id }}"
+
+jottick_add_points_admin:
+  alias: 'JotTick: Add Points Admin'
+  icon: mdi:shield-account
+  fields:
+    admin_id:
+      description: Home Assistant user ID to add as admin
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.add_points_admin
+      data:
+        admin_id: "{{ admin_id }}"
+
+jottick_remove_points_admin:
+  alias: 'JotTick: Remove Points Admin'
+  icon: mdi:shield-off
+  fields:
+    admin_id:
+      description: Home Assistant user ID to remove from admins
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: jottick.remove_points_admin
+      data:
+        admin_id: "{{ admin_id }}"
+
+jottick_points_action:
+  alias: 'JotTick: Points Action Handler'
+  icon: mdi:star
+  sequence:
+    - variables:
+        action_data: "{{ states('input_text.jottick_points_action_data') }}"
+        action: "{{ action_data.split('|')[0] if '|' in action_data else '' }}"
+        params: "{{ action_data.split('|')[1:] if '|' in action_data else [] }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'claim' }}"
+          sequence:
+            - service: script.jottick_claim_item_points
+              data:
+                user_id: "{{ params[0] if params | length > 0 else '' }}"
+                item_type: "{{ params[1] if params | length > 1 else '' }}"
+                parent_id: "{{ params[2] if params | length > 2 else '' }}"
+                item_index: "{{ params[3] if params | length > 3 else '' }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'redeem' }}"
+          sequence:
+            - service: script.jottick_redeem_prize
+              data:
+                user_id: "{{ params[0] if params | length > 0 else '' }}"
+                prize_id: "{{ params[1] if params | length > 1 else '' }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'adjust' }}"
+          sequence:
+            - service: script.jottick_adjust_user_points
+              data:
+                user_id: "{{ params[0] if params | length > 0 else '' }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'reset' }}"
+          sequence:
+            - service: script.jottick_reset_user_points
+              data:
+                user_id: "{{ params[0] if params | length > 0 else '' }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'delete_user' }}"
+          sequence:
+            - service: script.jottick_delete_points_user
+              data:
+                user_id: "{{ params[0] if params | length > 0 else '' }}"
+        - conditions:
+            - condition: template
+              value_template: "{{ action == 'delete_prize' }}"
+          sequence:
+            - service: script.jottick_delete_prize
+              data:
+                prize_id: "{{ params[0] if params | length > 0 else '' }}"
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jottick_points_action_data
+      data:
+        value: ""
+
+jottick_clear_reminders:
+  alias: "JotTick: Clear Reminders"
+  icon: mdi:bell-off
+  sequence:
+    - event: jottick_reminder_update
+      event_data:
+        configs: {}
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All reminders cleared"
+        notification_id: jottick_clear
+
+jottick_clear_recurring:
+  alias: "JotTick: Clear Recurring"
+  icon: mdi:calendar-remove
+  sequence:
+    - event: jottick_recurring_update
+      event_data:
+        configs: {}
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All recurring resets cleared"
+        notification_id: jottick_clear
+
+jottick_clear_scheduled_notes:
+  alias: "JotTick: Clear Scheduled Notes"
+  icon: mdi:calendar-clock
+  sequence:
+    - event: jottick_scheduled_notes_update
+      event_data:
+        schedules: {}
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All scheduled notes cleared"
+        notification_id: jottick_clear
+
+jottick_clear_points_users:
+  alias: "JotTick: Clear Points Users"
+  icon: mdi:account-off
+  sequence:
+    - event: jottick_points_users_update
+      event_data:
+        users: {}
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All points users cleared"
+        notification_id: jottick_clear
+
+jottick_clear_points_history:
+  alias: "JotTick: Clear Points History"
+  icon: mdi:history
+  sequence:
+    - event: jottick_points_history_update
+      event_data:
+        history: []
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All points history cleared"
+        notification_id: jottick_clear
+
+jottick_clear_prizes:
+  alias: "JotTick: Clear Prizes"
+  icon: mdi:gift-off
+  sequence:
+    - event: jottick_points_prizes_update
+      event_data:
+        prizes: []
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All prizes cleared"
+        notification_id: jottick_clear
+
+jottick_clear_achievements:
+  alias: "JotTick: Clear Achievements"
+  icon: mdi:trophy-broken
+  sequence:
+    - event: jottick_achievements_update
+      event_data:
+        achievements: []
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All achievements cleared"
+        notification_id: jottick_clear
+
+jottick_clear_user_achievements:
+  alias: "JotTick: Clear User Achievements"
+  icon: mdi:medal
+  sequence:
+    - event: jottick_user_achievements_update
+      event_data:
+        user_achievements: {}
+    - service: persistent_notification.create
+      data:
+        title: "JotTick"
+        message: "All user achievements cleared"
+        notification_id: jottick_clear

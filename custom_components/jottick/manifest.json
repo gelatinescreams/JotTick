@@ -1,7 +1,7 @@
 {
     "domain": "jottick",
     "name": "JotTick",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "codeowners": [],
     "config_flow": true,
     "dependencies": [],

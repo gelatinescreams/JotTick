@@ -229,7 +229,7 @@
               end_minutes: "{{ (end_parts[0] | int) * 60 + (end_parts[1] | int) }}"
               current_minutes: "{{ current_hour * 60 + current_minute }}"
               in_time_window: "{{ current_minutes >= start_minutes | int and current_minutes <= end_minutes | int }}"
-              minutes_since_last: "{{ ((as_timestamp(now()) - last_sent) / 60) | int if last_sent else 9999 }}"
+              minutes_since_last: "{{ ((as_timestamp(now()) - (last_sent | float(0))) / 60) | int if last_sent else 9999 }}"
               should_send: "{{ should_run_today and in_time_window and minutes_since_last >= interval_minutes | int }}"
           - condition: template
             value_template: "{{ should_send }}"
@@ -434,10 +434,16 @@
                 item_text: "{{ parts[2] }}"
                 due_date: "{{ parts[3] | default('') }}"
                 due_time: "{{ parts[4] | default('') }}"
+                item_points: "{{ parts[5] | default('') }}"
+                assigned_to: "{{ parts[6] | default('') }}"
             - service: jottick.add_checklist_item
               data:
                 checklist_id: "{{ list_id }}"
                 text: "{{ item_text }}"
+                points: >
+                  {% if item_points != '' %}{{ item_points | int }}{% endif %}
+                assigned_to: >
+                  {% if assigned_to != '' %}{{ assigned_to }}{% endif %}
             - condition: template
               value_template: "{{ due_date != '' }}"
             - delay:
@@ -519,17 +525,21 @@
                 current_items: "{{ (state_attr(task_entity | trim, 'items') or []) | length }}"
                 item_text: "{{ parts[2] }}"
                 item_status: "{{ parts[3] | default('todo') }}"
-                parent_index: "{{ parts[4] if parts | length > 4 and parts[4] != '' else none }}"
-                due_date: "{{ parts[5] | default('') }}"
-                due_time: "{{ parts[6] | default('') }}"
-            
+                due_date: "{{ parts[4] | default('') }}"
+                due_time: "{{ parts[5] | default('') }}"
+                item_points: "{{ parts[6] | default('') }}"
+                assigned_to: "{{ parts[7] | default('') }}"
+
             - service: jottick.add_task_item
               data:
                 task_id: "{{ task_id }}"
                 text: "{{ item_text }}"
                 status: "{{ item_status }}"
-                parent_index: "{{ parent_index if parent_index else none }}"
-            
+                points: >
+                  {% if item_points != '' %}{{ item_points | int }}{% endif %}
+                assigned_to: >
+                  {% if assigned_to != '' %}{{ assigned_to }}{% endif %}
+
             - condition: template
               value_template: "{{ due_date != '' }}"
             - delay:
@@ -713,26 +723,6 @@
       data:
         date: "{{ now().strftime('%Y-%m-%d') }}"                
         
-- id: jottick_calendar_color_refresh
-  alias: "JotTick: Refresh calendar on color change"
-  trigger:
-    - platform: state
-      entity_id:
-        - input_text.jottick_calendar_color_note_created
-        - input_text.jottick_calendar_color_note_edited
-        - input_text.jottick_calendar_color_note_reminder
-        - input_text.jottick_calendar_color_list_created
-        - input_text.jottick_calendar_color_list_edited
-        - input_text.jottick_calendar_color_list_due
-        - input_text.jottick_calendar_color_task_due
-        - input_text.jottick_calendar_color_task_overdue
-        - input_text.jottick_calendar_color_imported
-  action:
-    - delay: "00:00:01"
-    - service: homeassistant.update_entity
-      target:
-        entity_id: sensor.jottick_calendar_events        
-
 - id: jottick_auto_update_task_picker_fixed
   alias: 'JotTick: Auto Update Task Picker'
   trigger:
@@ -855,4 +845,35 @@
         {%- for item in items -%}
           {%- set ns.opts = ns.opts + [item.text | default('Item ' ~ loop.index)] -%}
         {%- endfor -%}
-        {{ ns.opts }}      
+        {{ ns.opts }}
+
+- id: jottick_refresh_calendar_on_settings_change
+  alias: 'JotTick: Refresh Calendar on Settings Change'
+  mode: restart
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.jottick_calendar_show_note_created
+    - input_boolean.jottick_calendar_show_note_edited
+    - input_boolean.jottick_calendar_show_note_reminders
+    - input_boolean.jottick_calendar_show_list_created
+    - input_boolean.jottick_calendar_show_list_edited
+    - input_boolean.jottick_calendar_show_list_due
+    - input_boolean.jottick_calendar_show_task_due
+    - input_boolean.jottick_calendar_show_imported
+    - input_boolean.jottick_calendar_show_overdue
+    - input_boolean.jottick_calendar_show_completed
+    - input_text.jottick_calendar_color_note_created
+    - input_text.jottick_calendar_color_note_edited
+    - input_text.jottick_calendar_color_note_reminder
+    - input_text.jottick_calendar_color_list_created
+    - input_text.jottick_calendar_color_list_edited
+    - input_text.jottick_calendar_color_list_due
+    - input_text.jottick_calendar_color_task_due
+    - input_text.jottick_calendar_color_task_overdue
+    - input_text.jottick_calendar_color_completed
+    - input_text.jottick_calendar_color_imported
+  action:
+  - service: homeassistant.update_entity
+    target:
+      entity_id: sensor.jottick_calendar_events

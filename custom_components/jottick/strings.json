@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Set up JotTick",
-        "description": "Notes, Lists and Tasks Lists with configurable notifications and recurring options"
+        "description": "Notes, Lists, Tasks Lists, Calendar and Chore system with configurable notifications and recurring options"
       }
     },
     "abort": {

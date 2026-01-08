@@ -4,9 +4,11 @@ import os
 import base64
 import shutil
 import json
+import copy
 import re
 import aiohttp
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 from aiohttp import web
@@ -21,10 +23,11 @@ from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.CALENDAR]
 
-IMAGES_DIR = "www/jottick/images"
-CALENDAR_DIR = "www/jottick/calendar"
+IMAGES_DIR = "www/community/jottick/images"
+CALENDAR_DIR = "www/community/jottick/calendar"
+POINTS_DIR = "www/community/jottick/points"
 
 
 def generate_id() -> str:
@@ -116,7 +119,7 @@ class JotTickUploadView(HomeAssistantView):
             
             await self.coordinator.hass.async_add_executor_job(write_file)
             
-            image_url = f"/local/jottick/images/{safe_filename}"
+            image_url = f"/local/community/jottick/images/{safe_filename}"
             image_record = {
                 "id": image_id,
                 "filename": safe_filename,
@@ -191,28 +194,28 @@ class JotTickDeleteImageView(HomeAssistantView):
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
 
-class JotTickCalendarExportView(HomeAssistantView):    
+class JotTickCalendarExportView(HomeAssistantView):
     url = "/api/jottick/calendar/{filename}.ics"
     name = "api:jottick:calendar_export"
-    requires_auth = False
-    
+    requires_auth = True
+
     def __init__(self, coordinator):
         self.coordinator = coordinator
-    
+
     async def get(self, request, filename):
         try:
             calendar_path = self.coordinator.hass.config.path(CALENDAR_DIR)
             file_path = os.path.join(calendar_path, f"{filename}.ics")
-            
+
             if not os.path.exists(file_path):
                 await self.coordinator.export_ical(filename=filename)
-            
+
             def read_file():
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return f.read()
-            
+
             content = await self.coordinator.hass.async_add_executor_job(read_file)
-            
+
             return web.Response(
                 text=content,
                 content_type="text/calendar; charset=utf-8",
@@ -220,10 +223,140 @@ class JotTickCalendarExportView(HomeAssistantView):
                     "Content-Disposition": f'attachment; filename="{filename}.ics"'
                 }
             )
-            
+
         except Exception as e:
             _LOGGER.error(f"Calendar export error: {e}")
             return web.Response(text=f"Error: {e}", status=500)
+
+
+class JotTickPrizeUploadView(HomeAssistantView):
+    url = "/api/jottick/prize-upload"
+    name = "api:jottick:prize_upload"
+    requires_auth = True
+
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+
+    async def post(self, request):
+        try:
+            data = await request.post()
+
+            prize_id = data.get('prize_id')
+            if not prize_id:
+                return web.json_response({"success": False, "error": "prize_id required"}, status=400)
+
+            file_field = data.get('file')
+            if not file_field:
+                return web.json_response({"success": False, "error": "file required"}, status=400)
+
+            filename = file_field.filename
+            content = file_field.file.read()
+
+            ext = os.path.splitext(filename)[1].lower() or '.jpg'
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+            if ext not in allowed_extensions:
+                return web.json_response({"success": False, "error": "Invalid file type"}, status=400)
+
+            safe_filename = f"prize_{prize_id}{ext}"
+
+            points_path = self.coordinator.hass.config.path(POINTS_DIR)
+            if not os.path.exists(points_path):
+                os.makedirs(points_path, exist_ok=True)
+
+            file_path = os.path.join(points_path, safe_filename)
+
+            def write_file():
+                with open(file_path, 'wb') as f:
+                    f.write(content)
+
+            await self.coordinator.hass.async_add_executor_job(write_file)
+
+            image_url = f"/local/community/jottick/points/{safe_filename}"
+
+            for prize in self.coordinator._data["points_prizes"]:
+                if prize["id"] == prize_id:
+                    prize["image"] = image_url
+                    break
+
+            await self.coordinator.async_save()
+
+            self.coordinator.hass.bus.async_fire("jottick_points_prizes_update", {
+                "prizes": self.coordinator._data["points_prizes"]
+            })
+
+            return web.json_response({
+                "success": True,
+                "image_url": image_url
+            })
+
+        except Exception as e:
+            _LOGGER.error(f"Prize upload error: {e}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+
+class JotTickAchievementUploadView(HomeAssistantView):
+    url = "/api/jottick/achievement-upload"
+    name = "api:jottick:achievement_upload"
+    requires_auth = True
+
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+
+    async def post(self, request):
+        try:
+            data = await request.post()
+
+            achievement_id = data.get('achievement_id')
+            if not achievement_id:
+                return web.json_response({"success": False, "error": "achievement_id required"}, status=400)
+
+            file_field = data.get('file')
+            if not file_field:
+                return web.json_response({"success": False, "error": "file required"}, status=400)
+
+            filename = file_field.filename
+            content = file_field.file.read()
+
+            ext = os.path.splitext(filename)[1].lower() or '.jpg'
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+            if ext not in allowed_extensions:
+                return web.json_response({"success": False, "error": "Invalid file type"}, status=400)
+
+            safe_filename = f"achievement_{achievement_id}{ext}"
+
+            points_path = self.coordinator.hass.config.path(POINTS_DIR)
+            if not os.path.exists(points_path):
+                os.makedirs(points_path, exist_ok=True)
+
+            file_path = os.path.join(points_path, safe_filename)
+
+            def write_file():
+                with open(file_path, 'wb') as f:
+                    f.write(content)
+
+            await self.coordinator.hass.async_add_executor_job(write_file)
+
+            image_url = f"/local/community/jottick/points/{safe_filename}"
+
+            for achievement in self.coordinator._data.get("achievements", []):
+                if achievement["id"] == achievement_id:
+                    achievement["image"] = image_url
+                    break
+
+            await self.coordinator.async_save()
+
+            self.coordinator.hass.bus.async_fire("jottick_achievements_update", {
+                "achievements": self.coordinator._data.get("achievements", [])
+            })
+
+            return web.json_response({
+                "success": True,
+                "image_url": image_url
+            })
+
+        except Exception as e:
+            _LOGGER.error(f"Achievement upload error: {e}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -231,33 +364,51 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     stored_data = await store.async_load()
     
     if stored_data is None:
-        stored_data = {"notes": [], "checklists": [], "tasks": [], "ical_sources": [], "imported_events": []}
+        stored_data = {"notes": [], "checklists": [], "tasks": [], "ical_sources": [], "imported_events": [], "points_users": {}, "points_history": [], "points_prizes": [], "points_admins": []}
         await store.async_save(stored_data)
-    
+
     if "ical_sources" not in stored_data:
         stored_data["ical_sources"] = []
     if "imported_events" not in stored_data:
         stored_data["imported_events"] = []
-    
+    if "points_users" not in stored_data:
+        stored_data["points_users"] = {}
+    if "points_history" not in stored_data:
+        stored_data["points_history"] = []
+    if "points_prizes" not in stored_data:
+        stored_data["points_prizes"] = []
+    if "points_admins" not in stored_data:
+        stored_data["points_admins"] = []
+    if "achievements" not in stored_data:
+        stored_data["achievements"] = []
+    if "user_achievements" not in stored_data:
+        stored_data["user_achievements"] = {}
+
     images_path = hass.config.path(IMAGES_DIR)
     if not os.path.exists(images_path):
         os.makedirs(images_path, exist_ok=True)
-    
+
     calendar_path = hass.config.path(CALENDAR_DIR)
     if not os.path.exists(calendar_path):
         os.makedirs(calendar_path, exist_ok=True)
-    
+
+    points_path = hass.config.path(POINTS_DIR)
+    if not os.path.exists(points_path):
+        os.makedirs(points_path, exist_ok=True)
+
     coordinator = JotTickCoordinator(hass, store, stored_data)
-    
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "store": store,
         "coordinator": coordinator,
     }
-    
+
     hass.http.register_view(JotTickUploadView(coordinator))
     hass.http.register_view(JotTickDeleteImageView(coordinator))
     hass.http.register_view(JotTickCalendarExportView(coordinator))
+    hass.http.register_view(JotTickPrizeUploadView(coordinator))
+    hass.http.register_view(JotTickAchievementUploadView(coordinator))
     
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_services(hass, entry.entry_id)
@@ -287,6 +438,12 @@ class JotTickCoordinator(DataUpdateCoordinator):
             "tasks": self._data.get("tasks", []),
             "ical_sources": self._data.get("ical_sources", []),
             "imported_events": self._data.get("imported_events", []),
+            "points_users": self._data.get("points_users", {}),
+            "points_history": self._data.get("points_history", []),
+            "points_prizes": self._data.get("points_prizes", []),
+            "points_admins": self._data.get("points_admins", []),
+            "achievements": self._data.get("achievements", []),
+            "user_achievements": self._data.get("user_achievements", {}),
         }
 
     async def _async_update_data(self) -> dict:
@@ -399,7 +556,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 image_record = {
                     "id": image_id,
                     "filename": safe_filename,
-                    "url": f"/local/jottick/images/{safe_filename}",
+                    "url": f"/local/community/jottick/images/{safe_filename}",
                     "caption": caption,
                     "addedAt": now_iso(),
                 }
@@ -446,7 +603,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 image_record = {
                     "id": image_id,
                     "filename": safe_filename,
-                    "url": f"/local/jottick/images/{safe_filename}",
+                    "url": f"/local/community/jottick/images/{safe_filename}",
                     "caption": caption,
                     "addedAt": now_iso(),
                 }
@@ -552,13 +709,17 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 return True
         raise ValueError(f"Checklist {checklist_id} not found")
 
-    async def add_checklist_item(self, checklist_id: str, text: str, status: str = None, parent_index: str = None) -> dict:
+    async def add_checklist_item(self, checklist_id: str, text: str, status: str = None, parent_index: str = None, points: int = None, assigned_to: str = None) -> dict:
         for checklist in self._data["checklists"]:
             if checklist["id"] == checklist_id:
                 new_item = {"text": text, "completed": False, "children": []}
                 if status:
                     new_item["status"] = status
-                
+                if points is not None:
+                    new_item["points"] = points
+                if assigned_to:
+                    new_item["assigned_to"] = assigned_to
+
                 if parent_index is not None:
                     items = checklist["items"]
                     indices = [int(i) for i in str(parent_index).split(".")]
@@ -568,7 +729,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                     target[indices[-1]].setdefault("children", []).append(new_item)
                 else:
                     checklist["items"].append(new_item)
-                
+
                 checklist["updatedAt"] = now_iso()
                 await self.async_save()
                 return new_item
@@ -594,13 +755,42 @@ class JotTickCoordinator(DataUpdateCoordinator):
         
         return target_list, final_idx
 
-    async def check_item(self, checklist_id: str, item_index: str) -> bool:
+    async def check_item(self, checklist_id: str, item_index: str, user_id: str = None) -> bool:
         for checklist in self._data["checklists"]:
             if checklist["id"] == checklist_id:
                 target_list, idx = self._get_item_by_index(checklist["items"], item_index)
-                target_list[idx]["completed"] = True
+                item = target_list[idx]
+                item["completed"] = True
+
+                claim_user = None
+                item_points = item.get("points", 0)
+                assigned_to = item.get("assigned_to", "")
+                if item_points > 0 and not item.get("points_claimed"):
+                    claim_user = user_id or assigned_to
+                    if claim_user and claim_user in self._data["points_users"]:
+                        item["points_claimed"] = True
+                        item["points_claimed_by"] = claim_user
+                        item["points_claimed_at"] = now_iso()
+                        self._data["points_users"][claim_user]["points"] = self._data["points_users"][claim_user].get("points", 0) + item_points
+                        self._data["points_users"][claim_user]["lifetime_points"] = self._data["points_users"][claim_user].get("lifetime_points", 0) + item_points
+                        self._data["points_history"].append({
+                            "id": generate_id()[:8],
+                            "user_id": claim_user,
+                            "user_name": self._data["points_users"][claim_user].get("name", ""),
+                            "amount": item_points,
+                            "reason": f"Completed: {item.get('text', 'item')}",
+                            "item_type": "checklist",
+                            "parent_id": checklist_id,
+                            "item_index": item_index,
+                            "timestamp": now_iso(),
+                        })
+                        self.hass.bus.async_fire("jottick_points_users_update", {"users": self._data["points_users"]})
+                        self.hass.bus.async_fire("jottick_points_history_update", {"history": self._data["points_history"][-50:]})
+
                 checklist["updatedAt"] = now_iso()
                 await self.async_save()
+                if claim_user:
+                    await self.check_auto_achievements(claim_user)
                 return True
         raise ValueError(f"Checklist {checklist_id} not found")
 
@@ -755,11 +945,15 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 return True
         raise ValueError(f"Task {task_id} not found")
 
-    async def add_task_item(self, task_id: str, text: str, status: str = "todo", parent_index: str = None) -> dict:
+    async def add_task_item(self, task_id: str, text: str, status: str = "todo", parent_index: str = None, points: int = None, assigned_to: str = None) -> dict:
         for task in self._data["tasks"]:
             if task["id"] == task_id:
                 new_item = {"text": text, "status": status, "children": []}
-                
+                if points is not None:
+                    new_item["points"] = points
+                if assigned_to:
+                    new_item["assigned_to"] = assigned_to
+
                 if parent_index is not None:
                     items = task["items"]
                     indices = [int(i) for i in str(parent_index).split(".")]
@@ -769,26 +963,56 @@ class JotTickCoordinator(DataUpdateCoordinator):
                     target[indices[-1]].setdefault("children", []).append(new_item)
                 else:
                     task["items"].append(new_item)
-                
+
                 task["updatedAt"] = now_iso()
                 await self.async_save()
                 return new_item
         raise ValueError(f"Task {task_id} not found")
 
-    async def update_task_item_status(self, task_id: str, item_index: str, status: str) -> bool:
+    async def update_task_item_status(self, task_id: str, item_index: str, status: str, user_id: str = None) -> bool:
         for task in self._data["tasks"]:
             if task["id"] == task_id:
                 target_list, idx = self._get_item_by_index(task["items"], item_index)
-                target_list[idx]["status"] = status
+                item = target_list[idx]
+                item["status"] = status
+
+                claim_user = None
                 if status == "completed":
+                    item_points = item.get("points", 0)
+                    assigned_to = item.get("assigned_to", "")
+                    if item_points > 0 and not item.get("points_claimed"):
+                        claim_user = user_id or assigned_to
+                        if claim_user and claim_user in self._data["points_users"]:
+                            item["points_claimed"] = True
+                            item["points_claimed_by"] = claim_user
+                            item["points_claimed_at"] = now_iso()
+                            self._data["points_users"][claim_user]["points"] = self._data["points_users"][claim_user].get("points", 0) + item_points
+                            self._data["points_users"][claim_user]["lifetime_points"] = self._data["points_users"][claim_user].get("lifetime_points", 0) + item_points
+                            self._data["points_history"].append({
+                                "id": generate_id()[:8],
+                                "user_id": claim_user,
+                                "user_name": self._data["points_users"][claim_user].get("name", ""),
+                                "amount": item_points,
+                                "reason": f"Completed: {item.get('text', 'item')}",
+                                "item_type": "task",
+                                "parent_id": task_id,
+                                "item_index": item_index,
+                                "timestamp": now_iso(),
+                            })
+                            self.hass.bus.async_fire("jottick_points_users_update", {"users": self._data["points_users"]})
+                            self.hass.bus.async_fire("jottick_points_history_update", {"history": self._data["points_history"][-50:]})
+
                     def cascade_complete(items):
-                        for item in items:
-                            item["status"] = "completed"
-                            if item.get("children"):
-                                cascade_complete(item["children"])
-                    cascade_complete(target_list[idx].get("children", []))
+                        for child in items:
+                            child["status"] = "completed"
+                            if child.get("children"):
+                                cascade_complete(child["children"])
+                    cascade_complete(item.get("children", []))
+
                 task["updatedAt"] = now_iso()
                 await self.async_save()
+                if claim_user:
+                    await self.check_auto_achievements(claim_user)
                 return True
         raise ValueError(f"Task {task_id} not found")
 
@@ -921,7 +1145,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Task {task_id} not found")
 
     async def duplicate_note(self, note_id: str, new_title: str = None) -> dict:
-        import copy
         for note in self._data["notes"]:
             if note["id"] == note_id:
                 new_note = copy.deepcopy(note)
@@ -935,7 +1158,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Note {note_id} not found")
 
     async def duplicate_checklist(self, checklist_id: str, new_title: str = None) -> dict:
-        import copy
         for checklist in self._data["checklists"]:
             if checklist["id"] == checklist_id:
                 new_checklist = copy.deepcopy(checklist)
@@ -949,7 +1171,6 @@ class JotTickCoordinator(DataUpdateCoordinator):
         raise ValueError(f"Checklist {checklist_id} not found")
 
     async def duplicate_task(self, task_id: str, new_title: str = None) -> dict:
-        import copy
         for task in self._data["tasks"]:
             if task["id"] == task_id:
                 new_task = copy.deepcopy(task)
@@ -961,7 +1182,641 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 await self.async_save()
                 return new_task
         raise ValueError(f"Task {task_id} not found")
-        
+
+    async def create_points_user(self, name: str, user_id: str = None, linked_ha_user: str = None, linked_device: str = None) -> dict:
+        if user_id is None:
+            user_id = generate_id()[:8]
+
+        if user_id in self._data["points_users"]:
+            raise ValueError(f"User ID {user_id} already exists")
+
+        user = {
+            "id": user_id,
+            "name": name,
+            "points": 0,
+            "lifetime_points": 0,
+            "linked_ha_user": linked_ha_user,
+            "linked_device": linked_device,
+            "created_at": now_iso(),
+        }
+
+        self._data["points_users"][user_id] = user
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+
+        return user
+
+    async def update_points_user(self, user_id: str, name: str = None, linked_ha_user: str = None, linked_device: str = None) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        user = self._data["points_users"][user_id]
+        if name is not None:
+            user["name"] = name
+        if linked_ha_user is not None:
+            user["linked_ha_user"] = linked_ha_user
+        if linked_device is not None:
+            user["linked_device"] = linked_device
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+
+        return user
+
+    async def delete_points_user(self, user_id: str) -> bool:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        del self._data["points_users"][user_id]
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+
+        return True
+
+    async def adjust_user_points(self, user_id: str, amount: int, reason: str = "", admin_id: str = None) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        user = self._data["points_users"][user_id]
+        old_points = user["points"]
+        user["points"] += amount
+
+        if amount > 0:
+            user["lifetime_points"] = user.get("lifetime_points", 0) + amount
+
+        history_entry = {
+            "id": generate_id()[:8],
+            "user_id": user_id,
+            "user_name": user["name"],
+            "amount": amount,
+            "old_balance": old_points,
+            "new_balance": user["points"],
+            "reason": reason,
+            "type": "adjustment",
+            "admin_id": admin_id,
+            "timestamp": now_iso(),
+        }
+
+        self._data["points_history"].append(history_entry)
+
+        if len(self._data["points_history"]) > 1000:
+            self._data["points_history"] = self._data["points_history"][-1000:]
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+        self.hass.bus.async_fire("jottick_points_history_update", {
+            "history": self._data["points_history"]
+        })
+
+        if amount > 0:
+            await self.check_auto_achievements(user_id)
+
+        return user
+
+    async def claim_item_points(
+        self,
+        user_id: str,
+        item_type: str,
+        parent_id: str,
+        item_index: str,
+        points: int = None,
+        claimed_by_admin: str = None
+    ) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        item_text = ""
+        parent_title = ""
+
+        if item_type == "checklist":
+            for checklist in self._data["checklists"]:
+                if checklist["id"] == parent_id:
+                    target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+                    item = target_list[idx]
+                    item_text = item.get("text", "")
+                    parent_title = checklist.get("title", "")
+
+                    if item.get("points_claimed"):
+                        raise ValueError("Points already claimed for this item")
+
+                    assigned_to = item.get("assigned_to", "")
+                    if assigned_to and assigned_to != user_id and not claimed_by_admin:
+                        assigned_user = self._data["points_users"].get(assigned_to, {})
+                        raise ValueError(f"This item is assigned to {assigned_user.get('name', 'another user')}. Only they can claim it.")
+
+                    if points is None:
+                        points = item.get("points", 1)
+
+                    if points == 0:
+                        raise ValueError("This item has no points assigned")
+
+                    item["points_claimed"] = True
+                    item["points_claimed_by"] = user_id
+                    item["points_claimed_at"] = now_iso()
+                    checklist["updatedAt"] = now_iso()
+                    break
+            else:
+                raise ValueError(f"Checklist {parent_id} not found")
+
+        elif item_type == "task":
+            for task in self._data["tasks"]:
+                if task["id"] == parent_id:
+                    target_list, idx = self._get_item_by_index(task["items"], item_index)
+                    item = target_list[idx]
+                    item_text = item.get("text", "")
+                    parent_title = task.get("title", "")
+
+                    if item.get("points_claimed"):
+                        raise ValueError("Points already claimed for this item")
+
+                    assigned_to = item.get("assigned_to", "")
+                    if assigned_to and assigned_to != user_id and not claimed_by_admin:
+                        assigned_user = self._data["points_users"].get(assigned_to, {})
+                        raise ValueError(f"This item is assigned to {assigned_user.get('name', 'another user')}. Only they can claim it.")
+
+                    if points is None:
+                        points = item.get("points", 5)
+
+                    if points == 0:
+                        raise ValueError("This item has no points assigned")
+
+                    item["points_claimed"] = True
+                    item["points_claimed_by"] = user_id
+                    item["points_claimed_at"] = now_iso()
+                    task["updatedAt"] = now_iso()
+                    break
+            else:
+                raise ValueError(f"Task {parent_id} not found")
+        else:
+            raise ValueError(f"Unknown item type: {item_type}")
+
+        user = self._data["points_users"][user_id]
+        old_points = user["points"]
+        user["points"] += points
+        user["lifetime_points"] = user.get("lifetime_points", 0) + points
+
+        history_entry = {
+            "id": generate_id()[:8],
+            "user_id": user_id,
+            "user_name": user["name"],
+            "amount": points,
+            "old_balance": old_points,
+            "new_balance": user["points"],
+            "reason": f"Completed: {item_text}" if item_text else "Item completed",
+            "type": "claim",
+            "item_type": item_type,
+            "parent_id": parent_id,
+            "parent_title": parent_title,
+            "item_index": item_index,
+            "claimed_by_admin": claimed_by_admin,
+            "timestamp": now_iso(),
+        }
+
+        self._data["points_history"].append(history_entry)
+
+        if len(self._data["points_history"]) > 1000:
+            self._data["points_history"] = self._data["points_history"][-1000:]
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+        self.hass.bus.async_fire("jottick_points_history_update", {
+            "history": self._data["points_history"]
+        })
+
+        await self.check_auto_achievements(user_id)
+
+        return {"user": user, "points_earned": points, "history_entry": history_entry}
+
+    async def set_item_points(self, item_type: str, parent_id: str, item_index: str, points: int) -> bool:
+        if item_type == "checklist":
+            for checklist in self._data["checklists"]:
+                if checklist["id"] == parent_id:
+                    target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+                    target_list[idx]["points"] = points
+                    checklist["updatedAt"] = now_iso()
+                    await self.async_save()
+                    return True
+            raise ValueError(f"Checklist {parent_id} not found")
+
+        elif item_type == "task":
+            for task in self._data["tasks"]:
+                if task["id"] == parent_id:
+                    target_list, idx = self._get_item_by_index(task["items"], item_index)
+                    target_list[idx]["points"] = points
+                    task["updatedAt"] = now_iso()
+                    await self.async_save()
+                    return True
+            raise ValueError(f"Task {parent_id} not found")
+
+        raise ValueError(f"Unknown item type: {item_type}")
+
+    async def create_prize(self, name: str, cost: int, description: str = "", quantity: int = -1) -> dict:
+        prize = {
+            "id": generate_id()[:8],
+            "name": name,
+            "description": description,
+            "cost": cost,
+            "quantity": quantity,
+            "redeemed_count": 0,
+            "created_at": now_iso(),
+        }
+
+        self._data["points_prizes"].append(prize)
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_prizes_update", {
+            "prizes": self._data["points_prizes"]
+        })
+
+        return prize
+
+    async def update_prize(self, prize_id: str, name: str = None, cost: int = None, description: str = None, quantity: int = None) -> dict:
+        for prize in self._data["points_prizes"]:
+            if prize["id"] == prize_id:
+                if name is not None:
+                    prize["name"] = name
+                if cost is not None:
+                    prize["cost"] = cost
+                if description is not None:
+                    prize["description"] = description
+                if quantity is not None:
+                    prize["quantity"] = quantity
+
+                await self.async_save()
+
+                self.hass.bus.async_fire("jottick_points_prizes_update", {
+                    "prizes": self._data["points_prizes"]
+                })
+
+                return prize
+
+        raise ValueError(f"Prize {prize_id} not found")
+
+    async def delete_prize(self, prize_id: str) -> bool:
+        for i, prize in enumerate(self._data["points_prizes"]):
+            if prize["id"] == prize_id:
+                del self._data["points_prizes"][i]
+                await self.async_save()
+
+                self.hass.bus.async_fire("jottick_points_prizes_update", {
+                    "prizes": self._data["points_prizes"]
+                })
+
+                return True
+
+        raise ValueError(f"Prize {prize_id} not found")
+
+    async def redeem_prize(self, user_id: str, prize_id: str) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        prize = None
+        for p in self._data["points_prizes"]:
+            if p["id"] == prize_id:
+                prize = p
+                break
+
+        if prize is None:
+            raise ValueError(f"Prize {prize_id} not found")
+
+        user = self._data["points_users"][user_id]
+
+        if user["points"] < prize["cost"]:
+            raise ValueError(f"Insufficient points. Need {prize['cost']}, have {user['points']}")
+
+        if prize["quantity"] != -1 and prize["quantity"] <= prize.get("redeemed_count", 0):
+            raise ValueError("Prize is out of stock")
+
+        old_points = user["points"]
+        user["points"] -= prize["cost"]
+        prize["redeemed_count"] = prize.get("redeemed_count", 0) + 1
+
+        history_entry = {
+            "id": generate_id()[:8],
+            "user_id": user_id,
+            "user_name": user["name"],
+            "amount": -prize["cost"],
+            "old_balance": old_points,
+            "new_balance": user["points"],
+            "reason": f"Redeemed: {prize['name']}",
+            "type": "redemption",
+            "prize_id": prize_id,
+            "prize_name": prize["name"],
+            "timestamp": now_iso(),
+        }
+
+        self._data["points_history"].append(history_entry)
+
+        if len(self._data["points_history"]) > 1000:
+            self._data["points_history"] = self._data["points_history"][-1000:]
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+        self.hass.bus.async_fire("jottick_points_prizes_update", {
+            "prizes": self._data["points_prizes"]
+        })
+        self.hass.bus.async_fire("jottick_points_history_update", {
+            "history": self._data["points_history"]
+        })
+
+        return {"user": user, "prize": prize, "history_entry": history_entry}
+
+    async def set_points_admins(self, admin_ids: list) -> list:
+        self._data["points_admins"] = admin_ids
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_admins_update", {
+            "admins": self._data["points_admins"]
+        })
+
+        return admin_ids
+
+    async def add_points_admin(self, admin_id: str) -> list:
+        if admin_id not in self._data["points_admins"]:
+            self._data["points_admins"].append(admin_id)
+            await self.async_save()
+
+            self.hass.bus.async_fire("jottick_points_admins_update", {
+                "admins": self._data["points_admins"]
+            })
+
+        return self._data["points_admins"]
+
+    async def remove_points_admin(self, admin_id: str) -> list:
+        if admin_id in self._data["points_admins"]:
+            self._data["points_admins"].remove(admin_id)
+            await self.async_save()
+
+            self.hass.bus.async_fire("jottick_points_admins_update", {
+                "admins": self._data["points_admins"]
+            })
+
+        return self._data["points_admins"]
+
+    async def reset_user_points(self, user_id: str, admin_id: str = None) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        user = self._data["points_users"][user_id]
+        old_points = user["points"]
+        user["points"] = 0
+
+        history_entry = {
+            "id": generate_id()[:8],
+            "user_id": user_id,
+            "user_name": user["name"],
+            "amount": -old_points,
+            "old_balance": old_points,
+            "new_balance": 0,
+            "reason": "Points reset by admin",
+            "type": "reset",
+            "admin_id": admin_id,
+            "timestamp": now_iso(),
+        }
+
+        self._data["points_history"].append(history_entry)
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+        self.hass.bus.async_fire("jottick_points_history_update", {
+            "history": self._data["points_history"]
+        })
+
+        return user
+
+    async def deduct_user_points(self, user_id: str, amount: int, reason: str, admin_id: str = None) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        if amount is None:
+            raise ValueError("Amount is required")
+
+        if amount <= 0:
+            raise ValueError("Amount must be positive")
+
+        user = self._data["points_users"][user_id]
+        old_points = user["points"]
+        user["points"] = max(0, user["points"] - amount)
+
+        history_entry = {
+            "id": generate_id()[:8],
+            "user_id": user_id,
+            "user_name": user["name"],
+            "amount": -amount,
+            "old_balance": old_points,
+            "new_balance": user["points"],
+            "reason": reason or "Points deducted",
+            "type": "penalty",
+            "admin_id": admin_id,
+            "timestamp": now_iso(),
+        }
+
+        self._data["points_history"].append(history_entry)
+
+        if len(self._data["points_history"]) > 1000:
+            self._data["points_history"] = self._data["points_history"][-1000:]
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_points_users_update", {
+            "users": self._data["points_users"]
+        })
+        self.hass.bus.async_fire("jottick_points_history_update", {
+            "history": self._data["points_history"]
+        })
+
+        return {"user": user, "points_deducted": amount, "history_entry": history_entry}
+
+    async def create_achievement(self, name: str, description: str = "", points_threshold: int = 0, achievement_id: str = None) -> dict:
+        if achievement_id is None:
+            achievement_id = generate_id()[:8]
+
+        for a in self._data.get("achievements", []):
+            if a["id"] == achievement_id:
+                raise ValueError(f"Achievement ID {achievement_id} already exists")
+
+        achievement = {
+            "id": achievement_id,
+            "name": name,
+            "description": description,
+            "image": "",
+            "points_threshold": points_threshold,
+            "created_at": now_iso(),
+        }
+
+        if "achievements" not in self._data:
+            self._data["achievements"] = []
+        self._data["achievements"].append(achievement)
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_achievements_update", {
+            "achievements": self._data["achievements"]
+        })
+
+        return achievement
+
+    async def update_achievement(self, achievement_id: str, name: str = None, description: str = None, points_threshold: int = None) -> dict:
+        for achievement in self._data.get("achievements", []):
+            if achievement["id"] == achievement_id:
+                if name is not None:
+                    achievement["name"] = name
+                if description is not None:
+                    achievement["description"] = description
+                if points_threshold is not None:
+                    achievement["points_threshold"] = points_threshold
+
+                await self.async_save()
+
+                self.hass.bus.async_fire("jottick_achievements_update", {
+                    "achievements": self._data["achievements"]
+                })
+
+                return achievement
+
+        raise ValueError(f"Achievement {achievement_id} not found")
+
+    async def delete_achievement(self, achievement_id: str) -> bool:
+        achievements = self._data.get("achievements", [])
+        for i, achievement in enumerate(achievements):
+            if achievement["id"] == achievement_id:
+                if achievement.get("image"):
+                    img_path = self.hass.config.path(POINTS_DIR, f"achievement_{achievement_id}")
+                    for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']:
+                        full_path = img_path + ext
+                        if os.path.exists(full_path):
+                            try:
+                                os.remove(full_path)
+                            except:
+                                pass
+
+                del achievements[i]
+                await self.async_save()
+
+                self.hass.bus.async_fire("jottick_achievements_update", {
+                    "achievements": self._data["achievements"]
+                })
+
+                return True
+
+        raise ValueError(f"Achievement {achievement_id} not found")
+
+    async def award_achievement(self, user_id: str, achievement_id: str, admin_id: str = None) -> dict:
+        if user_id not in self._data["points_users"]:
+            raise ValueError(f"User {user_id} not found")
+
+        achievement = None
+        for a in self._data.get("achievements", []):
+            if a["id"] == achievement_id:
+                achievement = a
+                break
+
+        if achievement is None:
+            raise ValueError(f"Achievement {achievement_id} not found")
+
+        if "user_achievements" not in self._data:
+            self._data["user_achievements"] = {}
+        if user_id not in self._data["user_achievements"]:
+            self._data["user_achievements"][user_id] = []
+
+        for ua in self._data["user_achievements"][user_id]:
+            if ua["achievement_id"] == achievement_id:
+                raise ValueError(f"User already has this achievement")
+
+        user_achievement = {
+            "achievement_id": achievement_id,
+            "awarded_at": now_iso(),
+            "awarded_by": admin_id,
+        }
+
+        self._data["user_achievements"][user_id].append(user_achievement)
+
+        await self.async_save()
+
+        self.hass.bus.async_fire("jottick_user_achievements_update", {
+            "user_achievements": self._data["user_achievements"]
+        })
+
+        user = self._data["points_users"][user_id]
+        return {"user": user, "achievement": achievement}
+
+    async def revoke_achievement(self, user_id: str, achievement_id: str) -> bool:
+        if user_id not in self._data.get("user_achievements", {}):
+            raise ValueError(f"User {user_id} has no achievements")
+
+        user_achievements = self._data["user_achievements"][user_id]
+        for i, ua in enumerate(user_achievements):
+            if ua["achievement_id"] == achievement_id:
+                del user_achievements[i]
+                await self.async_save()
+
+                self.hass.bus.async_fire("jottick_user_achievements_update", {
+                    "user_achievements": self._data["user_achievements"]
+                })
+
+                return True
+
+        raise ValueError(f"User does not have this achievement")
+
+    async def check_auto_achievements(self, user_id: str) -> list:
+        if user_id not in self._data.get("points_users", {}):
+            return []
+
+        user = self._data["points_users"][user_id]
+        lifetime_points = user.get("lifetime_points", 0)
+
+        user_achievement_ids = set()
+        for ua in self._data.get("user_achievements", {}).get(user_id, []):
+            user_achievement_ids.add(ua["achievement_id"])
+
+        awarded = []
+        for achievement in self._data.get("achievements", []):
+            threshold = achievement.get("points_threshold", 0)
+            if threshold <= 0 or achievement["id"] in user_achievement_ids:
+                continue
+
+            if lifetime_points >= threshold:
+                if "user_achievements" not in self._data:
+                    self._data["user_achievements"] = {}
+                if user_id not in self._data["user_achievements"]:
+                    self._data["user_achievements"][user_id] = []
+
+                user_achievement = {
+                    "achievement_id": achievement["id"],
+                    "awarded_at": now_iso(),
+                    "awarded_by": "auto",
+                }
+                self._data["user_achievements"][user_id].append(user_achievement)
+                awarded.append(achievement)
+
+        if awarded:
+            await self.async_save()
+            self.hass.bus.async_fire("jottick_user_achievements_update", {
+                "user_achievements": self._data["user_achievements"]
+            })
+
+        return awarded
+
     async def import_ical(self, url: str, name: str = None, auto_refresh: bool = True) -> dict:
         try:
             for source in self._data.get("ical_sources", []):
@@ -999,9 +1854,9 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 "sources": self._data["ical_sources"]
             })
             self.hass.bus.async_fire("jottick_imported_events_update", {
-                "events": self._data["imported_events"]
+                "event_count": len(self._data["imported_events"])
             })
-            
+
             return source_record
             
         except aiohttp.ClientError as e:
@@ -1011,67 +1866,303 @@ class JotTickCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"Failed to import iCal: {e}")
             raise
 
+    def _parse_ical_datetime(self, dt_line: str, event_data: str) -> tuple:
+        date_str = None
+        time_str = None
+        is_all_day = False
+
+        if 'VALUE=DATE' in dt_line and 'VALUE=DATE-TIME' not in dt_line:
+            is_all_day = True
+            match = re.search(r':(\d{8})$', dt_line)
+            if match:
+                dt_val = match.group(1)
+                date_str = f"{dt_val[:4]}-{dt_val[4:6]}-{dt_val[6:8]}"
+            return date_str, None, is_all_day
+
+        tzid = None
+        tzid_match = re.search(r'TZID=([^:;]+)', dt_line)
+        if tzid_match:
+            tzid = tzid_match.group(1)
+
+        value_match = re.search(r':(\d{8}(?:T\d{6}Z?)?)$', dt_line)
+        if not value_match:
+            return None, None, False
+
+        dt_val = value_match.group(1)
+
+        if len(dt_val) >= 8:
+            date_str = f"{dt_val[:4]}-{dt_val[4:6]}-{dt_val[6:8]}"
+
+        if len(dt_val) >= 15:
+            hour = int(dt_val[9:11])
+            minute = int(dt_val[11:13])
+            second = int(dt_val[13:15]) if len(dt_val) >= 15 else 0
+
+            is_utc = dt_val.endswith('Z')
+
+            try:
+                dt = datetime(
+                    int(dt_val[:4]), int(dt_val[4:6]), int(dt_val[6:8]),
+                    hour, minute, second
+                )
+
+                if is_utc:
+                    dt = dt.replace(tzinfo=ZoneInfo('UTC'))
+                    local_tz = self.hass.config.time_zone
+                    if local_tz:
+                        try:
+                            dt = dt.astimezone(ZoneInfo(local_tz))
+                        except Exception:
+                            pass
+                elif tzid:
+                    try:
+                        dt = dt.replace(tzinfo=ZoneInfo(tzid))
+                        local_tz = self.hass.config.time_zone
+                        if local_tz:
+                            dt = dt.astimezone(ZoneInfo(local_tz))
+                    except Exception:
+                        pass
+
+                date_str = dt.strftime("%Y-%m-%d")
+                time_str = dt.strftime("%H:%M")
+            except Exception as e:
+                _LOGGER.debug(f"Error parsing datetime {dt_val}: {e}")
+                time_str = f"{dt_val[9:11]}:{dt_val[11:13]}"
+
+        return date_str, time_str, is_all_day
+
     def _parse_ical_data(self, ical_data: str, source_url: str) -> list:
-        events = []   
-        ical_data = re.sub(r'\r?\n[ \t]', '', ical_data)    
+        events = []
+
+        ical_data = re.sub(r'\r?\n[ \t]', '', ical_data)
         ical_data = ical_data.replace('\r\n', '\n').replace('\r', '\n')
+
+        vtimezone_pattern = re.compile(r'BEGIN:VTIMEZONE(.*?)END:VTIMEZONE', re.DOTALL)
+        timezones = {}
+        for tz_match in vtimezone_pattern.finditer(ical_data):
+            tz_data = tz_match.group(1)
+            tzid_match = re.search(r'^TZID:(.+?)$', tz_data, re.MULTILINE)
+            if tzid_match:
+                timezones[tzid_match.group(1).strip()] = tz_data
+
         vevent_pattern = re.compile(r'BEGIN:VEVENT(.*?)END:VEVENT', re.DOTALL)
-        
+
         for match in vevent_pattern.finditer(ical_data):
             event_data = match.group(1)
-            
+
             event = {
                 "id": f"imported_{generate_id()[:8]}",
                 "source_url": source_url,
                 "editable": False,
             }
-            
+
             uid_match = re.search(r'^UID[;:](.+?)$', event_data, re.MULTILINE)
             if uid_match:
-                event["original_uid"] = uid_match.group(1).strip()
+                uid_val = uid_match.group(1).strip()
+                if ':' in uid_val:
+                    uid_val = uid_val.split(':', 1)[-1]
+                event["original_uid"] = uid_val
+
             summary_match = re.search(r'^SUMMARY[;:](.+?)$', event_data, re.MULTILINE)
             if summary_match:
                 title = summary_match.group(1).strip()
-                if ':' in title and not title.startswith('\\'):
-                    title = title.split(':', 1)[-1]
-                event["title"] = title.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ")
+                if ';' in title.split(':')[0] if ':' in title else False:
+                    title = title.split(':', 1)[-1] if ':' in title else title
+                elif ':' in title and not title.startswith('\\'):
+                    parts = title.split(':')
+                    if len(parts) > 1 and '=' in parts[0]:
+                        title = ':'.join(parts[1:])
+                event["title"] = title.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ").replace("\\\\", "\\")
             else:
                 event["title"] = "Untitled Event"
+
             desc_match = re.search(r'^DESCRIPTION[;:](.+?)$', event_data, re.MULTILINE)
             if desc_match:
                 desc = desc_match.group(1).strip()
-                if ':' in desc and not desc.startswith('\\'):
-                    desc = desc.split(':', 1)[-1]
-                event["description"] = desc.replace("\\n", "\n").replace("\\,", ",")
-            dtstart_match = re.search(r'^DTSTART[^:\n]*:(\d{8}(?:T\d{6}Z?)?)$', event_data, re.MULTILINE)
-            if dtstart_match:
-                dt_str = dtstart_match.group(1)
-                if len(dt_str) >= 8:
-                    event["date"] = f"{dt_str[:4]}-{dt_str[4:6]}-{dt_str[6:8]}"
-                    if len(dt_str) >= 15:
-                        event["time"] = f"{dt_str[9:11]}:{dt_str[11:13]}"
-            
+                if ':' in desc:
+                    parts = desc.split(':')
+                    if len(parts) > 1 and '=' in parts[0]:
+                        desc = ':'.join(parts[1:])
+                event["description"] = desc.replace("\\n", "\n").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
 
-            dtend_match = re.search(r'^DTEND[^:\n]*:(\d{8}(?:T\d{6}Z?)?)$', event_data, re.MULTILINE)
+            dtstart_match = re.search(r'^(DTSTART[^:\n]*:\S+)$', event_data, re.MULTILINE)
+            if dtstart_match:
+                dtstart_line = dtstart_match.group(1)
+                start_date, start_time, is_all_day = self._parse_ical_datetime(dtstart_line, event_data)
+                if start_date:
+                    event["date"] = start_date
+                    if start_time and not is_all_day:
+                        event["time"] = start_time
+                    event["all_day"] = is_all_day
+
+            dtend_match = re.search(r'^(DTEND[^:\n]*:\S+)$', event_data, re.MULTILINE)
             if dtend_match:
-                dt_str = dtend_match.group(1)
-                if len(dt_str) >= 15:  
-                    event["end_time"] = f"{dt_str[9:11]}:{dt_str[11:13]}"
-            
+                dtend_line = dtend_match.group(1)
+                end_date, end_time, end_is_all_day = self._parse_ical_datetime(dtend_line, event_data)
+                if end_date:
+                    event["end_date"] = end_date
+                    if end_time and not end_is_all_day:
+                        event["end_time"] = end_time
+
+            if "end_date" not in event:
+                duration_match = re.search(r'^DURATION:(.+?)$', event_data, re.MULTILINE)
+                if duration_match and "date" in event:
+                    duration = duration_match.group(1).strip()
+                    try:
+                        days = 0
+                        hours = 0
+                        minutes = 0
+
+                        day_match = re.search(r'(\d+)D', duration)
+                        if day_match:
+                            days = int(day_match.group(1))
+
+                        hour_match = re.search(r'(\d+)H', duration)
+                        if hour_match:
+                            hours = int(hour_match.group(1))
+
+                        min_match = re.search(r'(\d+)M', duration)
+                        if min_match and 'T' in duration:
+                            minutes = int(min_match.group(1))
+
+                        start_dt = datetime.strptime(event["date"], "%Y-%m-%d")
+                        if event.get("time"):
+                            start_dt = datetime.strptime(f"{event['date']} {event['time']}", "%Y-%m-%d %H:%M")
+
+                        end_dt = start_dt + timedelta(days=days, hours=hours, minutes=minutes)
+                        event["end_date"] = end_dt.strftime("%Y-%m-%d")
+                        if hours or minutes:
+                            event["end_time"] = end_dt.strftime("%H:%M")
+                    except Exception as e:
+                        _LOGGER.debug(f"Error parsing duration {duration}: {e}")
 
             location_match = re.search(r'^LOCATION[;:](.+?)$', event_data, re.MULTILINE)
             if location_match:
                 loc = location_match.group(1).strip()
-                if ':' in loc and not loc.startswith('\\'):
-                    loc = loc.split(':', 1)[-1]
-                event["location"] = loc.replace("\\,", ",")
-            
+                if ':' in loc:
+                    parts = loc.split(':')
+                    if len(parts) > 1 and '=' in parts[0]:
+                        loc = ':'.join(parts[1:])
+                event["location"] = loc.replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
+
+            rrule_match = re.search(r'^RRULE:(.+?)$', event_data, re.MULTILINE)
+            if rrule_match:
+                rrule = rrule_match.group(1).strip()
+                event["rrule"] = rrule
+
+                recurring_events = self._expand_rrule(event, rrule)
+                if recurring_events:
+                    events.extend(recurring_events)
+                    continue
+
+            status_match = re.search(r'^STATUS:(.+?)$', event_data, re.MULTILINE)
+            if status_match:
+                event["status"] = status_match.group(1).strip()
+
+            categories_match = re.search(r'^CATEGORIES[;:](.+?)$', event_data, re.MULTILINE)
+            if categories_match:
+                cats = categories_match.group(1).strip()
+                if ':' in cats:
+                    parts = cats.split(':')
+                    if len(parts) > 1 and '=' in parts[0]:
+                        cats = ':'.join(parts[1:])
+                event["categories"] = [c.strip() for c in cats.split(',')]
+
             if "date" in event:
                 events.append(event)
                 _LOGGER.debug(f"Parsed iCal event: {event.get('title')} on {event.get('date')}")
-        
+
         _LOGGER.info(f"Parsed {len(events)} events from iCal source: {source_url}")
         return events
+
+    def _expand_rrule(self, base_event: dict, rrule: str, max_instances: int = 52) -> list:
+        events = []
+
+        try:
+            rrule_parts = {}
+            for part in rrule.split(';'):
+                if '=' in part:
+                    key, value = part.split('=', 1)
+                    rrule_parts[key] = value
+
+            freq = rrule_parts.get('FREQ', 'DAILY')
+            count = int(rrule_parts.get('COUNT', max_instances))
+            interval = int(rrule_parts.get('INTERVAL', 1))
+            until = rrule_parts.get('UNTIL')
+            byday = rrule_parts.get('BYDAY', '').split(',') if 'BYDAY' in rrule_parts else []
+
+            count = min(count, max_instances)
+
+            base_date = datetime.strptime(base_event["date"], "%Y-%m-%d")
+            base_time = base_event.get("time")
+
+            until_date = None
+            if until:
+                try:
+                    if len(until) == 8:
+                        until_date = datetime.strptime(until, "%Y%m%d")
+                    elif len(until) >= 15:
+                        until_date = datetime.strptime(until[:15], "%Y%m%dT%H%M%S")
+                except:
+                    pass
+
+            day_map = {'MO': 0, 'TU': 1, 'WE': 2, 'TH': 3, 'FR': 4, 'SA': 5, 'SU': 6}
+
+            current_date = base_date
+            generated = 0
+
+            while generated < count:
+                if until_date and current_date > until_date:
+                    break
+
+                if freq == 'WEEKLY' and byday:
+                    week_start = current_date - timedelta(days=current_date.weekday())
+                    for day_code in byday:
+                        clean_day = ''.join(c for c in day_code if c.isalpha())
+                        if clean_day in day_map:
+                            day_offset = day_map[clean_day]
+                            event_date = week_start + timedelta(days=day_offset)
+
+                            if event_date >= base_date and generated < count:
+                                if until_date and event_date > until_date:
+                                    continue
+
+                                new_event = base_event.copy()
+                                new_event["id"] = f"imported_{generate_id()[:8]}"
+                                new_event["date"] = event_date.strftime("%Y-%m-%d")
+                                new_event["recurring"] = True
+                                events.append(new_event)
+                                generated += 1
+
+                    current_date += timedelta(weeks=interval)
+                else:
+                    new_event = base_event.copy()
+                    new_event["id"] = f"imported_{generate_id()[:8]}"
+                    new_event["date"] = current_date.strftime("%Y-%m-%d")
+                    new_event["recurring"] = True
+                    events.append(new_event)
+                    generated += 1
+
+                    if freq == 'DAILY':
+                        current_date += timedelta(days=interval)
+                    elif freq == 'WEEKLY':
+                        current_date += timedelta(weeks=interval)
+                    elif freq == 'MONTHLY':
+                        month = current_date.month + interval
+                        year = current_date.year + (month - 1) // 12
+                        month = ((month - 1) % 12) + 1
+                        day = min(current_date.day, [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+                        current_date = current_date.replace(year=year, month=month, day=day)
+                    elif freq == 'YEARLY':
+                        current_date = current_date.replace(year=current_date.year + interval)
+                    else:
+                        break
+
+        except Exception as e:
+            _LOGGER.debug(f"Error expanding RRULE {rrule}: {e}")
+            return [base_event]
+
+        return events if events else [base_event]
 
     async def remove_ical_import(self, url: str) -> bool:
         sources = self._data.get("ical_sources", [])
@@ -1093,9 +2184,9 @@ class JotTickCoordinator(DataUpdateCoordinator):
             "sources": self._data["ical_sources"]
         })
         self.hass.bus.async_fire("jottick_imported_events_update", {
-            "events": self._data["imported_events"]
+            "event_count": len(self._data["imported_events"])
         })
-        
+
         return True
 
     async def refresh_ical_imports(self) -> dict:
@@ -1148,9 +2239,9 @@ class JotTickCoordinator(DataUpdateCoordinator):
             "sources": self._data["ical_sources"]
         })
         self.hass.bus.async_fire("jottick_imported_events_update", {
-            "events": self._data["imported_events"]
+            "event_count": len(self._data["imported_events"])
         })
-        
+
         return results
 
     async def export_ical(
@@ -1324,7 +2415,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
         
         await self.hass.async_add_executor_job(write_ical)
         
-        return f"/local/jottick/calendar/{filename}.ics"
+        return f"/local/community/jottick/calendar/{filename}.ics"
 
     def _export_items_due_dates(self, lines: list, items: list, parent: dict, item_type: str, now_stamp: str, prefix: str = ""):
         for i, item in enumerate(items):
@@ -1462,11 +2553,16 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
 
     async def handle_add_checklist_item(call: ServiceCall):
         coordinator = get_coordinator()
+        points = call.data.get("points")
+        if points is not None:
+            points = int(points) if str(points).strip() else None
         await coordinator.add_checklist_item(
             checklist_id=call.data.get("checklist_id"),
             text=call.data.get("text"),
             status=call.data.get("status"),
             parent_index=call.data.get("parent_index"),
+            points=points,
+            assigned_to=call.data.get("assigned_to") or None,
         )
 
     async def handle_check_item(call: ServiceCall):
@@ -1543,11 +2639,16 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
 
     async def handle_add_task_item(call: ServiceCall):
         coordinator = get_coordinator()
+        points = call.data.get("points")
+        if points is not None:
+            points = int(points) if str(points).strip() else None
         await coordinator.add_task_item(
             task_id=call.data.get("task_id"),
             text=call.data.get("text"),
             status=call.data.get("status", "todo"),
             parent_index=call.data.get("parent_index"),
+            points=points,
+            assigned_to=call.data.get("assigned_to") or None,
         )
 
     async def handle_update_task_item_status(call: ServiceCall):
@@ -1675,6 +2776,158 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
             include_reminders=call.data.get("include_reminders", True),
         )
 
+    async def handle_create_points_user(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.create_points_user(
+            name=call.data.get("name"),
+            user_id=call.data.get("user_id"),
+            linked_ha_user=call.data.get("linked_ha_user"),
+            linked_device=call.data.get("linked_device"),
+        )
+
+    async def handle_update_points_user(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_points_user(
+            user_id=call.data.get("user_id"),
+            name=call.data.get("name"),
+            linked_ha_user=call.data.get("linked_ha_user"),
+            linked_device=call.data.get("linked_device"),
+        )
+
+    async def handle_delete_points_user(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.delete_points_user(user_id=call.data.get("user_id"))
+
+    async def handle_adjust_user_points(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.adjust_user_points(
+            user_id=call.data.get("user_id"),
+            amount=call.data.get("amount"),
+            reason=call.data.get("reason", ""),
+            admin_id=call.data.get("admin_id"),
+        )
+
+    async def handle_claim_item_points(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.claim_item_points(
+            user_id=call.data.get("user_id"),
+            item_type=call.data.get("item_type"),
+            parent_id=call.data.get("parent_id"),
+            item_index=str(call.data.get("item_index")),
+            points=call.data.get("points"),
+            claimed_by_admin=call.data.get("claimed_by_admin"),
+        )
+
+    async def handle_set_item_points(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.set_item_points(
+            item_type=call.data.get("item_type"),
+            parent_id=call.data.get("parent_id"),
+            item_index=str(call.data.get("item_index")),
+            points=call.data.get("points"),
+        )
+
+    async def handle_create_prize(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.create_prize(
+            name=call.data.get("name"),
+            cost=call.data.get("cost"),
+            description=call.data.get("description", ""),
+            quantity=call.data.get("quantity", -1),
+        )
+
+    async def handle_update_prize(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_prize(
+            prize_id=call.data.get("prize_id"),
+            name=call.data.get("name"),
+            cost=call.data.get("cost"),
+            description=call.data.get("description"),
+            quantity=call.data.get("quantity"),
+        )
+
+    async def handle_delete_prize(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.delete_prize(prize_id=call.data.get("prize_id"))
+
+    async def handle_redeem_prize(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.redeem_prize(
+            user_id=call.data.get("user_id"),
+            prize_id=call.data.get("prize_id"),
+        )
+
+    async def handle_set_points_admins(call: ServiceCall):
+        coordinator = get_coordinator()
+        admin_ids = call.data.get("admin_ids", [])
+        if isinstance(admin_ids, str):
+            admin_ids = [x.strip() for x in admin_ids.split(",")]
+        await coordinator.set_points_admins(admin_ids=admin_ids)
+
+    async def handle_add_points_admin(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.add_points_admin(admin_id=call.data.get("admin_id"))
+
+    async def handle_remove_points_admin(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.remove_points_admin(admin_id=call.data.get("admin_id"))
+
+    async def handle_reset_user_points(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.reset_user_points(
+            user_id=call.data.get("user_id"),
+            admin_id=call.data.get("admin_id"),
+        )
+
+    async def handle_deduct_user_points(call: ServiceCall):
+        coordinator = get_coordinator()
+        amount = call.data.get("amount")
+        if amount is not None:
+            amount = int(amount) if str(amount).strip() else None
+        await coordinator.deduct_user_points(
+            user_id=call.data.get("user_id"),
+            amount=amount,
+            reason=call.data.get("reason", ""),
+            admin_id=call.data.get("admin_id"),
+        )
+
+    async def handle_create_achievement(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.create_achievement(
+            name=call.data.get("name"),
+            description=call.data.get("description", ""),
+            points_threshold=call.data.get("points_threshold", 0),
+            achievement_id=call.data.get("achievement_id"),
+        )
+
+    async def handle_update_achievement(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.update_achievement(
+            achievement_id=call.data.get("achievement_id"),
+            name=call.data.get("name"),
+            description=call.data.get("description"),
+            points_threshold=call.data.get("points_threshold"),
+        )
+
+    async def handle_delete_achievement(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.delete_achievement(achievement_id=call.data.get("achievement_id"))
+
+    async def handle_award_achievement(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.award_achievement(
+            user_id=call.data.get("user_id"),
+            achievement_id=call.data.get("achievement_id"),
+            admin_id=call.data.get("admin_id"),
+        )
+
+    async def handle_revoke_achievement(call: ServiceCall):
+        coordinator = get_coordinator()
+        await coordinator.revoke_achievement(
+            user_id=call.data.get("user_id"),
+            achievement_id=call.data.get("achievement_id"),
+        )
+
     hass.services.async_register(DOMAIN, "create_note", handle_create_note)
     hass.services.async_register(DOMAIN, "update_note", handle_update_note)
     hass.services.async_register(DOMAIN, "delete_note", handle_delete_note)
@@ -1722,3 +2975,24 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str):
     hass.services.async_register(DOMAIN, "remove_ical_import", handle_remove_ical_import)
     hass.services.async_register(DOMAIN, "refresh_ical_imports", handle_refresh_ical_imports)
     hass.services.async_register(DOMAIN, "export_ical", handle_export_ical)
+
+    hass.services.async_register(DOMAIN, "create_points_user", handle_create_points_user)
+    hass.services.async_register(DOMAIN, "update_points_user", handle_update_points_user)
+    hass.services.async_register(DOMAIN, "delete_points_user", handle_delete_points_user)
+    hass.services.async_register(DOMAIN, "adjust_user_points", handle_adjust_user_points)
+    hass.services.async_register(DOMAIN, "claim_item_points", handle_claim_item_points)
+    hass.services.async_register(DOMAIN, "set_item_points", handle_set_item_points)
+    hass.services.async_register(DOMAIN, "create_prize", handle_create_prize)
+    hass.services.async_register(DOMAIN, "update_prize", handle_update_prize)
+    hass.services.async_register(DOMAIN, "delete_prize", handle_delete_prize)
+    hass.services.async_register(DOMAIN, "redeem_prize", handle_redeem_prize)
+    hass.services.async_register(DOMAIN, "set_points_admins", handle_set_points_admins)
+    hass.services.async_register(DOMAIN, "add_points_admin", handle_add_points_admin)
+    hass.services.async_register(DOMAIN, "remove_points_admin", handle_remove_points_admin)
+    hass.services.async_register(DOMAIN, "reset_user_points", handle_reset_user_points)
+    hass.services.async_register(DOMAIN, "deduct_user_points", handle_deduct_user_points)
+    hass.services.async_register(DOMAIN, "create_achievement", handle_create_achievement)
+    hass.services.async_register(DOMAIN, "update_achievement", handle_update_achievement)
+    hass.services.async_register(DOMAIN, "delete_achievement", handle_delete_achievement)
+    hass.services.async_register(DOMAIN, "award_achievement", handle_award_achievement)
+    hass.services.async_register(DOMAIN, "revoke_achievement", handle_revoke_achievement)
