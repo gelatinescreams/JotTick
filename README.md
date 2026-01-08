@@ -150,6 +150,10 @@ Install these via HACS → Frontend:
 3. Search for "JotTick"
 4. Click to add.
 
+### Packages
+1. It is highly recommebeded to use the package system. More information from Home Assistant about it [here](https://www.home-assistant.io/docs/configuration/packages/)
+2. If you use the package system, a prebuilt package for Jottick is included and you scan skip to step 7.
+
 ### Step 4: Install Helper Entities
 1. Copy the contents of `jottick_input_helpers.yaml` to your `configuration.yaml` or packages folder
 2. Restart Home Assistant (or reload Input helpers)
