@@ -4,10 +4,10 @@
   <h1 align="center">JotTick</h1><br/>
 </p>
 <p align="center">
-<i>Jot notes. Tick tasks. Sync calendars. Get Notified. Simple.</i>
+<i>Jot notes. Tick tasks. Sync calendars. Get Notified. Simple. Now with gamification.</i>
 </p>
 
-A notes, checklists, task management and calendar integration for Home Assistant. Includes iCal support, per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
+A notes, checklists, task management, calendar and chore/gamification integration for Home Assistant. Includes iCal support, per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
 ###### Notes Preview
 ![Notes Preview](assets/notes-preview.gif)
