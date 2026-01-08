@@ -151,7 +151,7 @@ Install these via HACS → Frontend:
 4. Click to add.
 
 ### Packages
-1. It is highly recommebeded to use the package system. More information from Home Assistant about it [here](https://www.home-assistant.io/docs/configuration/packages/)
+1. It is highly recommended to use the package system. More information from Home Assistant about it [here](https://www.home-assistant.io/docs/configuration/packages/)
 2. If you use the package system, a prebuilt package for Jottick is included and you scan skip to step 7.
 
 ### Step 4: Install Helper Entities
