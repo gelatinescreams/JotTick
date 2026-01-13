@@ -368,6 +368,18 @@
                   - service: script.jottick_reset_checklist
                     data:
                       checklist_id: "{{ item_id }}"
+              - conditions: "{{ item_type == 'checklist_item' }}"
+                sequence:
+                  - service: script.jottick_reset_checklist_item
+                    data:
+                      checklist_id: "{{ config.parent_id }}"
+                      item_index: "{{ config.item_index }}"
+              - conditions: "{{ item_type == 'task_item' }}"
+                sequence:
+                  - service: script.jottick_reset_task_item
+                    data:
+                      task_id: "{{ config.parent_id }}"
+                      item_index: "{{ config.item_index }}"
 
 - id: jottick_process_scheduled_notes
   alias: "JotTick Process Scheduled Notes"
@@ -550,6 +562,19 @@
                 item_index: "{{ current_items }}"
                 due_date: "{{ due_date }}"
                 due_time: "{{ due_time if due_time != '' else none }}"
+
+        - conditions: "{{ action == 'add_sub' }}"
+          sequence:
+            - variables:
+                item_text: "{{ parts[2] }}"
+                item_status: "{{ parts[3] | default('todo') }}"
+                parent_index: "{{ parts[4] }}"
+            - service: jottick.add_task_item
+              data:
+                task_id: "{{ task_id }}"
+                text: "{{ item_text }}"
+                status: "{{ item_status }}"
+                parent_index: "{{ parent_index }}"
         
         - conditions: "{{ parts[2] | default('') == 'status' }}"
           sequence:

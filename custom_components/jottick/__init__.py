@@ -429,7 +429,37 @@ class JotTickCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=30))
         self.store = store
         self._data = initial_data
+        self._migrate_data()
         self.data = self._format_data()
+
+    def _migrate_data(self):
+        def fix_item_fields(items):
+            for item in items:
+                if "points" in item:
+                    pts = item["points"]
+                    if pts is None or pts == "":
+                        del item["points"]
+                    elif isinstance(pts, str):
+                        try:
+                            item["points"] = int(pts)
+                        except ValueError:
+                            del item["points"]
+                if "dueDate" in item:
+                    dd = item["dueDate"]
+                    if dd is None or dd == "" or dd == 0 or dd == "0":
+                        del item["dueDate"]
+                    elif not isinstance(dd, str):
+                        item["dueDate"] = str(dd)
+                    elif len(dd) < 10 or dd[4] != '-':
+                        del item["dueDate"]
+                if "children" in item and item["children"]:
+                    fix_item_fields(item["children"])
+
+        for checklist in self._data.get("checklists", []):
+            fix_item_fields(checklist.get("items", []))
+
+        for task in self._data.get("tasks", []):
+            fix_item_fields(task.get("items", []))
 
     def _format_data(self) -> dict:
         return {
@@ -764,6 +794,10 @@ class JotTickCoordinator(DataUpdateCoordinator):
 
                 claim_user = None
                 item_points = item.get("points", 0)
+                if item_points is not None and item_points != "":
+                    item_points = int(item_points)
+                else:
+                    item_points = 0
                 assigned_to = item.get("assigned_to", "")
                 if item_points > 0 and not item.get("points_claimed"):
                     claim_user = user_id or assigned_to
@@ -979,6 +1013,10 @@ class JotTickCoordinator(DataUpdateCoordinator):
                 claim_user = None
                 if status == "completed":
                     item_points = item.get("points", 0)
+                    if item_points is not None and item_points != "":
+                        item_points = int(item_points)
+                    else:
+                        item_points = 0
                     assigned_to = item.get("assigned_to", "")
                     if item_points > 0 and not item.get("points_claimed"):
                         claim_user = user_id or assigned_to
@@ -1318,6 +1356,10 @@ class JotTickCoordinator(DataUpdateCoordinator):
 
                     if points is None:
                         points = item.get("points", 1)
+                        if points is not None and points != "":
+                            points = int(points)
+                        else:
+                            points = 1
 
                     if points == 0:
                         raise ValueError("This item has no points assigned")
@@ -1348,6 +1390,10 @@ class JotTickCoordinator(DataUpdateCoordinator):
 
                     if points is None:
                         points = item.get("points", 5)
+                        if points is not None and points != "":
+                            points = int(points)
+                        else:
+                            points = 5
 
                     if points == 0:
                         raise ValueError("This item has no points assigned")
@@ -2420,9 +2466,9 @@ class JotTickCoordinator(DataUpdateCoordinator):
     def _export_items_due_dates(self, lines: list, items: list, parent: dict, item_type: str, now_stamp: str, prefix: str = ""):
         for i, item in enumerate(items):
             index_path = f"{prefix}{i}" if not prefix else f"{prefix}.{i}"
-            
+
             due_date = item.get("dueDate")
-            if due_date:
+            if due_date and isinstance(due_date, str) and len(due_date) >= 10 and due_date[4] == '-':
                 due_time = item.get("dueTime")
                 item_text = item.get("text", "Untitled")
                 parent_title = parent.get("title", "Untitled")

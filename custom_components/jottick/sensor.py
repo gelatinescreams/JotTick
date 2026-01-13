@@ -44,12 +44,14 @@ def count_completed_recursive(items):
 def get_items_with_due_dates(items, today_str=None):
     if today_str is None:
         today_str = datetime.now().strftime("%Y-%m-%d")
-    
+
     result = []
     flat = flatten_items(items)
     for item in flat:
         due_date = item.get("dueDate")
         if due_date:
+            if not isinstance(due_date, str):
+                due_date = str(due_date)
             is_overdue = due_date < today_str
             is_completed = item.get("completed", False) or item.get("status") == "completed"
             result.append({
@@ -67,10 +69,12 @@ def get_items_with_due_dates(items, today_str=None):
 def count_overdue_items(items, today_str=None):
     if today_str is None:
         today_str = datetime.now().strftime("%Y-%m-%d")
-    
+
     count = 0
     for item in items:
         due_date = item.get("dueDate")
+        if due_date is not None and not isinstance(due_date, str):
+            due_date = str(due_date)
         is_completed = item.get("completed", False) or item.get("status") == "completed"
         if due_date and due_date < today_str and not is_completed:
             count += 1

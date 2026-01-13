@@ -1,6 +1,23 @@
 ### Changelog
 
-### New 1.5.2 1/08/26
+### New 1.5.3 : 1/12/26
+* **Added item level recurring resets for individual list and task items**
+  * Set recurring reset on any single checklist or task item
+  * Independent from whole list/task recurring reset
+  * Full dashboard UI with time picker for each item
+* **Fixed subtask functionality broken after points update**
+  * Fixed type comparison errors with points and due dates
+  * Added data migration to clean up invalid stored values
+  * Subtasks now properly indent and display
+* **Assign dropdown now defaults to first created user instead of Open Bounty**
+* **Removed old browser_mod code. Went a different route**
+
+* **Upgrade Information**
+  * Core plugin files changed in 1.5.3, replace them all
+  * Replace all scripts, automations and inputs if you use this method
+  * (Recommended Method) Replace packages/jottick.yaml if using packages
+  
+### New 1.5.2 : 1/08/26
 - Version 1.5.2 Added Points and Rewards system for gamification/chores
   - Achievements: Trophies that auto award based on lifetime points. Create achievements with image upload.
   - Rewards/Prizes: Create an awards/prizes store with image upload.

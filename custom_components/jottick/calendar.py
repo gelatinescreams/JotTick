@@ -397,9 +397,12 @@ class JotTickListDueDatesCalendar(BaseJotTickCalendar):
                 due_date_str = item.get("dueDate")
                 due_time_str = item.get("dueTime")
 
+                if due_date_str is not None and not isinstance(due_date_str, str):
+                    due_date_str = str(due_date_str)
+
                 try:
                     due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
-                except ValueError:
+                except (ValueError, TypeError):
                     continue
 
                 is_overdue = due_date < today and not is_completed
@@ -485,9 +488,12 @@ class JotTickTaskDueDatesCalendar(BaseJotTickCalendar):
                 due_date_str = item.get("dueDate")
                 due_time_str = item.get("dueTime")
 
+                if due_date_str is not None and not isinstance(due_date_str, str):
+                    due_date_str = str(due_date_str)
+
                 try:
                     due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
-                except ValueError:
+                except (ValueError, TypeError):
                     continue
 
                 is_overdue = due_date < today and not is_completed

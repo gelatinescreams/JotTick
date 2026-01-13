@@ -27,30 +27,12 @@ A notes, checklists, task management, calendar and chore/gamification integratio
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 1.5.2 1/08/26
-- Version 1.5.2 Added Points and Rewards system for gamification/chores
-  - Achievements: Trophies that auto award based on lifetime points. Create achievements with image upload.
-  - Rewards/Prizes: Create an awards/prizes store with image upload.
-  - Full History: Track points earned, spent, achievements and more. 
-  - Admin Controls: Full admin controls including creating users, adding and removing points, and much more.
-  - Full featured dashboard.  
-- Version 1.5.2 Upgraded the calendar. Now imports into standard Home Assistant calendar.
-  - Jottick Notes, Lists and Tasks now show up in Home Assistant calendar.
-  - Use any calendar card you want now!
-  - Full admin calendar settings on dashboard.
-- Version 1.5.2 Clear Data buttons added to Quick Actions tab
-- Version 1.5.2 [changelog.md](changelog.md)
-- Version 1.5 Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
-- Version 1.5 Added iCAL import and export for JotTick
-- Version 1.5 Custom calendar dashboard added to JotTick
-- Version 1.5 Much More [changelog.md](changelog.md)
-- Version 1.4 Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
-- Version 1.3 Assist, reminders and aliases oh my
-- Natural Language Assist Reminders: No LLM needed
-  - Add aliases (nicknames) for each device "Remind (alias) to X in an hour thirty" and [many more variations here](assist_README.md)
-  - Add "me" for each device : "Remind me to X in 30 minutes" and [many more variations here](assist_README.md)
-- Easy to Use Dashboard: Easily link devices and add aliases. [see here](assets/preview-reminders.png)
-- Upgrade information and more changes available via [changelog.md](changelog.md)
+### New 1.5.3 1/12/26
+* **Cleanup, bugfixes and suggestions**
+* **Added item level recurring resets for individual list and task items +[@mike-kovacs](https://github.com/mike-kovacs)**
+* **Fixed subtask display and type errors from points update +[@mike-kovacs](https://github.com/mike-kovacs)**
+* **Assign dropdown defaults to first user if one exists +[@mike-kovacs](https://github.com/mike-kovacs)**
+* **+ More [changelog.md](changelog.md)**
 
 ### Notes
 - Create, edit, and delete notes with images

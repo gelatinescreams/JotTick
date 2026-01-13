@@ -1001,8 +1001,19 @@ views:
                   border-radius: 8px;
                   gap: 12px;
                   transition: opacity 0.2s;
+                  border-left: 3px solid var(--success-color);
                 }
                 .list-item:hover { background: var(--divider-color, var(--divider-color)); }
+                .list-item.depth-0 { margin-left: 0; border-left-color: var(--success-color); }
+                .list-item.depth-1 { margin-left: 30px; border-left-color: var(--primary-color); }
+                .list-item.depth-2 { margin-left: 60px; border-left-color: var(--warning-color); }
+                .list-item.depth-3 { margin-left: 90px; border-left-color: var(--info-color); }
+                .list-item.depth-4 { margin-left: 120px; border-left-color: var(--accent-color); }
+                .list-item.depth-5 { margin-left: 150px; border-left-color: var(--primary-color); }
+                .list-item.depth-6 { margin-left: 180px; border-left-color: var(--success-color); }
+                .list-item.depth-7 { margin-left: 210px; border-left-color: var(--warning-color); }
+                .list-item.depth-8 { margin-left: 240px; border-left-color: var(--info-color); }
+                .list-item.depth-9 { margin-left: 270px; border-left-color: var(--accent-color); }
                 .item-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
                 .item-checkbox:disabled { cursor: wait; }
                 .item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
@@ -1159,7 +1170,7 @@ views:
                   {% if ns.count is odd %}
                     {% set list_id = state_attr(state.entity_id, 'checklist_id') %}
                     {% set list_title = state_attr(state.entity_id, 'title') %}
-                    {% set items = state_attr(state.entity_id, 'items') or [] %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
                     {% set completed = state_attr(state.entity_id, 'completed') %}
                     {% set total = state_attr(state.entity_id, 'total') %}
                     {% set has_reminder = reminder_configs is mapping and list_id in reminder_configs %}
@@ -1176,9 +1187,14 @@ views:
                         </div>
                       </div>
                     <div class="list-items">
-                    {% for item in items %}
-                      <div class="list-item" style="flex-wrap:wrap;">
-                        <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                    {% for item in flat_items %}
+                      {% set index_path = item.get('index_path', '0') %}
+                      {% set depth = index_path.split('.') | length - 1 %}
+                      {% set item_rec_key = list_id ~ ':' ~ index_path %}
+                      {% set item_has_recurring = recurring_configs is mapping and item_rec_key in recurring_configs %}
+                      {% set item_rec_config = recurring_configs.get(item_rec_key, {}) if recurring_configs is mapping else {} %}
+                      <div class="list-item depth-{{ depth }}" style="flex-wrap:wrap;">
+                        <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ index_path }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
                         <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
                         {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_lists', 'on') %}
                         {% set item_points = item.get('points') %}
@@ -1195,7 +1211,7 @@ views:
                           <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
                             <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
                             <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
-                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
                           </div>
                         </div>
                         {% else %}
@@ -1207,7 +1223,7 @@ views:
                               <option value="">Select user...</option>
                               {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
                             </select>
-                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim</button>
+                            <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim</button>
                           </div>
                         </div>
                         {% endif %}
@@ -1223,8 +1239,8 @@ views:
                               <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                               <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                               <div style="display:flex;gap:6px;">
-                                <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
-                                <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                                <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
                               </div>
                             </div>
                           {% else %}
@@ -1233,12 +1249,35 @@ views:
                               <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
                               <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                               <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
-                              <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                              <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
                             </div>
                           {% endif %}
                         </div>
-                        
-                        <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete</button>
+                        <div class="item-recurring-wrapper" style="position:relative;display:inline-flex;align-items:center;">
+                          <button class="item-rec-btn {{ 'active' if item_has_recurring else '' }}" style="padding:2px 6px;background:{{ 'var(--success-color)' if item_has_recurring else 'var(--secondary-background-color)' }};border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:{{ 'white' if item_has_recurring else 'var(--secondary-text-color)' }};" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="{{ 'Edit recurring' if item_has_recurring else 'Add recurring reset' }}">{{ '⟳' if item_has_recurring else '⟳' }}</button>
+                          <div class="item-rec-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:220px;">
+                            <div style="font-size:0.85em;color:var(--success-color);margin-bottom:8px;font-weight:600;">Item Recurring Reset</div>
+                            <div style="margin-bottom:8px;">
+                              <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
+                              <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
+                                <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                              </select>
+                            </div>
+                            <div style="margin-bottom:8px;">
+                              <label style="font-size:0.8em;color:var(--secondary-text-color);">Time:</label>
+                              <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                              <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
+                              {% if item_has_recurring %}
+                              <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');btn.disabled=true;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}setTimeout(function(){popup.style.display='none';},1000);})(this);">Remove</button>
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                        <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ index_path }}'});}})(this);}">Delete</button>
                       </div>
                     {% endfor %}
                   </div>
@@ -1259,9 +1298,10 @@ views:
                           <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
                           <input type="number" class="add-item-points" value="{{ default_list_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          {% set first_user_id = (points_users.keys() | list)[0] if points_users | length > 0 else '' %}
                           <select class="add-item-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                            <option value="">Open Bounty</option>
-                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                            <option value="" {{ '' if first_user_id else 'selected' }}>Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}" {{ 'selected' if uid == first_user_id else '' }}>{{ user.name }}</option>{% endfor %}
                           </select>
                         </div>
                         {% endif %}
@@ -1411,8 +1451,19 @@ views:
                   border-radius: 8px;
                   gap: 12px;
                   transition: opacity 0.2s;
+                  border-left: 3px solid var(--success-color);
                 }
                 .list-item:hover { background: var(--divider-color, var(--divider-color)); }
+                .list-item.depth-0 { margin-left: 0; border-left-color: var(--success-color); }
+                .list-item.depth-1 { margin-left: 30px; border-left-color: var(--primary-color); }
+                .list-item.depth-2 { margin-left: 60px; border-left-color: var(--warning-color); }
+                .list-item.depth-3 { margin-left: 90px; border-left-color: var(--info-color); }
+                .list-item.depth-4 { margin-left: 120px; border-left-color: var(--accent-color); }
+                .list-item.depth-5 { margin-left: 150px; border-left-color: var(--primary-color); }
+                .list-item.depth-6 { margin-left: 180px; border-left-color: var(--success-color); }
+                .list-item.depth-7 { margin-left: 210px; border-left-color: var(--warning-color); }
+                .list-item.depth-8 { margin-left: 240px; border-left-color: var(--info-color); }
+                .list-item.depth-9 { margin-left: 270px; border-left-color: var(--accent-color); }
                 .item-checkbox { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; }
                 .item-checkbox:disabled { cursor: wait; }
                 .item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
@@ -1531,7 +1582,7 @@ views:
                   {% if ns.count is even %}
                     {% set list_id = state_attr(state.entity_id, 'checklist_id') %}
                     {% set list_title = state_attr(state.entity_id, 'title') %}
-                    {% set items = state_attr(state.entity_id, 'items') or [] %}
+                    {% set flat_items = state_attr(state.entity_id, 'flat_items') or [] %}
                     {% set completed = state_attr(state.entity_id, 'completed') %}
                     {% set total = state_attr(state.entity_id, 'total') %}
                     {% set has_reminder = reminder_configs is mapping and list_id in reminder_configs %}
@@ -1548,9 +1599,14 @@ views:
                         </div>
                       </div>
                     <div class="list-items">
-                      {% for item in items %}
-                        <div class="list-item" style="flex-wrap:wrap;">
-                          <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ loop.index0 }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
+                      {% for item in flat_items %}
+                        {% set index_path = item.get('index_path', '0') %}
+                        {% set depth = index_path.split('.') | length - 1 %}
+                        {% set item_rec_key = list_id ~ ':' ~ index_path %}
+                        {% set item_has_recurring = recurring_configs is mapping and item_rec_key in recurring_configs %}
+                        {% set item_rec_config = recurring_configs.get(item_rec_key, {}) if recurring_configs is mapping else {} %}
+                        <div class="list-item depth-{{ depth }}" style="flex-wrap:wrap;">
+                          <input type="checkbox" class="item-checkbox" {{ 'checked' if item.completed else '' }} onchange="(function(cb){cb.disabled=true;cb.parentElement.style.opacity='0.5';const act=cb.checked?'check':'uncheck';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_action_data',value:'{{ list_id }}|||{{ index_path }}|||'+act});}setTimeout(function(){cb.disabled=false;cb.parentElement.style.opacity='1';},1000);})(this);">
                           <span class="item-text {{ 'completed' if item.completed else '' }}" style="flex:1;">{{ item.text }}</span>
                           {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_lists', 'on') %}
                           {% set item_points = item.get('points') %}
@@ -1567,7 +1623,7 @@ views:
                             <div class="claim-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:180px;">
                               <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Assigned to {{ assigned_user.get('name', 'user') }}</div>
                               <div style="font-size:0.85em;color:var(--primary-text-color);margin-bottom:8px;">{{ item_points }} points</div>
-                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
+                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:'{{ item_assigned }}',item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim for {{ assigned_user.get('name', 'user')[:10] }}</button>
                             </div>
                           </div>
                           {% else %}
@@ -1579,7 +1635,7 @@ views:
                                 <option value="">Select user...</option>
                                 {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
                               </select>
-                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ loop.index0 }}'});popup.style.display='none';})(this);">Claim</button>
+                              <button style="width:100%;padding:8px;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9em;" onclick="(function(btn){var popup=btn.closest('.claim-popup');var sel=popup.querySelector('.claim-user-select');if(!sel.value){alert('Please select a user');return;}var ha=document.querySelector('home-assistant');ha.hass.callService('jottick','claim_item_points',{user_id:sel.value,item_type:'checklist',parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});popup.style.display='none';})(this);">Claim</button>
                             </div>
                           </div>
                           {% endif %}
@@ -1595,8 +1651,8 @@ views:
                                 <input type="date" class="edit-due-date" value="{{ item.get('dueDate', '') }}" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                                 <input type="time" class="edit-due-time" value="{{ item.get('dueTime', '') | default('') }}" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                                 <div style="display:flex;gap:6px;">
-                                  <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
-                                  <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
+                                  <button style="flex:1;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove due date?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||clear'});}btn.closest('.due-popup').style.display='none';}})(this);">Clear</button>
                                 </div>
                               </div>
                             {% else %}
@@ -1605,12 +1661,35 @@ views:
                                 <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Set Due Date</div>
                                 <input type="date" class="edit-due-date" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
                                 <input type="time" class="edit-due-time" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);">
-                                <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ loop.index0 }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
+                                <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'list|||{{ list_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
                               </div>
                             {% endif %}
                           </div>
-
-                          <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ loop.index0 }}'});}})(this);}">Delete</button>
+                          <div class="item-recurring-wrapper" style="position:relative;display:inline-flex;align-items:center;">
+                            <button class="item-rec-btn {{ 'active' if item_has_recurring else '' }}" style="padding:2px 6px;background:{{ 'var(--success-color)' if item_has_recurring else 'var(--secondary-background-color)' }};border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:{{ 'white' if item_has_recurring else 'var(--secondary-text-color)' }};" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="{{ 'Edit recurring' if item_has_recurring else 'Add recurring reset' }}">⟳</button>
+                            <div class="item-rec-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:220px;">
+                              <div style="font-size:0.85em;color:var(--success-color);margin-bottom:8px;font-weight:600;">Item Recurring Reset</div>
+                              <div style="margin-bottom:8px;">
+                                <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
+                                <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                  <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                  <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
+                                  <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                                </select>
+                              </div>
+                              <div style="margin-bottom:8px;">
+                                <label style="font-size:0.8em;color:var(--secondary-text-color);">Time:</label>
+                                <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                              </div>
+                              <div style="display:flex;gap:6px;">
+                                <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
+                                {% if item_has_recurring %}
+                                <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');btn.disabled=true;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}setTimeout(function(){popup.style.display='none';},1000);})(this);">Remove</button>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ index_path }}'});}})(this);}">Delete</button>
                         </div>
                       {% endfor %}
                     </div>
@@ -1631,9 +1710,10 @@ views:
                           <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
                           <input type="number" class="add-item-points" value="{{ default_list_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          {% set first_user_id = (points_users.keys() | list)[0] if points_users | length > 0 else '' %}
                           <select class="add-item-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                            <option value="">Open Bounty</option>
-                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                            <option value="" {{ '' if first_user_id else 'selected' }}>Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}" {{ 'selected' if uid == first_user_id else '' }}>{{ user.name }}</option>{% endfor %}
                           </select>
                         </div>
                         {% endif %}
@@ -1951,6 +2031,10 @@ views:
                 .task-item.depth-3 { margin-left: 90px; border-left: 3px solid var(--info-color); }
                 .task-item.depth-4 { margin-left: 120px; border-left: 3px solid var(--accent-color); }
                 .task-item.depth-5 { margin-left: 150px; border-left: 3px solid var(--primary-color); }
+                .task-item.depth-6 { margin-left: 180px; border-left: 3px solid var(--success-color); }
+                .task-item.depth-7 { margin-left: 210px; border-left: 3px solid var(--warning-color); }
+                .task-item.depth-8 { margin-left: 240px; border-left: 3px solid var(--info-color); }
+                .task-item.depth-9 { margin-left: 270px; border-left: 3px solid var(--accent-color); }
                 .task-item-text { flex-grow: 1; color: var(--primary-text-color); font-size: 1em; }
                 .task-item-text.completed { text-decoration: line-through; opacity: 0.6; }
                 .task-status-select {
@@ -2178,6 +2262,9 @@ views:
                         {% for item in flat_items %}
                           {% set index_path = item.get('index_path') | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
+                          {% set item_rec_key = task_id ~ ':' ~ index_path %}
+                          {% set item_has_recurring = recurring_configs is mapping and item_rec_key in recurring_configs %}
+                          {% set item_rec_config = recurring_configs.get(item_rec_key, {}) if recurring_configs is mapping else {} %}
                           <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
                             {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_tasks', 'on') %}
@@ -2236,13 +2323,35 @@ views:
                                   <button style="width:100%;padding:6px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.85em;" onclick="(function(btn){var popup=btn.closest('.due-popup');var dateInp=popup.querySelector('.edit-due-date');var timeInp=popup.querySelector('.edit-due-time');if(!dateInp.value){alert('Please select a date');return;}var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_due_date_action_data',value:'task|||{{ task_id }}|||{{ index_path }}|||set|||'+dateInp.value+'|||'+timeInp.value});}popup.style.display='none';})(this);">Set Due Date</button>
                                 </div>
                               {% endif %}
-                            </div>     
+                            </div>
+                            <div class="item-recurring-wrapper" style="position:relative;display:inline-flex;align-items:center;">
+                              <button class="item-rec-btn" style="padding:2px 6px;background:{{ 'var(--success-color)' if item_has_recurring else 'var(--secondary-background-color)' }};border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:{{ 'white' if item_has_recurring else 'var(--secondary-text-color)' }};" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="{{ 'Edit item recurring' if item_has_recurring else 'Add item recurring' }}">⟳</button>
+                              <div class="item-rec-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:220px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Item Recurring Reset</div>
+                                <div style="margin-bottom:8px;">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
+                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                                    <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                  </select>
+                                </div>
+                                <div style="margin-bottom:8px;">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Time:</label>
+                                  <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove recurring?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}btn.closest('.item-rec-popup').style.display='none';}})(this);">Remove</button>
+                                </div>
+                              </div>
+                            </div>
                             <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}setTimeout(function(){sel.disabled=false;sel.parentElement.style.opacity='1';},1000);})(this);">
                               {% for status in statuses | sort(attribute='order') %}
                                 <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
                               {% endfor %}
                             </select>
-                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
+                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add_sub|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
                             <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
                         {% endfor %}
@@ -2270,9 +2379,10 @@ views:
                           <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
                           <input type="number" class="add-task-points" value="{{ default_task_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          {% set first_user_id = (points_users.keys() | list)[0] if points_users | length > 0 else '' %}
                           <select class="add-task-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                            <option value="">Open Bounty</option>
-                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                            <option value="" {{ '' if first_user_id else 'selected' }}>Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}" {{ 'selected' if uid == first_user_id else '' }}>{{ user.name }}</option>{% endfor %}
                           </select>
                         </div>
                         {% endif %}
@@ -2535,6 +2645,9 @@ views:
                         {% for item in flat_items %}
                           {% set index_path = item.get('index_path') | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
+                          {% set item_rec_key = task_id ~ ':' ~ index_path %}
+                          {% set item_has_recurring = recurring_configs is mapping and item_rec_key in recurring_configs %}
+                          {% set item_rec_config = recurring_configs.get(item_rec_key, {}) if recurring_configs is mapping else {} %}
                           <div class="task-item depth-{{ depth }} status-{{ item.status }}" style="flex-wrap:wrap;">
                             <span class="task-item-text {{ 'completed' if item.status == 'completed' else '' }}">{{ item.text }}</span>
                             {% if is_state('input_boolean.jottick_points_enabled', 'on') and is_state('input_boolean.jottick_points_show_on_tasks', 'on') %}
@@ -2594,12 +2707,34 @@ views:
                                 </div>
                               {% endif %}
                             </div>
+                            <div class="item-recurring-wrapper" style="position:relative;display:inline-flex;align-items:center;">
+                              <button class="item-rec-btn" style="padding:2px 6px;background:{{ 'var(--success-color)' if item_has_recurring else 'var(--secondary-background-color)' }};border:1px solid var(--divider-color);border-radius:4px;cursor:pointer;font-size:0.65em;color:{{ 'white' if item_has_recurring else 'var(--secondary-text-color)' }};" onclick="(function(el){var popup=el.nextElementSibling;popup.style.display=popup.style.display==='none'?'block':'none';})(this);" title="{{ 'Edit item recurring' if item_has_recurring else 'Add item recurring' }}">⟳</button>
+                              <div class="item-rec-popup" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);min-width:220px;">
+                                <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Item Recurring Reset</div>
+                                <div style="margin-bottom:8px;">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
+                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
+                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                                    <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                  </select>
+                                </div>
+                                <div style="margin-bottom:8px;">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Time:</label>
+                                  <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove recurring?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}btn.closest('.item-rec-popup').style.display='none';}})(this);">Remove</button>
+                                </div>
+                              </div>
+                            </div>
                             <select class="task-status-select" onchange="(function(sel){sel.disabled=true;sel.parentElement.style.opacity='0.5';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||status|||'+sel.value});}})(this);">
                               {% for status in statuses | sort(attribute='order') %}
                                 <option value="{{ status.id }}" {{ 'selected' if item.status == status.id else '' }}>{{ status.name }}</option>
                               {% endfor %}
                             </select>
-                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
+                            <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add_sub|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
                             <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
                         {% endfor %}
@@ -2627,9 +2762,10 @@ views:
                           <span style="font-size:0.85em;color:var(--secondary-text-color);" title="Set to 0 for no bounty">Points:</span>
                           <input type="number" class="add-task-points" value="{{ default_task_points }}" min="0" max="1000" style="width:60px;padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;text-align:center;" title="0 = no bounty">
                           <span style="font-size:0.85em;color:var(--secondary-text-color);margin-left:8px;">Assign:</span>
+                          {% set first_user_id = (points_users.keys() | list)[0] if points_users | length > 0 else '' %}
                           <select class="add-task-assign" style="padding:6px 8px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                            <option value="">Open Bounty</option>
-                            {% for uid, user in points_users.items() %}<option value="{{ uid }}">{{ user.name }}</option>{% endfor %}
+                            <option value="" {{ '' if first_user_id else 'selected' }}>Open Bounty</option>
+                            {% for uid, user in points_users.items() %}<option value="{{ uid }}" {{ 'selected' if uid == first_user_id else '' }}>{{ user.name }}</option>{% endfor %}
                           </select>
                         </div>
                         {% endif %}

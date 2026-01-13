@@ -1195,13 +1195,17 @@ jottick_save_recurring:
   alias: "JotTick: Save Recurring"
   fields:
     item_id:
-      description: "List/task ID"
+      description: "List/task ID or unique key for item-level recurring"
     item_type:
-      description: "checklist or task"
+      description: "checklist, task, checklist_item, or task_item"
     days:
       description: "weekdays, weekends, or every_day"
     reset_times:
       description: "Comma-separated times like 06:00,14:00"
+    parent_id:
+      description: "Parent list/task ID (for item-level recurring)"
+    item_index:
+      description: "Item index path (for item-level recurring)"
   sequence:
     - variables:
         configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
@@ -1209,10 +1213,12 @@ jottick_save_recurring:
       value_template: "{{ item_id != '' and reset_times != '' }}"
     - variables:
         times_list: "{{ reset_times.split(',') | map('trim') | list }}"
-        new_config:
-          type: "{{ item_type }}"
-          days: "{{ days }}"
-          reset_times: "{{ times_list }}"
+        new_config: >
+          {% if item_type in ['checklist_item', 'task_item'] %}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'parent_id': parent_id, 'item_index': item_index} }}
+          {% else %}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list} }}
+          {% endif %}
         safe_configs: "{{ configs if configs is mapping else {} }}"
         updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"
     - event: jottick_recurring_update
@@ -1311,6 +1317,33 @@ jottick_reset_task:
               task_id: "{{ task_id }}"
               item_index: "{{ repeat.item.index_path }}"
               status: "todo"
+
+jottick_reset_checklist_item:
+  alias: "JotTick: Reset Single Checklist Item"
+  fields:
+    checklist_id:
+      description: "Checklist ID"
+    item_index:
+      description: "Item index path (e.g., 0, 0.1, 1.2.3)"
+  sequence:
+    - service: jottick.uncheck_item
+      data:
+        checklist_id: "{{ checklist_id }}"
+        item_index: "{{ item_index }}"
+
+jottick_reset_task_item:
+  alias: "JotTick: Reset Single Task Item"
+  fields:
+    task_id:
+      description: "Task ID"
+    item_index:
+      description: "Item index path (e.g., 0, 0.1, 1.2.3)"
+  sequence:
+    - service: jottick.update_task_item_status
+      data:
+        task_id: "{{ task_id }}"
+        item_index: "{{ item_index }}"
+        status: "todo"
 
 jottick_schedule_note:
   alias: "JotTick: Schedule Note"
@@ -1872,61 +1905,6 @@ jottick_import_ical:
           - input_text.jottick_ical_import_name
       data:
         value: ""
-
-jottick_navigate_to_item:
-  alias: 'JotTick: Navigate to Item'
-  icon: mdi:arrow-right
-  fields:
-    item_type:
-      description: 'Type: note, list, or task'
-      example: 'note'
-    item_id:
-      description: 'The item ID'
-      example: 'abc-123'
-  sequence:
-    - service: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.jottick_show_calendar_event_popup
-    - choose:
-        - conditions:
-            - condition: template
-              value_template: "{{ item_type == 'note' }}"
-          sequence:
-            - service: browser_mod.navigate
-              data:
-                path: /jottick-dashboard/notes
-            - delay: "00:00:01"
-            - service: input_text.set_value
-              target:
-                entity_id: input_text.jottick_note_id
-              data:
-                value: "{{ item_id }}"
-        - conditions:
-            - condition: template
-              value_template: "{{ item_type == 'list' }}"
-          sequence:
-            - service: browser_mod.navigate
-              data:
-                path: /jottick-dashboard/lists
-            - delay: "00:00:01"
-            - service: input_text.set_value
-              target:
-                entity_id: input_text.jottick_checklist_id
-              data:
-                value: "{{ item_id }}"
-        - conditions:
-            - condition: template
-              value_template: "{{ item_type == 'task' }}"
-          sequence:
-            - service: browser_mod.navigate
-              data:
-                path: /jottick-dashboard/tasks
-            - delay: "00:00:01"
-            - service: input_text.set_value
-              target:
-                entity_id: input_text.jottick_selected_task_id
-              data:
-                value: "{{ item_id }}"
 
 jottick_create_points_user:
   alias: 'JotTick: Create Points User'
