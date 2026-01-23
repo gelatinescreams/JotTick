@@ -834,8 +834,9 @@ views:
               rows: auto
           - type: custom:html-template-card
             ignore_line_breaks: true
-            content: |
-              <div style="display:flex;gap:16px;padding:8px 12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
+            content: >
+              <div style="display:flex;gap:16px;padding:8px
+              12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85em;color:var(--secondary-text-color);">
                   <input type="checkbox" {{ 'checked' if is_state('input_boolean.jottick_hide_completed_list_items', 'on') else '' }} onchange="(function(cb){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_boolean',cb.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_hide_completed_list_items'});}})(this);" style="width:16px;height:16px;">
                   Hide completed items
@@ -1884,8 +1885,9 @@ views:
               rows: auto
           - type: custom:html-template-card
             ignore_line_breaks: true
-            content: |
-              <div style="display:flex;gap:16px;padding:8px 12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
+            content: >
+              <div style="display:flex;gap:16px;padding:8px
+              12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85em;color:var(--secondary-text-color);">
                   <input type="checkbox" {{ 'checked' if is_state('input_boolean.jottick_hide_completed_task_items', 'on') else '' }} onchange="(function(cb){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_boolean',cb.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_hide_completed_task_items'});}})(this);" style="width:16px;height:16px;">
                   Hide completed items
@@ -2381,10 +2383,14 @@ views:
                                 <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Item Recurring Reset</div>
                                 <div style="margin-bottom:8px;">
                                   <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
-                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                                  <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--secondary-text-color);font-size:0.85em;" onchange="(function(sel){var md=sel.closest('.item-rec-popup').querySelector('.item-monthly-day');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}})(this);">
                                     <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
+                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                                    <option value="monthly" {{ 'selected' if item_rec_config.get('days')=='monthly' else '' }}>Monthly</option>
+                                    <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
+                                    <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
+                                    <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
                                   </select>
                                 </div>
                                 <div style="margin-bottom:8px;">
@@ -4180,8 +4186,7 @@ views:
                   {% endfor %}
                 </div>
                 {% endif %}
-              </div>
-              <div class="jt-points-card">
+              </div> <div class="jt-points-card">
                 <h3>Manage Points Prizes</h3>
                 <div class="jt-points-form" style="margin-bottom:16px;">
                   <input type="text" class="jt-points-input new-prize-name" placeholder="Prize name">
@@ -4214,8 +4219,7 @@ views:
                   {% endfor %}
                 </div>
                 {% endif %}
-              </div>
-              <div class="jt-points-card">
+              </div> <div class="jt-points-card">
                 <h3>Manage Points Achievements</h3>
                 <div class="jt-points-form" style="margin-bottom:16px;">
                   <input type="text" class="jt-points-input new-ach-name" placeholder="Achievement name">
@@ -4258,8 +4262,7 @@ views:
                   <p>No achievements yet. Add one above!</p>
                 </div>
                 {% endif %}
-              </div>
-              <div class="jt-points-card">
+              </div> <div class="jt-points-card">
                 <h3>User Achievements</h3>
                 {% if sorted_users | length > 0 %}
                 <div style="margin-top:8px;">
@@ -4294,8 +4297,7 @@ views:
                   <p>Add users first to award achievements.</p>
                 </div>
                 {% endif %}
-              </div>
-              {% endif %}
+              </div> {% endif %}
             grid_options:
               columns: full
               rows: auto
