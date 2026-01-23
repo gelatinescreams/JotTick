@@ -1199,9 +1199,11 @@ jottick_save_recurring:
     item_type:
       description: "checklist, task, checklist_item, or task_item"
     days:
-      description: "weekdays, weekends, or every_day"
+      description: "weekdays, weekends, every_day, monthly, monthly_last, quarterly, quarterly_last"
     reset_times:
       description: "Comma-separated times like 06:00,14:00"
+    monthly_day:
+      description: "Day of month for monthly/quarterly (1-28)"
     parent_id:
       description: "Parent list/task ID (for item-level recurring)"
     item_index:
@@ -1213,11 +1215,12 @@ jottick_save_recurring:
       value_template: "{{ item_id != '' and reset_times != '' }}"
     - variables:
         times_list: "{{ reset_times.split(',') | map('trim') | list }}"
+        monthly_day_val: "{{ monthly_day | default(1) | int }}"
         new_config: >
           {% if item_type in ['checklist_item', 'task_item'] %}
-            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'parent_id': parent_id, 'item_index': item_index} }}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
           {% else %}
-            {{ {'type': item_type, 'days': days, 'reset_times': times_list} }}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val} }}
           {% endif %}
         safe_configs: "{{ configs if configs is mapping else {} }}"
         updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"

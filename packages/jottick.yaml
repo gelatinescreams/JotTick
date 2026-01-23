@@ -557,6 +557,16 @@ input_boolean:
     initial: false
     icon: mdi:check-circle
 
+  jottick_hide_completed_list_items:
+    name: "Hide Completed List Items"
+    initial: false
+    icon: mdi:checkbox-marked-outline
+
+  jottick_hide_completed_task_items:
+    name: "Hide Completed Task Items"
+    initial: false
+    icon: mdi:clipboard-check-outline
+
   jottick_show_calendar_event_popup:
     name: "Show Calendar Event Popup"
     initial: false
@@ -679,21 +689,24 @@ template:
         state: "{{ this.attributes.notifiers | default([]) | length }}"
         attributes:
           notifiers: >
-            {% set ns = namespace(services=[]) %}
-            {% for state in states.device_tracker %}
-              {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
-                {% set device_name = state.name | slugify %}
-                {% set service_name = 'notify.mobile_app_' ~ device_name %}
-                {% set ns.services = ns.services + [service_name] %}
+            {% set ns = namespace(services=[], seen=[]) %}
+            {% for s in states.sensor %}
+              {% if s.entity_id.endswith('_battery_level') or s.entity_id.endswith('_battery_state') %}
+                {% set base = s.entity_id | replace('sensor.', '') | replace('_battery_level', '') | replace('_battery_state', '') %}
+                {% if base not in ns.seen %}
+                  {% set ns.services = ns.services + ['notify.mobile_app_' ~ base] %}
+                  {% set ns.seen = ns.seen + [base] %}
+                {% endif %}
               {% endif %}
             {% endfor %}
             {% if ns.services | length == 0 %}
               {% for state in states.device_tracker %}
-                {% set eid = state.entity_id | lower %}
-                {% if 'iphone' in eid or 'phone' in eid or 'pixel' in eid or 'samsung' in eid or 'galaxy' in eid %}
+                {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
                   {% set device_name = state.object_id %}
-                  {% set service_name = 'notify.mobile_app_' ~ device_name %}
-                  {% set ns.services = ns.services + [service_name] %}
+                  {% if device_name not in ns.seen %}
+                    {% set ns.services = ns.services + ['notify.mobile_app_' ~ device_name] %}
+                    {% set ns.seen = ns.seen + [device_name] %}
+                  {% endif %}
                 {% endif %}
               {% endfor %}
             {% endif %}
@@ -1284,7 +1297,11 @@ automation:
         configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
         current_time: "{{ now().strftime('%H:%M') }}"
         current_day: "{{ now().strftime('%A') }}"
+        current_dom: "{{ now().day }}"
+        current_month: "{{ now().month }}"
         is_weekday: "{{ current_day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] }}"
+        is_last_day_of_month: "{{ (now() + timedelta(days=1)).day == 1 }}"
+        is_quarterly_month: "{{ current_month in [1, 4, 7, 10] }}"
     - condition: template
       value_template: "{{ configs is mapping and configs | length > 0 }}"
     - repeat:
@@ -1295,12 +1312,24 @@ automation:
               config: "{{ configs[item_id] if configs[repeat.item] is defined else {} }}"
               item_type: "{{ config.type | default('checklist') }}"
               days: "{{ config.days | default('every_day') }}"
+              monthly_day: "{{ config.monthly_day | default(1) | int }}"
               reset_times: "{{ config.reset_times | default([]) if config.reset_times is defined else [] }}"
               should_run_today: >
                 {% if days == 'weekdays' %}
                   {{ is_weekday }}
                 {% elif days == 'weekends' %}
                   {{ not is_weekday }}
+                {% elif days == 'monthly' %}
+                  {{ current_dom | int == monthly_day }}
+                {% elif days == 'monthly_last' %}
+                  {{ is_last_day_of_month }}
+                {% elif days == 'quarterly' %}
+                  {{ is_quarterly_month and current_dom | int == monthly_day }}
+                {% elif days == 'quarterly_last' %}
+                  {{ is_quarterly_month and is_last_day_of_month }}
+                {% elif days.startswith('specific:') %}
+                  {% set specific_days = days.replace('specific:', '').split(',') %}
+                  {{ current_day[:3] in specific_days }}
                 {% else %}
                   true
                 {% endif %}
@@ -3032,9 +3061,11 @@ script:
       item_type:
         description: "checklist, task, checklist_item, or task_item"
       days:
-        description: "weekdays, weekends, or every_day"
+        description: "weekdays, weekends, every_day, monthly, monthly_last, quarterly, quarterly_last"
       reset_times:
         description: "Comma-separated times like 06:00,14:00"
+      monthly_day:
+        description: "Day of month for monthly/quarterly (1-28)"
       parent_id:
         description: "Parent list/task ID (for item-level recurring)"
       item_index:
@@ -3046,11 +3077,12 @@ script:
         value_template: "{{ item_id != '' and reset_times != '' }}"
       - variables:
           times_list: "{{ reset_times.split(',') | map('trim') | list }}"
+          monthly_day_val: "{{ monthly_day | default(1) | int }}"
           new_config: >
             {% if item_type in ['checklist_item', 'task_item'] %}
-              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'parent_id': parent_id, 'item_index': item_index} }}
+              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
             {% else %}
-              {{ {'type': item_type, 'days': days, 'reset_times': times_list} }}
+              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val} }}
             {% endif %}
           safe_configs: "{{ configs if configs is mapping else {} }}"
           updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"

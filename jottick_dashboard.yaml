@@ -105,8 +105,8 @@ views:
                   </select>
                   <select class="device-select">
                     <option value="">-- Select device --</option>
-                    {% for n in notifiers %}
-                    <option value="{{ n }}">{{ n | replace('notify.mobile_app_','') | replace('_',' ') | title }}</option>
+                    {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}
+                    <option value="{{ svc }}">{{ name }}</option>
                     {% endfor %}
                   </select>
                   <button class="save-btn" type="button" onclick="(function(btn){var sec=btn.closest('.section');var u=sec.querySelector('.user-select');var d=sec.querySelector('.device-select');var cfg=btn.closest('.reminder-config');var s=cfg.querySelector('.status');if(!u.value){s.textContent='Select your user';return;}if(!d.value){s.textContent='Select your device';return;}var ha=document.querySelector('home-assistant');var uname=u.options[u.selectedIndex].text;ha.hass.callService('script','jottick_save_user_device',{user_id:u.value,user_name:uname,device:d.value});s.textContent='Saved! Refresh page to see changes.';btn.disabled=true;setTimeout(function(){btn.disabled=false;},2000);})(this);">Save My Device</button>
@@ -128,8 +128,8 @@ views:
                   <input type="text" class="names-input" placeholder="Names separated by commas (e.g. tim, timmy, dad)">
                   <select class="device-select">
                     <option value="">-- Select device --</option>
-                    {% for n in notifiers %}
-                    <option value="{{ n }}">{{ n | replace('notify.mobile_app_','') | replace('_',' ') | title }}</option>
+                    {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}
+                    <option value="{{ svc }}">{{ name }}</option>
                     {% endfor %}
                   </select>
                   <button class="save-btn" type="button" onclick="(function(btn){var sec=btn.closest('.section');var n=sec.querySelector('.names-input');var d=sec.querySelector('.device-select');var cfg=btn.closest('.reminder-config');var s=cfg.querySelector('.status');if(!n.value.trim()){s.textContent='Enter at least one name';return;}if(!d.value){s.textContent='Select a device';return;}var ha=document.querySelector('home-assistant');ha.hass.callService('script','jottick_save_alias_direct',{names:n.value,device:d.value});s.textContent='Saved! Say: remind '+n.value.split(',')[0].trim()+' to... Refresh to see.';n.value='';btn.disabled=true;setTimeout(function(){btn.disabled=false;},2000);})(this);">Save Alias</button>
@@ -494,8 +494,8 @@ views:
                       <div class="note-send-section">
                         <h4>Send Note</h4>
                         <div class="send-targets">
-                          {% for n in notifiers %}{% if n != 'Nobody' %}
-                          <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                          {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                          <label><input type="checkbox" class="send-target-cb" value="{{ svc }}"><span>{{ name }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
                         <div class="send-mode-tabs">
@@ -749,8 +749,8 @@ views:
                       <div class="note-send-section">
                         <h4>Send Note</h4>
                         <div class="send-targets">
-                          {% for n in notifiers %}{% if n != 'Nobody' %}
-                          <label><input type="checkbox" class="send-target-cb" value="{{ n }}"><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                          {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                          <label><input type="checkbox" class="send-target-cb" value="{{ svc }}"><span>{{ name }}</span></label>
                           {% endif %}{% endfor %}
                         </div>
                         <div class="send-mode-tabs">
@@ -832,6 +832,15 @@ views:
             grid_options:
               columns: full
               rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <div style="display:flex;gap:16px;padding:8px 12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85em;color:var(--secondary-text-color);">
+                  <input type="checkbox" {{ 'checked' if is_state('input_boolean.jottick_hide_completed_list_items', 'on') else '' }} onchange="(function(cb){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_boolean',cb.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_hide_completed_list_items'});}})(this);" style="width:16px;height:16px;">
+                  Hide completed items
+                </label>
+              </div>
           - type: custom:html-template-card
             ignore_line_breaks: true
             content: |
@@ -1153,7 +1162,7 @@ views:
                 {% set ns = namespace(count=0, lists=[]) %}
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
-                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or [] %}
                 {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
                 {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
                 {% set default_list_points = states('input_number.jottick_points_default_list_item') | int(0) %}
@@ -1187,7 +1196,9 @@ views:
                         </div>
                       </div>
                     <div class="list-items">
+                    {% set hide_completed = is_state('input_boolean.jottick_hide_completed_list_items', 'on') %}
                     {% for item in flat_items %}
+                      {% if not (hide_completed and item.completed) %}
                       {% set index_path = item.get('index_path', '0') %}
                       {% set depth = index_path.split('.') | length - 1 %}
                       {% set item_rec_key = list_id ~ ':' ~ index_path %}
@@ -1259,10 +1270,14 @@ views:
                             <div style="font-size:0.85em;color:var(--success-color);margin-bottom:8px;font-weight:600;">Item Recurring Reset</div>
                             <div style="margin-bottom:8px;">
                               <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                              <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                              <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var md=sel.closest('.item-rec-popup').querySelector('.item-monthly-day');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}})(this);">
                                 <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                                 <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
                                 <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                                <option value="monthly" {{ 'selected' if item_rec_config.get('days')=='monthly' else '' }}>Monthly</option>
+                                <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
+                                <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
+                                <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
                               </select>
                             </div>
                             <div style="margin-bottom:8px;">
@@ -1279,6 +1294,7 @@ views:
                         </div>
                         <button style="padding:2px 8px;background:var(--error-color, #ff5555);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="if(confirm('Delete this item?')){(function(btn){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_delete_item_data',value:'{{ list_id }}|||{{ index_path }}'});}})(this);}">Delete</button>
                       </div>
+                      {% endif %}
                     {% endfor %}
                   </div>
                       <div class="add-item-section" style="flex-direction:column;">
@@ -1312,8 +1328,8 @@ views:
                           <label>Notify:</label>
                           <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
                             {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
-                            {% for n in notifiers %}{% if n != 'Nobody' %}
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ svc }}" {{ 'checked' if svc in saved_targets else '' }}><span>{{ name }}</span></label>
                             {% endif %}{% endfor %}
                           </div>
                         </div>
@@ -1354,10 +1370,22 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days">
+                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
-                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                            <option value="monthly" {{ 'selected' if rec_config.get('days','')=='monthly' else '' }}>Monthly</option>
+                            <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
+                            <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
+                            <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                          <label>Day of month:</label>
+                          <select class="rec-monthly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="reminder-row">
@@ -1402,7 +1430,7 @@ views:
                           <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -1724,8 +1752,8 @@ views:
                           <label>Notify:</label>
                           <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
                             {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
-                            {% for n in notifiers %}{% if n != 'Nobody' %}
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ svc }}" {{ 'checked' if svc in saved_targets else '' }}><span>{{ name }}</span></label>
                             {% endif %}{% endfor %}
                           </div>
                         </div>
@@ -1766,10 +1794,22 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days">
+                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
-                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                            <option value="monthly" {{ 'selected' if rec_config.get('days','')=='monthly' else '' }}>Monthly</option>
+                            <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
+                            <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
+                            <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                          <label>Day of month:</label>
+                          <select class="rec-monthly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="reminder-row">
@@ -1814,7 +1854,7 @@ views:
                           <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -1842,6 +1882,15 @@ views:
             grid_options:
               columns: full
               rows: auto
+          - type: custom:html-template-card
+            ignore_line_breaks: true
+            content: |
+              <div style="display:flex;gap:16px;padding:8px 12px;background:var(--secondary-background-color);border-radius:8px;align-items:center;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85em;color:var(--secondary-text-color);">
+                  <input type="checkbox" {{ 'checked' if is_state('input_boolean.jottick_hide_completed_task_items', 'on') else '' }} onchange="(function(cb){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_boolean',cb.checked?'turn_on':'turn_off',{entity_id:'input_boolean.jottick_hide_completed_task_items'});}})(this);" style="width:16px;height:16px;">
+                  Hide completed items
+                </label>
+              </div>
           - type: custom:html-template-card
             ignore_line_breaks: true
             content: |
@@ -2227,7 +2276,7 @@ views:
                 {% set ns = namespace(count=0, tasks=[]) %}
                 {% set reminder_configs = state_attr('sensor.jottick_reminders', 'configs') or {} %}
                 {% set recurring_configs = state_attr('sensor.jottick_recurring', 'configs') or {} %}
-                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or ['Nobody'] %}
+                {% set notifiers = state_attr('sensor.jottick_available_notifiers', 'notifiers') or [] %}
                 {% set points_users = state_attr('sensor.jottick_points_users', 'users') or {} %}
                 {% set points_enabled = is_state('input_boolean.jottick_points_enabled', 'on') %}
                 {% set default_task_points = states('input_number.jottick_points_default_task_item') | int(0) %}
@@ -2259,7 +2308,9 @@ views:
                         </div>
                       </div>
                       <div class="task-items">
+                        {% set hide_completed_tasks = is_state('input_boolean.jottick_hide_completed_task_items', 'on') %}
                         {% for item in flat_items %}
+                          {% if not (hide_completed_tasks and item.status == 'completed') %}
                           {% set index_path = item.get('index_path') | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
                           {% set item_rec_key = task_id ~ ':' ~ index_path %}
@@ -2354,6 +2405,7 @@ views:
                             <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add_sub|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
                             <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
+                          {% endif %}
                         {% endfor %}
                       </div>
                       <div class="add-task-section" style="flex-direction:column;">
@@ -2415,8 +2467,8 @@ views:
                           <label>Notify:</label>
                           <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
                             {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
-                            {% for n in notifiers %}{% if n != 'Nobody' %}
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ svc }}" {{ 'checked' if svc in saved_targets else '' }}><span>{{ name }}</span></label>
                             {% endif %}{% endfor %}
                           </div>
                         </div>
@@ -2457,10 +2509,22 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days">
+                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
-                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                            <option value="monthly" {{ 'selected' if rec_config.get('days','')=='monthly' else '' }}>Monthly</option>
+                            <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
+                            <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
+                            <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                          <label>Day of month:</label>
+                          <select class="rec-monthly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="reminder-row">
@@ -2505,7 +2569,7 @@ views:
                           <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -2642,7 +2706,9 @@ views:
                         </div>
                       </div>
                       <div class="task-items">
+                        {% set hide_completed_tasks = is_state('input_boolean.jottick_hide_completed_task_items', 'on') %}
                         {% for item in flat_items %}
+                          {% if not (hide_completed_tasks and item.status == 'completed') %}
                           {% set index_path = item.get('index_path') | default('0') %}
                           {% set depth = index_path.split('.') | length - 1 %}
                           {% set item_rec_key = task_id ~ ':' ~ index_path %}
@@ -2737,6 +2803,7 @@ views:
                             <button class="add-sub-btn" title="Add sub-task" onclick="(function(btn){const txt=prompt('Enter sub-task:');if(txt&&txt.trim()){btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||add_sub|||'+txt.trim()+'|||todo|||{{ index_path }}'});}}})(this);">+</button>
                             <button class="delete-item-btn" onclick="if(confirm('Delete?')){const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('input_text','set_value',{entity_id:'input_text.jottick_quick_task_action_data',value:'{{ task_id }}|||{{ index_path }}|||delete_item'});}}">Delete</button>
                           </div>
+                          {% endif %}
                         {% endfor %}
                       </div>
                       <div class="add-task-section" style="flex-direction:column;">
@@ -2798,8 +2865,8 @@ views:
                           <label>Notify:</label>
                           <div class="r-targets" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
                             {% set saved_targets = (config.get('targets','') or config.get('target','')) %}
-                            {% for n in notifiers %}{% if n != 'Nobody' %}
-                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ n }}" {{ 'checked' if n in saved_targets else '' }}><span>{{ n.replace('notify.mobile_app_','') }}</span></label>
+                            {% for n in notifiers %}{% set svc = n %}{% set name = n | replace('notify.mobile_app_','') | replace('_',' ') | title %}{% if svc != 'Nobody' %}
+                            <label style="display:flex;align-items:center;gap:4px;font-size:0.9em;cursor:pointer;"><input type="checkbox" class="r-target-cb" value="{{ svc }}" {{ 'checked' if svc in saved_targets else '' }}><span>{{ name }}</span></label>
                             {% endif %}{% endfor %}
                           </div>
                         </div>
@@ -2840,10 +2907,22 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days">
+                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
-                            <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                            <option value="monthly" {{ 'selected' if rec_config.get('days','')=='monthly' else '' }}>Monthly</option>
+                            <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
+                            <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
+                            <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                          </select>
+                        </div>
+                        <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                          <label>Day of month:</label>
+                          <select class="rec-monthly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
                           </select>
                         </div>
                         <div class="reminder-row">
@@ -2888,7 +2967,7 @@ views:
                           <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>

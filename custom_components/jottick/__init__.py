@@ -76,29 +76,35 @@ def format_ical_datetime(date_str: str, time_str: str = None) -> str:
         return dt.strftime("%Y%m%d")
 
 
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024
+
+
 class JotTickUploadView(HomeAssistantView):
     url = "/api/jottick/upload"
     name = "api:jottick:upload"
     requires_auth = True
-    
+
     def __init__(self, coordinator):
         self.coordinator = coordinator
-    
+
     async def post(self, request):
         try:
             data = await request.post()
-            
+
             note_id = data.get('note_id')
             if not note_id:
                 return web.json_response({"success": False, "error": "note_id required"}, status=400)
-            
+
             file_field = data.get('file')
             if not file_field:
                 return web.json_response({"success": False, "error": "file required"}, status=400)
-            
+
             filename = file_field.filename
             content = file_field.file.read()
-            
+
+            if len(content) > MAX_UPLOAD_SIZE:
+                return web.json_response({"success": False, "error": f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024*1024)}MB"}, status=400)
+
             ext = os.path.splitext(filename)[1].lower() or '.jpg'
             allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
             if ext not in allowed_extensions:
@@ -204,11 +210,20 @@ class JotTickCalendarExportView(HomeAssistantView):
 
     async def get(self, request, filename):
         try:
+            safe_filename = re.sub(r'[^a-zA-Z0-9_-]', '', filename)
+            if not safe_filename:
+                safe_filename = "jottick_calendar"
+
             calendar_path = self.coordinator.hass.config.path(CALENDAR_DIR)
-            file_path = os.path.join(calendar_path, f"{filename}.ics")
+            file_path = os.path.join(calendar_path, f"{safe_filename}.ics")
+
+            resolved_path = os.path.realpath(file_path)
+            resolved_calendar_path = os.path.realpath(calendar_path)
+            if not resolved_path.startswith(resolved_calendar_path):
+                return web.Response(text="Invalid filename", status=400)
 
             if not os.path.exists(file_path):
-                await self.coordinator.export_ical(filename=filename)
+                await self.coordinator.export_ical(filename=safe_filename)
 
             def read_file():
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -220,7 +235,7 @@ class JotTickCalendarExportView(HomeAssistantView):
                 text=content,
                 content_type="text/calendar; charset=utf-8",
                 headers={
-                    "Content-Disposition": f'attachment; filename="{filename}.ics"'
+                    "Content-Disposition": f'attachment; filename="{safe_filename}.ics"'
                 }
             )
 
@@ -251,6 +266,9 @@ class JotTickPrizeUploadView(HomeAssistantView):
 
             filename = file_field.filename
             content = file_field.file.read()
+
+            if len(content) > MAX_UPLOAD_SIZE:
+                return web.json_response({"success": False, "error": f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024*1024)}MB"}, status=400)
 
             ext = os.path.splitext(filename)[1].lower() or '.jpg'
             allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
@@ -316,6 +334,9 @@ class JotTickAchievementUploadView(HomeAssistantView):
 
             filename = file_field.filename
             content = file_field.file.read()
+
+            if len(content) > MAX_UPLOAD_SIZE:
+                return web.json_response({"success": False, "error": f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024*1024)}MB"}, status=400)
 
             ext = os.path.splitext(filename)[1].lower() or '.jpg'
             allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
@@ -429,8 +450,26 @@ class JotTickCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=30))
         self.store = store
         self._data = initial_data
+        self._note_index = {}
+        self._checklist_index = {}
+        self._task_index = {}
         self._migrate_data()
+        self._rebuild_indexes()
         self.data = self._format_data()
+
+    def _rebuild_indexes(self):
+        self._note_index = {n["id"]: n for n in self._data.get("notes", [])}
+        self._checklist_index = {c["id"]: c for c in self._data.get("checklists", [])}
+        self._task_index = {t["id"]: t for t in self._data.get("tasks", [])}
+
+    def _get_note(self, note_id: str):
+        return self._note_index.get(note_id)
+
+    def _get_checklist(self, checklist_id: str):
+        return self._checklist_index.get(checklist_id)
+
+    def _get_task(self, task_id: str):
+        return self._task_index.get(task_id)
 
     def _migrate_data(self):
         def fix_item_fields(items):
@@ -481,6 +520,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
 
     async def async_save(self):
         await self.store.async_save(self._data)
+        self._rebuild_indexes()
         self.data = self._format_data()
         self.async_set_updated_data(self.data)
         
@@ -498,16 +538,16 @@ class JotTickCoordinator(DataUpdateCoordinator):
         return note
 
     async def update_note(self, note_id: str, title: str = None, content: str = None) -> dict:
-        for note in self._data["notes"]:
-            if note["id"] == note_id:
-                if title is not None:
-                    note["title"] = title
-                if content is not None:
-                    note["content"] = content
-                note["updatedAt"] = now_iso()
-                await self.async_save()
-                return note
-        raise ValueError(f"Note {note_id} not found")
+        note = self._get_note(note_id)
+        if not note:
+            raise ValueError(f"Note {note_id} not found")
+        if title is not None:
+            note["title"] = title
+        if content is not None:
+            note["content"] = content
+        note["updatedAt"] = now_iso()
+        await self.async_save()
+        return note
 
     async def delete_note(self, note_id: str) -> bool:
         for i, note in enumerate(self._data["notes"]):
@@ -786,57 +826,57 @@ class JotTickCoordinator(DataUpdateCoordinator):
         return target_list, final_idx
 
     async def check_item(self, checklist_id: str, item_index: str, user_id: str = None) -> bool:
-        for checklist in self._data["checklists"]:
-            if checklist["id"] == checklist_id:
-                target_list, idx = self._get_item_by_index(checklist["items"], item_index)
-                item = target_list[idx]
-                item["completed"] = True
+        checklist = self._get_checklist(checklist_id)
+        if not checklist:
+            raise ValueError(f"Checklist {checklist_id} not found")
+        target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+        item = target_list[idx]
+        item["completed"] = True
 
-                claim_user = None
-                item_points = item.get("points", 0)
-                if item_points is not None and item_points != "":
-                    item_points = int(item_points)
-                else:
-                    item_points = 0
-                assigned_to = item.get("assigned_to", "")
-                if item_points > 0 and not item.get("points_claimed"):
-                    claim_user = user_id or assigned_to
-                    if claim_user and claim_user in self._data["points_users"]:
-                        item["points_claimed"] = True
-                        item["points_claimed_by"] = claim_user
-                        item["points_claimed_at"] = now_iso()
-                        self._data["points_users"][claim_user]["points"] = self._data["points_users"][claim_user].get("points", 0) + item_points
-                        self._data["points_users"][claim_user]["lifetime_points"] = self._data["points_users"][claim_user].get("lifetime_points", 0) + item_points
-                        self._data["points_history"].append({
-                            "id": generate_id()[:8],
-                            "user_id": claim_user,
-                            "user_name": self._data["points_users"][claim_user].get("name", ""),
-                            "amount": item_points,
-                            "reason": f"Completed: {item.get('text', 'item')}",
-                            "item_type": "checklist",
-                            "parent_id": checklist_id,
-                            "item_index": item_index,
-                            "timestamp": now_iso(),
-                        })
-                        self.hass.bus.async_fire("jottick_points_users_update", {"users": self._data["points_users"]})
-                        self.hass.bus.async_fire("jottick_points_history_update", {"history": self._data["points_history"][-50:]})
+        claim_user = None
+        item_points = item.get("points", 0)
+        if item_points is not None and item_points != "":
+            item_points = int(item_points)
+        else:
+            item_points = 0
+        assigned_to = item.get("assigned_to", "")
+        if item_points > 0 and not item.get("points_claimed"):
+            claim_user = user_id or assigned_to
+            if claim_user and claim_user in self._data["points_users"]:
+                item["points_claimed"] = True
+                item["points_claimed_by"] = claim_user
+                item["points_claimed_at"] = now_iso()
+                self._data["points_users"][claim_user]["points"] = self._data["points_users"][claim_user].get("points", 0) + item_points
+                self._data["points_users"][claim_user]["lifetime_points"] = self._data["points_users"][claim_user].get("lifetime_points", 0) + item_points
+                self._data["points_history"].append({
+                    "id": generate_id()[:8],
+                    "user_id": claim_user,
+                    "user_name": self._data["points_users"][claim_user].get("name", ""),
+                    "amount": item_points,
+                    "reason": f"Completed: {item.get('text', 'item')}",
+                    "item_type": "checklist",
+                    "parent_id": checklist_id,
+                    "item_index": item_index,
+                    "timestamp": now_iso(),
+                })
+                self.hass.bus.async_fire("jottick_points_users_update", {"users": self._data["points_users"]})
+                self.hass.bus.async_fire("jottick_points_history_update", {"history": self._data["points_history"][-50:]})
 
-                checklist["updatedAt"] = now_iso()
-                await self.async_save()
-                if claim_user:
-                    await self.check_auto_achievements(claim_user)
-                return True
-        raise ValueError(f"Checklist {checklist_id} not found")
+        checklist["updatedAt"] = now_iso()
+        await self.async_save()
+        if claim_user:
+            await self.check_auto_achievements(claim_user)
+        return True
 
     async def uncheck_item(self, checklist_id: str, item_index: str) -> bool:
-        for checklist in self._data["checklists"]:
-            if checklist["id"] == checklist_id:
-                target_list, idx = self._get_item_by_index(checklist["items"], item_index)
-                target_list[idx]["completed"] = False
-                checklist["updatedAt"] = now_iso()
-                await self.async_save()
-                return True
-        raise ValueError(f"Checklist {checklist_id} not found")
+        checklist = self._get_checklist(checklist_id)
+        if not checklist:
+            raise ValueError(f"Checklist {checklist_id} not found")
+        target_list, idx = self._get_item_by_index(checklist["items"], item_index)
+        target_list[idx]["completed"] = False
+        checklist["updatedAt"] = now_iso()
+        await self.async_save()
+        return True
     
     async def check_all_items(self, checklist_id: str) -> bool:
         def check_recursive(items):

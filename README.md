@@ -27,8 +27,14 @@ A notes, checklists, task management, calendar and chore/gamification integratio
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 1.5.3 1/12/26
-* **Cleanup, bugfixes and suggestions**
+### New 1.5.4 1/23/26
+* **Tweaks, Security and Bug Fixes**
+* **Refactored mobile device detection** : Now detects devices using battery sensors for friendly name (we will test and see if this excludes any devices) [#10](https://github.com/gelatinescreams/JotTick/issues/10)
+* **Added monthly and quarterly recurring options** [#9](https://github.com/gelatinescreams/JotTick/issues/9)  
+* **Added hide completed items toggle** - Show/hide completed items in lists and tasks [#8](https://github.com/gelatinescreams/JotTick/issues/8)  
+* **Security and performance improvements** : Upload size limits, path sanitization, optimized lookups
+* **+ More [changelog.md](changelog.md)**
+
 * **Added item level recurring resets for individual list and task items +[@mike-kovacs](https://github.com/mike-kovacs)**
 * **Fixed subtask display and type errors from points update +[@mike-kovacs](https://github.com/mike-kovacs)**
 * **Assign dropdown defaults to first user if one exists +[@mike-kovacs](https://github.com/mike-kovacs)**

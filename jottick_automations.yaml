@@ -334,7 +334,11 @@
         configs: "{{ state_attr('sensor.jottick_recurring', 'configs') or {} }}"
         current_time: "{{ now().strftime('%H:%M') }}"
         current_day: "{{ now().strftime('%A') }}"
+        current_dom: "{{ now().day }}"
+        current_month: "{{ now().month }}"
         is_weekday: "{{ current_day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] }}"
+        is_last_day_of_month: "{{ (now() + timedelta(days=1)).day == 1 }}"
+        is_quarterly_month: "{{ current_month in [1, 4, 7, 10] }}"
     - condition: template
       value_template: "{{ configs is mapping and configs | length > 0 }}"
     - repeat:
@@ -345,12 +349,24 @@
               config: "{{ configs[item_id] if configs[repeat.item] is defined else {} }}"
               item_type: "{{ config.type | default('checklist') }}"
               days: "{{ config.days | default('every_day') }}"
+              monthly_day: "{{ config.monthly_day | default(1) | int }}"
               reset_times: "{{ config.reset_times | default([]) if config.reset_times is defined else [] }}"
               should_run_today: >
                 {% if days == 'weekdays' %}
                   {{ is_weekday }}
                 {% elif days == 'weekends' %}
                   {{ not is_weekday }}
+                {% elif days == 'monthly' %}
+                  {{ current_dom | int == monthly_day }}
+                {% elif days == 'monthly_last' %}
+                  {{ is_last_day_of_month }}
+                {% elif days == 'quarterly' %}
+                  {{ is_quarterly_month and current_dom | int == monthly_day }}
+                {% elif days == 'quarterly_last' %}
+                  {{ is_quarterly_month and is_last_day_of_month }}
+                {% elif days.startswith('specific:') %}
+                  {% set specific_days = days.replace('specific:', '').split(',') %}
+                  {{ current_day[:3] in specific_days }}
                 {% else %}
                   true
                 {% endif %}

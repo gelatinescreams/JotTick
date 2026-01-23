@@ -1,6 +1,28 @@
 ### Changelog
 
-### New 1.5.3 : 1/12/26
+### 1.5.4 : 1/23/26
+* **Tweaks, Security and Bug Fixes**
+* **Refactored mobile device detection**
+  * Uses battery_level/battery_state sensors to find registered mobile devices
+  * Displays friendly device names in dropdowns
+  * Currently in testing. Please let me know if any devices are not recognized via this method
+* **Added monthly and quarterly recurring options**
+* **Added hide completed items toggle**
+  * New toggle under "New List" to hide completed list items
+  * New toggle under "New Task List" to hide completed task items
+* **Security improvements**
+  * Added 50MB file size limit for image uploads
+  * Path sanitization for calendar export filenames
+* **Performance improvements**
+  * Added dict indexing for O(1) note/checklist/task lookups
+  * Optimized sensor attribute access
+
+* **Upgrade Information**
+  * Core plugin files changed in 1.5.4, replace them all
+  * Replace all scripts, automations and inputs if you use this method
+  * (Recommended Method) Replace packages/jottick.yaml if using packages
+
+### 1.5.3 : 1/12/26
 * **Added item level recurring resets for individual list and task items**
   * Set recurring reset on any single checklist or task item
   * Independent from whole list/task recurring reset
@@ -17,7 +39,7 @@
   * Replace all scripts, automations and inputs if you use this method
   * (Recommended Method) Replace packages/jottick.yaml if using packages
   
-### New 1.5.2 : 1/08/26
+### 1.5.2 : 1/08/26
 - Version 1.5.2 Added Points and Rewards system for gamification/chores
   - Achievements: Trophies that auto award based on lifetime points. Create achievements with image upload.
   - Rewards/Prizes: Create an awards/prizes store with image upload.
@@ -39,7 +61,7 @@
   - Replace packages/jottick.yaml if using packages
   - If you have uploaded images from the previous version, move them from www/jottick/ to www/community/jottick
 
-### New 1.5.1 12/29/25
+### 1.5.1 12/29/25
   - Added missing automations not transferred from the test install
   - Fixed 5 automations
 - Services created and will be added to dashboard later
@@ -64,7 +86,7 @@
   - Core plugin file(s) are changed in 1.5.1, please replace them all
   - New Automations were added and 4 were updated. Please replace all automations with the new file
   
-### New 12/28/25
+### 12/28/25
 - **Version 1.5** Added calendar support for notes, lists and tasks. [demo here](https://jottick.com)
   - Added iCAL import and export for JotTick
   - Custom calendar dashboard added to JotTick.
@@ -76,7 +98,7 @@
   - Core plugin files are changed in 1.5. Please replace them all
   - Replace all the scripts, automations and inputs. Many have changed and or fixed
 
-### New 12/19/25
+### 12/19/25
 - **Version 1.4** Added Kanban drag and drop dashboard to task lists [demo here](https://jottick.com)
 - **Version 1.3** Assist, reminders and aliases oh my
 - **Natural Language Assist Reminders**: No LLM needed
@@ -87,7 +109,7 @@
   - No core plugin files were changed in 1.3
   - Check all the scripts, automations and inputs. Many have changed.
   
-### New 12/15/25
+### 12/15/25
 - **Version 1.2**
 - **Scheduled Note Sending**: Schedule notes to send to devices
   - Easy Datetime picker
@@ -104,7 +126,7 @@
   - Copy the new jottick_automations.yaml to your automations
   - Copy the new template from jottick_input_helpers to your templates section in configuration 
   
-### New  12/13/25
+###  12/13/25
 - **Version 1.1**
 - Added full assist integration [read more here @ assist_README.md](assist_README.md)
 - Added image uploads to notes

@@ -564,6 +564,16 @@ input_boolean:
     initial: false
     icon: mdi:check-circle
 
+  jottick_hide_completed_list_items:
+    name: "Hide Completed List Items"
+    initial: false
+    icon: mdi:checkbox-marked-outline
+
+  jottick_hide_completed_task_items:
+    name: "Hide Completed Task Items"
+    initial: false
+    icon: mdi:clipboard-check-outline
+
   jottick_show_calendar_event_popup:
     name: "Show Calendar Event Popup"
     initial: false
@@ -686,21 +696,24 @@ template:
         state: "{{ this.attributes.notifiers | default([]) | length }}"
         attributes:
           notifiers: >
-            {% set ns = namespace(services=[]) %}
-            {% for state in states.device_tracker %}
-              {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
-                {% set device_name = state.name | slugify %}
-                {% set service_name = 'notify.mobile_app_' ~ device_name %}
-                {% set ns.services = ns.services + [service_name] %}
+            {% set ns = namespace(services=[], seen=[]) %}
+            {% for s in states.sensor %}
+              {% if s.entity_id.endswith('_battery_level') or s.entity_id.endswith('_battery_state') %}
+                {% set base = s.entity_id | replace('sensor.', '') | replace('_battery_level', '') | replace('_battery_state', '') %}
+                {% if base not in ns.seen %}
+                  {% set ns.services = ns.services + ['notify.mobile_app_' ~ base] %}
+                  {% set ns.seen = ns.seen + [base] %}
+                {% endif %}
               {% endif %}
             {% endfor %}
             {% if ns.services | length == 0 %}
               {% for state in states.device_tracker %}
-                {% set eid = state.entity_id | lower %}
-                {% if 'iphone' in eid or 'phone' in eid or 'pixel' in eid or 'samsung' in eid or 'galaxy' in eid %}
+                {% if state.attributes.source_type is defined and state.attributes.source_type == 'gps' %}
                   {% set device_name = state.object_id %}
-                  {% set service_name = 'notify.mobile_app_' ~ device_name %}
-                  {% set ns.services = ns.services + [service_name] %}
+                  {% if device_name not in ns.seen %}
+                    {% set ns.services = ns.services + ['notify.mobile_app_' ~ device_name] %}
+                    {% set ns.seen = ns.seen + [device_name] %}
+                  {% endif %}
                 {% endif %}
               {% endfor %}
             {% endif %}
