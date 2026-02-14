@@ -1,4 +1,14 @@
 # JotTick Package : All JotTick helpers, automations, and scripts
+
+recorder:
+  exclude:
+    entity_globs:
+      - sensor.jottick_list_*
+      - sensor.jottick_task_*
+      - sensor.jottick_overdue_items
+      - sensor.jottick_calendar_events
+      - sensor.jottick_imported_events
+
 input_text:
 
   jottick_due_date_action_data:
@@ -1313,6 +1323,8 @@ automation:
               item_type: "{{ config.type | default('checklist') }}"
               days: "{{ config.days | default('every_day') }}"
               monthly_day: "{{ config.monthly_day | default(1) | int }}"
+              yearly_month: "{{ config.get('yearly_month', 1) | int }}"
+              yearly_day: "{{ config.get('yearly_day', 1) | int }}"
               reset_times: "{{ config.reset_times | default([]) if config.reset_times is defined else [] }}"
               should_run_today: >
                 {% if days == 'weekdays' %}
@@ -1327,6 +1339,8 @@ automation:
                   {{ is_quarterly_month and current_dom | int == monthly_day }}
                 {% elif days == 'quarterly_last' %}
                   {{ is_quarterly_month and is_last_day_of_month }}
+                {% elif days == 'yearly' %}
+                  {{ current_month | int == yearly_month and current_dom | int == yearly_day }}
                 {% elif days.startswith('specific:') %}
                   {% set specific_days = days.replace('specific:', '').split(',') %}
                   {{ current_day[:3] in specific_days }}
@@ -3066,6 +3080,10 @@ script:
         description: "Comma-separated times like 06:00,14:00"
       monthly_day:
         description: "Day of month for monthly/quarterly (1-28)"
+      yearly_month:
+        description: "Month for yearly recurrence (1-12)"
+      yearly_day:
+        description: "Day for yearly recurrence (1-28)"
       parent_id:
         description: "Parent list/task ID (for item-level recurring)"
       item_index:
@@ -3078,11 +3096,13 @@ script:
       - variables:
           times_list: "{{ reset_times.split(',') | map('trim') | list }}"
           monthly_day_val: "{{ monthly_day | default(1) | int }}"
+          yearly_month_val: "{{ yearly_month | default(1) | int }}"
+          yearly_day_val: "{{ yearly_day | default(1) | int }}"
           new_config: >
             {% if item_type in ['checklist_item', 'task_item'] %}
-              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
+              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'yearly_month': yearly_month_val, 'yearly_day': yearly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
             {% else %}
-              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val} }}
+              {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'yearly_month': yearly_month_val, 'yearly_day': yearly_day_val} }}
             {% endif %}
           safe_configs: "{{ configs if configs is mapping else {} }}"
           updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"

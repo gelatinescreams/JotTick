@@ -350,6 +350,8 @@
               item_type: "{{ config.type | default('checklist') }}"
               days: "{{ config.days | default('every_day') }}"
               monthly_day: "{{ config.monthly_day | default(1) | int }}"
+              yearly_month: "{{ config.get('yearly_month', 1) | int }}"
+              yearly_day: "{{ config.get('yearly_day', 1) | int }}"
               reset_times: "{{ config.reset_times | default([]) if config.reset_times is defined else [] }}"
               should_run_today: >
                 {% if days == 'weekdays' %}
@@ -364,6 +366,8 @@
                   {{ is_quarterly_month and current_dom | int == monthly_day }}
                 {% elif days == 'quarterly_last' %}
                   {{ is_quarterly_month and is_last_day_of_month }}
+                {% elif days == 'yearly' %}
+                  {{ current_month | int == yearly_month and current_dom | int == yearly_day }}
                 {% elif days.startswith('specific:') %}
                   {% set specific_days = days.replace('specific:', '').split(',') %}
                   {{ current_day[:3] in specific_days }}

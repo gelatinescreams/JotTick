@@ -1141,6 +1141,16 @@ views:
                 .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
                 .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
                 .reminder-row select { min-width: 120px; }
+                .custom-times-container { margin-bottom: 8px; }
+                .custom-times-label { margin-bottom: 6px; }
+                .custom-times-label label { font-size: 0.85em; color: var(--secondary-text-color); }
+                .custom-times-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+                .custom-time-row { display: flex; gap: 6px; align-items: center; }
+                .custom-time-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; flex: 1; }
+                .custom-time-remove { width: 28px; height: 28px; padding: 0; background: var(--error-color, #ef4444); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; line-height: 1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .custom-time-remove:hover { opacity: 0.85; }
+                .custom-time-add { padding: 6px 12px; background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; font-size: 0.85em; width: 100%; }
+                .custom-time-add:hover { background: var(--divider-color); }
                 .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
                 .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
                 .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -1271,7 +1281,7 @@ views:
                             <div style="font-size:0.85em;color:var(--success-color);margin-bottom:8px;font-weight:600;">Item Recurring Reset</div>
                             <div style="margin-bottom:8px;">
                               <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                              <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var md=sel.closest('.item-rec-popup').querySelector('.item-monthly-day');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}})(this);">
+                              <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var popup=sel.closest('.item-rec-popup');var md=popup.querySelector('.item-monthly-day');var yr=popup.querySelector('.item-yearly-picker');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'block':'none';}})(this);">
                                 <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                                 <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
                                 <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
@@ -1279,6 +1289,22 @@ views:
                                 <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
                                 <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
                                 <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                                <option value="yearly" {{ 'selected' if item_rec_config.get('days')=='yearly' else '' }}>Yearly</option>
+                              </select>
+                            </div>
+                            <div class="item-yearly-picker" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') == 'yearly' else 'none' }};">
+                              <label style="font-size:0.8em;color:var(--secondary-text-color);">Month:</label>
+                              <select class="item-rec-yearly-month" style="width:100%;padding:4px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                {% for m in range(1, 13) %}
+                                {% set mnames = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                                <option value="{{ m }}" {{ 'selected' if item_rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                                {% endfor %}
+                              </select>
+                              <label style="font-size:0.8em;color:var(--secondary-text-color);">Day:</label>
+                              <select class="item-rec-yearly-day" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                {% for day in range(1, 29) %}
+                                <option value="{{ day }}" {{ 'selected' if item_rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                {% endfor %}
                               </select>
                             </div>
                             <div style="margin-bottom:8px;">
@@ -1286,7 +1312,7 @@ views:
                               <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
                             </div>
                             <div style="display:flex;gap:6px;">
-                              <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
+                              <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;var mdEl=popup.querySelector('.item-rec-monthly-day');var monthlyDay=mdEl?mdEl.value:'1';var ymEl=popup.querySelector('.item-rec-yearly-month');var ydEl=popup.querySelector('.item-rec-yearly-day');var yearlyMonth=ymEl?ymEl.value:'1';var yearlyDay=ydEl?ydEl.value:'1';btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay),parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
                               {% if item_has_recurring %}
                               <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');btn.disabled=true;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}setTimeout(function(){popup.style.display='none';},1000);})(this);">Remove</button>
                               {% endif %}
@@ -1371,7 +1397,7 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                          <select class="rec-days" onchange="(function(sel){var sec=sel.closest('.recurring-section');var md=sec.querySelector('.monthly-day-row');var yr=sec.querySelector('.yearly-picker-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'flex':'none';}})(this);">
                             <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
@@ -1379,6 +1405,7 @@ views:
                             <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
                             <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
                             <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                            <option value="yearly" {{ 'selected' if rec_config.get('days','')=='yearly' else '' }}>Yearly</option>
                           </select>
                         </div>
                         <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
@@ -1389,9 +1416,24 @@ views:
                             {% endfor %}
                           </select>
                         </div>
+                        <div class="reminder-row yearly-picker-row" style="display:{{ 'flex' if rec_config.get('days') == 'yearly' else 'none' }};gap:8px;align-items:center;">
+                          <label>Month:</label>
+                          <select class="rec-yearly-month" style="flex:1;">
+                            {% for m in range(1, 13) %}
+                            {% set mnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+                            <option value="{{ m }}" {{ 'selected' if rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                            {% endfor %}
+                          </select>
+                          <label>Day:</label>
+                          <select class="rec-yearly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
                         <div class="reminder-row">
                           <label>Preset:</label>
-                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                          <select class="rec-preset" onchange="(function(sel){var sec=sel.closest('.recurring-section');var h=sec.querySelector('.rec-times');var c=sec.querySelector('.custom-times-container');if(sel.value!='custom'){h.value=sel.value;c.style.display='none';}else{c.style.display='block';var list=c.querySelector('.custom-times-list');if(!list.querySelector('.custom-time-row')){var vals=h.value?h.value.split(/,\s*/):[];if(vals.length===0)vals=['06:00'];vals.forEach(function(v){var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value=v.trim();inp.onchange=function(){var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(rm);list.appendChild(row);});}};})(this);" style="flex:1;min-width:180px;">
                             <option value="custom">Custom...</option>
                             <optgroup label="Once Daily">
                               <option value="05:00">5:00 AM</option>
@@ -1426,12 +1468,21 @@ views:
                             </optgroup>
                           </select>
                         </div>
-                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
-                          <label>Times:</label>
-                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        <div class="custom-times-container" style="display:{{ 'block' if rec_config.get('reset_times') else 'none' }};">
+                          <input type="hidden" class="rec-times" value="{{ rec_config.get('reset_times', []) | join(', ') }}">
+                          <div class="custom-times-label"><label>Times:</label></div>
+                          <div class="custom-times-list">
+                            {% for t in rec_config.get('reset_times', []) %}
+                            <div class="custom-time-row">
+                              <input type="time" value="{{ t }}" onchange="(function(inp){var c=inp.closest('.custom-times-container');var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">
+                              <button type="button" class="custom-time-remove" onclick="(function(btn){var row=btn.closest('.custom-time-row');var c=btn.closest('.custom-times-container');row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">&times;</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          <button type="button" class="custom-time-add" onclick="(function(btn){var c=btn.closest('.custom-times-container');var list=c.querySelector('.custom-times-list');var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value='12:00';inp.onchange=function(){var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(rm);list.appendChild(row);var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">+ Add Time</button>
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var ym=sec.querySelector('.rec-yearly-month');var yd=sec.querySelector('.rec-yearly-day');var yearlyMonth=ym?ym.value:'1';var yearlyDay=yd?yd.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -1586,6 +1637,16 @@ views:
                 .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
                 .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
                 .reminder-row select { min-width: 120px; }
+                .custom-times-container { margin-bottom: 8px; }
+                .custom-times-label { margin-bottom: 6px; }
+                .custom-times-label label { font-size: 0.85em; color: var(--secondary-text-color); }
+                .custom-times-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+                .custom-time-row { display: flex; gap: 6px; align-items: center; }
+                .custom-time-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; flex: 1; }
+                .custom-time-remove { width: 28px; height: 28px; padding: 0; background: var(--error-color, #ef4444); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; line-height: 1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .custom-time-remove:hover { opacity: 0.85; }
+                .custom-time-add { padding: 6px 12px; background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; font-size: 0.85em; width: 100%; }
+                .custom-time-add:hover { background: var(--divider-color); }
                 .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
                 .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
                 .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -1700,10 +1761,38 @@ views:
                               <div style="font-size:0.85em;color:var(--success-color);margin-bottom:8px;font-weight:600;">Item Recurring Reset</div>
                               <div style="margin-bottom:8px;">
                                 <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                                <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var popup=sel.closest('.item-rec-popup');var md=popup.querySelector('.item-monthly-day');var yr=popup.querySelector('.item-yearly-picker');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'block':'none';}})(this);">
                                   <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                                   <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
                                   <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                                  <option value="monthly" {{ 'selected' if item_rec_config.get('days')=='monthly' else '' }}>Monthly</option>
+                                  <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
+                                  <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
+                                  <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                                  <option value="yearly" {{ 'selected' if item_rec_config.get('days')=='yearly' else '' }}>Yearly</option>
+                                </select>
+                              </div>
+                              <div class="item-monthly-day" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                                <label style="font-size:0.8em;color:var(--secondary-text-color);">Day of month:</label>
+                                <select class="item-rec-monthly-day" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                  {% for day in range(1, 29) %}
+                                  <option value="{{ day }}" {{ 'selected' if item_rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+                              <div class="item-yearly-picker" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') == 'yearly' else 'none' }};">
+                                <label style="font-size:0.8em;color:var(--secondary-text-color);">Month:</label>
+                                <select class="item-rec-yearly-month" style="width:100%;padding:4px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                  {% for m in range(1, 13) %}
+                                  {% set mnames = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                                  <option value="{{ m }}" {{ 'selected' if item_rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                                  {% endfor %}
+                                </select>
+                                <label style="font-size:0.8em;color:var(--secondary-text-color);">Day:</label>
+                                <select class="item-rec-yearly-day" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                  {% for day in range(1, 29) %}
+                                  <option value="{{ day }}" {{ 'selected' if item_rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                  {% endfor %}
                                 </select>
                               </div>
                               <div style="margin-bottom:8px;">
@@ -1711,7 +1800,7 @@ views:
                                 <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
                               </div>
                               <div style="display:flex;gap:6px;">
-                                <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
+                                <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var d=popup.querySelector('.item-rec-days').value;var t=popup.querySelector('.item-rec-time').value;var mdEl=popup.querySelector('.item-rec-monthly-day');var monthlyDay=mdEl?mdEl.value:'1';var ymEl=popup.querySelector('.item-rec-yearly-month');var ydEl=popup.querySelector('.item-rec-yearly-day');var yearlyMonth=ymEl?ymEl.value:'1';var yearlyDay=ydEl?ydEl.value:'1';btn.disabled=true;btn.textContent='...';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'checklist_item',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay),parent_id:'{{ list_id }}',item_index:'{{ index_path }}'});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';popup.style.display='none';},1500);})(this);">Save</button>
                                 {% if item_has_recurring %}
                                 <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');btn.disabled=true;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}setTimeout(function(){popup.style.display='none';},1000);})(this);">Remove</button>
                                 {% endif %}
@@ -1795,7 +1884,7 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                          <select class="rec-days" onchange="(function(sel){var sec=sel.closest('.recurring-section');var md=sec.querySelector('.monthly-day-row');var yr=sec.querySelector('.yearly-picker-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'flex':'none';}})(this);">
                             <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
@@ -1803,6 +1892,7 @@ views:
                             <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
                             <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
                             <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                            <option value="yearly" {{ 'selected' if rec_config.get('days','')=='yearly' else '' }}>Yearly</option>
                           </select>
                         </div>
                         <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
@@ -1813,9 +1903,24 @@ views:
                             {% endfor %}
                           </select>
                         </div>
+                        <div class="reminder-row yearly-picker-row" style="display:{{ 'flex' if rec_config.get('days') == 'yearly' else 'none' }};gap:8px;align-items:center;">
+                          <label>Month:</label>
+                          <select class="rec-yearly-month" style="flex:1;">
+                            {% for m in range(1, 13) %}
+                            {% set mnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+                            <option value="{{ m }}" {{ 'selected' if rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                            {% endfor %}
+                          </select>
+                          <label>Day:</label>
+                          <select class="rec-yearly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
                         <div class="reminder-row">
                           <label>Preset:</label>
-                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                          <select class="rec-preset" onchange="(function(sel){var sec=sel.closest('.recurring-section');var h=sec.querySelector('.rec-times');var c=sec.querySelector('.custom-times-container');if(sel.value!='custom'){h.value=sel.value;c.style.display='none';}else{c.style.display='block';var list=c.querySelector('.custom-times-list');if(!list.querySelector('.custom-time-row')){var vals=h.value?h.value.split(/,\s*/):[];if(vals.length===0)vals=['06:00'];vals.forEach(function(v){var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value=v.trim();inp.onchange=function(){var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(rm);list.appendChild(row);});}};})(this);" style="flex:1;min-width:180px;">
                             <option value="custom">Custom...</option>
                             <optgroup label="Once Daily">
                               <option value="05:00">5:00 AM</option>
@@ -1850,12 +1955,21 @@ views:
                             </optgroup>
                           </select>
                         </div>
-                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
-                          <label>Times:</label>
-                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        <div class="custom-times-container" style="display:{{ 'block' if rec_config.get('reset_times') else 'none' }};">
+                          <input type="hidden" class="rec-times" value="{{ rec_config.get('reset_times', []) | join(', ') }}">
+                          <div class="custom-times-label"><label>Times:</label></div>
+                          <div class="custom-times-list">
+                            {% for t in rec_config.get('reset_times', []) %}
+                            <div class="custom-time-row">
+                              <input type="time" value="{{ t }}" onchange="(function(inp){var c=inp.closest('.custom-times-container');var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">
+                              <button type="button" class="custom-time-remove" onclick="(function(btn){var row=btn.closest('.custom-time-row');var c=btn.closest('.custom-times-container');row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">&times;</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          <button type="button" class="custom-time-add" onclick="(function(btn){var c=btn.closest('.custom-times-container');var list=c.querySelector('.custom-times-list');var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value='12:00';inp.onchange=function(){var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(rm);list.appendChild(row);var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">+ Add Time</button>
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var ym=sec.querySelector('.rec-yearly-month');var yd=sec.querySelector('.rec-yearly-day');var yearlyMonth=ym?ym.value:'1';var yearlyDay=yd?yd.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ list_id }}',item_type:'checklist',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ list_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -2255,8 +2369,18 @@ views:
                 .reminder-section h4 { margin: 0 0 12px 0; color: var(--text-primary-color, #fff); }
                 .reminder-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
                 .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
-                .reminder-row select, .reminder-row input[type="time"], .reminder-row input[type="text"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+                .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
                 .reminder-row select { min-width: 120px; }
+                .custom-times-container { margin-bottom: 8px; }
+                .custom-times-label { margin-bottom: 6px; }
+                .custom-times-label label { font-size: 0.85em; color: var(--secondary-text-color); }
+                .custom-times-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+                .custom-time-row { display: flex; gap: 6px; align-items: center; }
+                .custom-time-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; flex: 1; }
+                .custom-time-remove { width: 28px; height: 28px; padding: 0; background: var(--error-color, #ef4444); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; line-height: 1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .custom-time-remove:hover { opacity: 0.85; }
+                .custom-time-add { padding: 6px 12px; background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; font-size: 0.85em; width: 100%; }
+                .custom-time-add:hover { background: var(--divider-color); }
                 .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
                 .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
                 .reminder-remove-btn { padding: 8px 16px; background: var(--error-color, #ff5555); color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -2383,7 +2507,7 @@ views:
                                 <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Item Recurring Reset</div>
                                 <div style="margin-bottom:8px;">
                                   <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                                  <select class="item-rec-days" style="width:100%;padding:4px;border:1px solid var(--divider-color);border-radius:4px;background:var(--card-background-color);color:var(--secondary-text-color);font-size:0.85em;" onchange="(function(sel){var md=sel.closest('.item-rec-popup').querySelector('.item-monthly-day');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}})(this);">
+                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var popup=sel.closest('.item-rec-popup');var md=popup.querySelector('.item-monthly-day');var yr=popup.querySelector('.item-yearly-picker');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'block':'none';}})(this);">
                                     <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                                     <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
                                     <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
@@ -2391,6 +2515,30 @@ views:
                                     <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
                                     <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
                                     <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                                    <option value="yearly" {{ 'selected' if item_rec_config.get('days')=='yearly' else '' }}>Yearly</option>
+                                  </select>
+                                </div>
+                                <div class="item-monthly-day" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Day of month:</label>
+                                  <select class="item-rec-monthly-day" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for day in range(1, 29) %}
+                                    <option value="{{ day }}" {{ 'selected' if item_rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="item-yearly-picker" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') == 'yearly' else 'none' }};">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Month:</label>
+                                  <select class="item-rec-yearly-month" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for m in range(1, 13) %}
+                                    {% set mnames = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                                    <option value="{{ m }}" {{ 'selected' if item_rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                                    {% endfor %}
+                                  </select>
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Day:</label>
+                                  <select class="item-rec-yearly-day" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for day in range(1, 29) %}
+                                    <option value="{{ day }}" {{ 'selected' if item_rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                    {% endfor %}
                                   </select>
                                 </div>
                                 <div style="margin-bottom:8px;">
@@ -2398,7 +2546,7 @@ views:
                                   <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
                                 </div>
                                 <div style="display:flex;gap:6px;">
-                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var mdEl=popup.querySelector('.item-rec-monthly-day');var monthlyDay=mdEl?mdEl.value:'1';var ymEl=popup.querySelector('.item-rec-yearly-month');var ydEl=popup.querySelector('.item-rec-yearly-day');var yearlyMonth=ymEl?ymEl.value:'1';var yearlyDay=ydEl?ydEl.value:'1';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay),parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
                                   <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove recurring?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}btn.closest('.item-rec-popup').style.display='none';}})(this);">Remove</button>
                                 </div>
                               </div>
@@ -2515,7 +2663,7 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                          <select class="rec-days" onchange="(function(sel){var sec=sel.closest('.recurring-section');var md=sec.querySelector('.monthly-day-row');var yr=sec.querySelector('.yearly-picker-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'flex':'none';}})(this);">
                             <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
@@ -2523,6 +2671,7 @@ views:
                             <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
                             <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
                             <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                            <option value="yearly" {{ 'selected' if rec_config.get('days','')=='yearly' else '' }}>Yearly</option>
                           </select>
                         </div>
                         <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
@@ -2533,9 +2682,24 @@ views:
                             {% endfor %}
                           </select>
                         </div>
+                        <div class="reminder-row yearly-picker-row" style="display:{{ 'flex' if rec_config.get('days') == 'yearly' else 'none' }};gap:8px;align-items:center;">
+                          <label>Month:</label>
+                          <select class="rec-yearly-month" style="flex:1;">
+                            {% for m in range(1, 13) %}
+                            {% set mnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+                            <option value="{{ m }}" {{ 'selected' if rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                            {% endfor %}
+                          </select>
+                          <label>Day:</label>
+                          <select class="rec-yearly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
                         <div class="reminder-row">
                           <label>Preset:</label>
-                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                          <select class="rec-preset" onchange="(function(sel){var sec=sel.closest('.recurring-section');var h=sec.querySelector('.rec-times');var c=sec.querySelector('.custom-times-container');if(sel.value!='custom'){h.value=sel.value;c.style.display='none';}else{c.style.display='block';var list=c.querySelector('.custom-times-list');if(!list.querySelector('.custom-time-row')){var vals=h.value?h.value.split(/,\s*/):[];if(vals.length===0)vals=['06:00'];vals.forEach(function(v){var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value=v.trim();inp.onchange=function(){var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(rm);list.appendChild(row);});}};})(this);" style="flex:1;min-width:180px;">
                             <option value="custom">Custom...</option>
                             <optgroup label="Once Daily">
                               <option value="05:00">5:00 AM</option>
@@ -2570,12 +2734,21 @@ views:
                             </optgroup>
                           </select>
                         </div>
-                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
-                          <label>Times:</label>
-                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        <div class="custom-times-container" style="display:{{ 'block' if rec_config.get('reset_times') else 'none' }};">
+                          <input type="hidden" class="rec-times" value="{{ rec_config.get('reset_times', []) | join(', ') }}">
+                          <div class="custom-times-label"><label>Times:</label></div>
+                          <div class="custom-times-list">
+                            {% for t in rec_config.get('reset_times', []) %}
+                            <div class="custom-time-row">
+                              <input type="time" value="{{ t }}" onchange="(function(inp){var c=inp.closest('.custom-times-container');var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">
+                              <button type="button" class="custom-time-remove" onclick="(function(btn){var row=btn.closest('.custom-time-row');var c=btn.closest('.custom-times-container');row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">&times;</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          <button type="button" class="custom-time-add" onclick="(function(btn){var c=btn.closest('.custom-times-container');var list=c.querySelector('.custom-times-list');var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value='12:00';inp.onchange=function(){var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(rm);list.appendChild(row);var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">+ Add Time</button>
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var ym=sec.querySelector('.rec-yearly-month');var yd=sec.querySelector('.rec-yearly-day');var yearlyMonth=ym?ym.value:'1';var yearlyDay=yd?yd.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>
@@ -2633,6 +2806,16 @@ views:
                 .reminder-row label { font-size: 0.85em; color: var(--secondary-text-color); min-width: 50px; }
                 .reminder-row select, .reminder-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; }
                 .reminder-row select { min-width: 120px; }
+                .custom-times-container { margin-bottom: 8px; }
+                .custom-times-label { margin-bottom: 6px; }
+                .custom-times-label label { font-size: 0.85em; color: var(--secondary-text-color); }
+                .custom-times-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+                .custom-time-row { display: flex; gap: 6px; align-items: center; }
+                .custom-time-row input[type="time"] { padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 0.9em; flex: 1; }
+                .custom-time-remove { width: 28px; height: 28px; padding: 0; background: var(--error-color, #ef4444); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; line-height: 1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .custom-time-remove:hover { opacity: 0.85; }
+                .custom-time-add { padding: 6px 12px; background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; font-size: 0.85em; width: 100%; }
+                .custom-time-add:hover { background: var(--divider-color); }
                 .reminder-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--primary-color-translucent, rgba(156,39,176,0.2)); }
                 .reminder-save-btn { padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
                 .reminder-remove-btn { padding: 8px 16px; background: var(--error-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -2785,10 +2968,38 @@ views:
                                 <div style="font-size:0.85em;color:var(--secondary-text-color);margin-bottom:8px;">Item Recurring Reset</div>
                                 <div style="margin-bottom:8px;">
                                   <label style="font-size:0.8em;color:var(--secondary-text-color);">Days:</label>
-                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
-                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
-                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
+                                  <select class="item-rec-days" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;" onchange="(function(sel){var popup=sel.closest('.item-rec-popup');var md=popup.querySelector('.item-monthly-day');var yr=popup.querySelector('.item-yearly-picker');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'block':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'block':'none';}})(this);">
                                     <option value="every_day" {{ 'selected' if item_rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
+                                    <option value="weekdays" {{ 'selected' if item_rec_config.get('days')=='weekdays' else '' }}>Weekdays</option>
+                                    <option value="weekends" {{ 'selected' if item_rec_config.get('days')=='weekends' else '' }}>Weekends</option>
+                                    <option value="monthly" {{ 'selected' if item_rec_config.get('days')=='monthly' else '' }}>Monthly</option>
+                                    <option value="monthly_last" {{ 'selected' if item_rec_config.get('days')=='monthly_last' else '' }}>Monthly (last day)</option>
+                                    <option value="quarterly" {{ 'selected' if item_rec_config.get('days')=='quarterly' else '' }}>Quarterly</option>
+                                    <option value="quarterly_last" {{ 'selected' if item_rec_config.get('days')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                                    <option value="yearly" {{ 'selected' if item_rec_config.get('days')=='yearly' else '' }}>Yearly</option>
+                                  </select>
+                                </div>
+                                <div class="item-monthly-day" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Day of month:</label>
+                                  <select class="item-rec-monthly-day" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for day in range(1, 29) %}
+                                    <option value="{{ day }}" {{ 'selected' if item_rec_config.get('monthly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="item-yearly-picker" style="margin-bottom:8px;display:{{ 'block' if item_rec_config.get('days') == 'yearly' else 'none' }};">
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Month:</label>
+                                  <select class="item-rec-yearly-month" style="width:100%;padding:6px;margin-bottom:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for m in range(1, 13) %}
+                                    {% set mnames = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                                    <option value="{{ m }}" {{ 'selected' if item_rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                                    {% endfor %}
+                                  </select>
+                                  <label style="font-size:0.8em;color:var(--secondary-text-color);">Day:</label>
+                                  <select class="item-rec-yearly-day" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
+                                    {% for day in range(1, 29) %}
+                                    <option value="{{ day }}" {{ 'selected' if item_rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                                    {% endfor %}
                                   </select>
                                 </div>
                                 <div style="margin-bottom:8px;">
@@ -2796,7 +3007,7 @@ views:
                                   <input type="time" class="item-rec-time" value="{{ item_rec_config.get('reset_times', ['06:00'])[0] if item_rec_config.get('reset_times') else '06:00' }}" style="width:100%;padding:6px;border:1px solid var(--divider-color);border-radius:4px;background:var(--secondary-background-color);color:var(--primary-text-color);font-size:0.85em;">
                                 </div>
                                 <div style="display:flex;gap:6px;">
-                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
+                                  <button style="flex:1;padding:6px;background:var(--success-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){var popup=btn.closest('.item-rec-popup');var days=popup.querySelector('.item-rec-days').value;var time=popup.querySelector('.item-rec-time').value;var mdEl=popup.querySelector('.item-rec-monthly-day');var monthlyDay=mdEl?mdEl.value:'1';var ymEl=popup.querySelector('.item-rec-yearly-month');var ydEl=popup.querySelector('.item-rec-yearly-day');var yearlyMonth=ymEl?ymEl.value:'1';var yearlyDay=ydEl?ydEl.value:'1';var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_save_recurring',{item_id:'{{ item_rec_key }}',item_type:'task_item',days:days,reset_times:time,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay),parent_id:'{{ task_id }}',item_index:'{{ index_path }}'});}popup.style.display='none';})(this);">Save</button>
                                   <button style="flex:1;padding:6px;background:var(--error-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.8em;" onclick="(function(btn){if(confirm('Remove recurring?')){var ha=document.querySelector('home-assistant');if(ha&&ha.hass){ha.hass.callService('script','jottick_remove_recurring',{item_id:'{{ item_rec_key }}'});}btn.closest('.item-rec-popup').style.display='none';}})(this);">Remove</button>
                                 </div>
                               </div>
@@ -2913,7 +3124,7 @@ views:
                         <h4>Daily Reset</h4>
                         <div class="reminder-row">
                           <label>Days:</label>
-                          <select class="rec-days" onchange="(function(sel){var md=sel.closest('.recurring-section').querySelector('.monthly-day-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}})(this);">
+                          <select class="rec-days" onchange="(function(sel){var sec=sel.closest('.recurring-section');var md=sec.querySelector('.monthly-day-row');var yr=sec.querySelector('.yearly-picker-row');if(md){md.style.display=(sel.value=='monthly'||sel.value=='quarterly')?'flex':'none';}if(yr){yr.style.display=(sel.value=='yearly')?'flex':'none';}})(this);">
                             <option value="every_day" {{ 'selected' if rec_config.get('days','every_day')=='every_day' else '' }}>Every day</option>
                             <option value="weekdays" {{ 'selected' if rec_config.get('days','every_day')=='weekdays' else '' }}>Weekdays</option>
                             <option value="weekends" {{ 'selected' if rec_config.get('days','every_day')=='weekends' else '' }}>Weekends</option>
@@ -2921,6 +3132,7 @@ views:
                             <option value="monthly_last" {{ 'selected' if rec_config.get('days','')=='monthly_last' else '' }}>Monthly (last day)</option>
                             <option value="quarterly" {{ 'selected' if rec_config.get('days','')=='quarterly' else '' }}>Quarterly (Jan/Apr/Jul/Oct)</option>
                             <option value="quarterly_last" {{ 'selected' if rec_config.get('days','')=='quarterly_last' else '' }}>Quarterly (last day)</option>
+                            <option value="yearly" {{ 'selected' if rec_config.get('days','')=='yearly' else '' }}>Yearly</option>
                           </select>
                         </div>
                         <div class="reminder-row monthly-day-row" style="display:{{ 'flex' if rec_config.get('days') in ['monthly','quarterly'] else 'none' }};">
@@ -2931,9 +3143,24 @@ views:
                             {% endfor %}
                           </select>
                         </div>
+                        <div class="reminder-row yearly-picker-row" style="display:{{ 'flex' if rec_config.get('days') == 'yearly' else 'none' }};gap:8px;align-items:center;">
+                          <label>Month:</label>
+                          <select class="rec-yearly-month" style="flex:1;">
+                            {% for m in range(1, 13) %}
+                            {% set mnames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+                            <option value="{{ m }}" {{ 'selected' if rec_config.get('yearly_month', 1)|int == m else '' }}>{{ mnames[m-1] }}</option>
+                            {% endfor %}
+                          </select>
+                          <label>Day:</label>
+                          <select class="rec-yearly-day" style="flex:1;">
+                            {% for day in range(1, 29) %}
+                            <option value="{{ day }}" {{ 'selected' if rec_config.get('yearly_day', 1)|int == day else '' }}>{{ day }}{{ 'st' if day == 1 else ('nd' if day == 2 else ('rd' if day == 3 else 'th')) }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
                         <div class="reminder-row">
                           <label>Preset:</label>
-                          <select class="rec-preset" onchange="(function(sel){var t=sel.closest('.recurring-section').querySelector('.rec-times');if(sel.value!='custom'){t.value=sel.value;}t.style.display=sel.value=='custom'?'block':'none';})(this);" style="flex:1;min-width:180px;">
+                          <select class="rec-preset" onchange="(function(sel){var sec=sel.closest('.recurring-section');var h=sec.querySelector('.rec-times');var c=sec.querySelector('.custom-times-container');if(sel.value!='custom'){h.value=sel.value;c.style.display='none';}else{c.style.display='block';var list=c.querySelector('.custom-times-list');if(!list.querySelector('.custom-time-row')){var vals=h.value?h.value.split(/,\s*/):[];if(vals.length===0)vals=['06:00'];vals.forEach(function(v){var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value=v.trim();inp.onchange=function(){var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var hh=c.querySelector('.rec-times');var vv=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vv.push(i.value);});hh.value=vv.join(', ');};row.appendChild(rm);list.appendChild(row);});}};})(this);" style="flex:1;min-width:180px;">
                             <option value="custom">Custom...</option>
                             <optgroup label="Once Daily">
                               <option value="05:00">5:00 AM</option>
@@ -2968,12 +3195,21 @@ views:
                             </optgroup>
                           </select>
                         </div>
-                        <div class="reminder-row" style="display:{{ 'flex' if rec_config.get('reset_times') else 'none' }};">
-                          <label>Times:</label>
-                          <input type="text" class="rec-times" placeholder="06:00, 14:00" value="{{ rec_config.get('reset_times', []) | join(', ') }}" style="flex:1;min-width:150px;">
+                        <div class="custom-times-container" style="display:{{ 'block' if rec_config.get('reset_times') else 'none' }};">
+                          <input type="hidden" class="rec-times" value="{{ rec_config.get('reset_times', []) | join(', ') }}">
+                          <div class="custom-times-label"><label>Times:</label></div>
+                          <div class="custom-times-list">
+                            {% for t in rec_config.get('reset_times', []) %}
+                            <div class="custom-time-row">
+                              <input type="time" value="{{ t }}" onchange="(function(inp){var c=inp.closest('.custom-times-container');var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">
+                              <button type="button" class="custom-time-remove" onclick="(function(btn){var row=btn.closest('.custom-time-row');var c=btn.closest('.custom-times-container');row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">&times;</button>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          <button type="button" class="custom-time-add" onclick="(function(btn){var c=btn.closest('.custom-times-container');var list=c.querySelector('.custom-times-list');var row=document.createElement('div');row.className='custom-time-row';var inp=document.createElement('input');inp.type='time';inp.value='12:00';inp.onchange=function(){var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(inp);var rm=document.createElement('button');rm.type='button';rm.className='custom-time-remove';rm.textContent='\u00d7';rm.onclick=function(){row.remove();var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');};row.appendChild(rm);list.appendChild(row);var h=c.querySelector('.rec-times');var vals=[];c.querySelectorAll('.custom-time-row input[type=time]').forEach(function(i){if(i.value)vals.push(i.value);});h.value=vals.join(', ');})(this);">+ Add Time</button>
                         </div>
                         <div class="reminder-actions">
-                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
+                          <button class="reminder-save-btn" style="background:var(--success-color);" onclick="(function(btn){var sec=btn.closest('.recurring-section');var d=sec.querySelector('.rec-days').value;var md=sec.querySelector('.rec-monthly-day');var monthlyDay=md?md.value:'1';var ym=sec.querySelector('.rec-yearly-month');var yd=sec.querySelector('.rec-yearly-day');var yearlyMonth=ym?ym.value:'1';var yearlyDay=yd?yd.value:'1';var preset=sec.querySelector('.rec-preset').value;var timesInput=sec.querySelector('.rec-times');var t=preset!='custom'?preset:timesInput.value;if(!t.trim()){alert('Select a preset or enter custom times');return;}btn.disabled=true;btn.textContent='Saving...';const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_save_recurring',{item_id:'{{ task_id }}',item_type:'task',days:d,reset_times:t,monthly_day:parseInt(monthlyDay),yearly_month:parseInt(yearlyMonth),yearly_day:parseInt(yearlyDay)});}setTimeout(function(){btn.disabled=false;btn.textContent='Save';sec.classList.remove('show');},1500);})(this);">Save</button>
                           <button class="reminder-remove-btn" onclick="(function(btn){if(!confirm('Remove recurring reset?'))return;btn.disabled=true;const el=document.querySelector('home-assistant');if(el&&el.hass){el.hass.callService('script','jottick_remove_recurring',{item_id:'{{ task_id }}'});}var sec=btn.closest('.recurring-section');setTimeout(function(){sec.classList.remove('show');},1000);})(this);">Remove</button>
                         </div>
                       </div>

@@ -1204,6 +1204,10 @@ jottick_save_recurring:
       description: "Comma-separated times like 06:00,14:00"
     monthly_day:
       description: "Day of month for monthly/quarterly (1-28)"
+    yearly_month:
+      description: "Month for yearly recurrence (1-12)"
+    yearly_day:
+      description: "Day for yearly recurrence (1-28)"
     parent_id:
       description: "Parent list/task ID (for item-level recurring)"
     item_index:
@@ -1216,11 +1220,13 @@ jottick_save_recurring:
     - variables:
         times_list: "{{ reset_times.split(',') | map('trim') | list }}"
         monthly_day_val: "{{ monthly_day | default(1) | int }}"
+        yearly_month_val: "{{ yearly_month | default(1) | int }}"
+        yearly_day_val: "{{ yearly_day | default(1) | int }}"
         new_config: >
           {% if item_type in ['checklist_item', 'task_item'] %}
-            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'yearly_month': yearly_month_val, 'yearly_day': yearly_day_val, 'parent_id': parent_id, 'item_index': item_index} }}
           {% else %}
-            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val} }}
+            {{ {'type': item_type, 'days': days, 'reset_times': times_list, 'monthly_day': monthly_day_val, 'yearly_month': yearly_month_val, 'yearly_day': yearly_day_val} }}
           {% endif %}
         safe_configs: "{{ configs if configs is mapping else {} }}"
         updated_configs: "{{ dict(safe_configs, **{item_id: new_config}) }}"

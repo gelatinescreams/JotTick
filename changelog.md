@@ -1,5 +1,20 @@
 ### Changelog
 
+### 1.5.5 : 2/13/26
+* **Added yearly/annual recurring option**
+  * New yearly option added to all list level and item level recurring dropdowns
+  * Month and day picker for setting exact yearly date (birthdays, home maintenance, etc)
+* **Fixed 3 item level recurring dropdowns missing monthly/quarterly options**
+* **Added Home Assistant recorder exclusions**
+  * Excludes large JotTick sensors from the recorder database to prevent bloat
+  * Applies to list, task, overdue, calendar and imported event sensors
+  * This was an edge case for very large lists and notifications
+
+* **Upgrade Information**
+  * Core plugin files changed in 1.5.5, replace them all
+  * Replace all scripts, automations and inputs if you use this method
+  * (Recommended Method) Replace packages/jottick.yaml if using packages
+
 ### 1.5.4 : 1/23/26
 * **Tweaks, Security and Bug Fixes**
 * **Refactored mobile device detection**
