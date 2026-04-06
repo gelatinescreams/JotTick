@@ -8,6 +8,9 @@ recorder:
       - sensor.jottick_overdue_items
       - sensor.jottick_calendar_events
       - sensor.jottick_imported_events
+    entities:
+      - input_boolean.jottick_calendar_show_task_created
+      - input_boolean.jottick_calendar_show_task_edited
 
 input_text:
 
@@ -209,6 +212,16 @@ input_text:
     max: 20
     icon: mdi:palette
 
+  jottick_calendar_color_task_created:
+    name: JotTick Calendar Color Task Created
+    initial: '#4fc3f7'
+    max: 255
+    icon: mdi:palette
+  jottick_calendar_color_task_edited:
+    name: JotTick Calendar Color Task Edited
+    initial: '#81c784'
+    max: 255
+    icon: mdi:palette
   jottick_calendar_color_task_due:
     name: "Calendar Color - Task Due"
     initial: "#F9E900"
@@ -547,6 +560,14 @@ input_boolean:
     initial: true
     icon: mdi:calendar-check
 
+  jottick_calendar_show_task_created:
+    name: JotTick Calendar Show Task Created
+    initial: true
+    icon: mdi:checkbox-marked-circle
+  jottick_calendar_show_task_edited:
+    name: JotTick Calendar Show Task Edited
+    initial: true
+    icon: mdi:checkbox-marked-circle
   jottick_calendar_show_task_due:
     name: "Show Task Due Dates"
     initial: true
@@ -1877,6 +1898,8 @@ automation:
     - input_boolean.jottick_calendar_show_list_created
     - input_boolean.jottick_calendar_show_list_edited
     - input_boolean.jottick_calendar_show_list_due
+    - input_boolean.jottick_calendar_show_task_created
+    - input_boolean.jottick_calendar_show_task_edited
     - input_boolean.jottick_calendar_show_task_due
     - input_boolean.jottick_calendar_show_imported
     - input_boolean.jottick_calendar_show_overdue
@@ -1887,6 +1910,8 @@ automation:
     - input_text.jottick_calendar_color_list_created
     - input_text.jottick_calendar_color_list_edited
     - input_text.jottick_calendar_color_list_due
+    - input_text.jottick_calendar_color_task_created
+    - input_text.jottick_calendar_color_task_edited
     - input_text.jottick_calendar_color_task_due
     - input_text.jottick_calendar_color_task_overdue
     - input_text.jottick_calendar_color_completed

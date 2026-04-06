@@ -1,5 +1,25 @@
 ### Changelog
 
+### 1.5.6 : 4/6/26
+* **Added specific day selection for recurring resets**
+  * New "Specific days" option added to all list level and item level recurring dropdowns
+  * Pick individual days of the week (Mon, Tue, Wed, etc) for any recurring reset
+  * Works on checklists, tasks, and individual items across standard and kanban views
+* **Added task created/edited calendar toggles and color pickers**
+  * Task created and edited events now have their own independent show/hide toggles
+  * Customizable colors for task created and edited events in calendar settings
+* **Fixed task calendar events using wrong visibility toggles**
+  * Task created/edited events were incorrectly controlled by the list created/edited toggles
+* **Fixed task calendar event colors were hardcoded**
+  * Task created/edited colors now use the same configurable color system as all other event types
+* **Replaced bare exception handlers in core plugin**
+  * All silent catch all exception handlers now use specific exception types (sorry to the logger!)
+
+* **Upgrade Information**
+  * Core plugin files changed in 1.5.6, replace them all
+  * Replace all scripts, automations and inputs if you use this method
+  * (Recommended Method) Replace packages/jottick.yaml if using packages
+
 ### 1.5.5 : 2/13/26
 * **Added yearly/annual recurring option**
   * New yearly option added to all list level and item level recurring dropdowns

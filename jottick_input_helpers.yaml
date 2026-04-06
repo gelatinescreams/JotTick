@@ -206,6 +206,16 @@ input_text:
     max: 20
     icon: mdi:palette
 
+  jottick_calendar_color_task_created:
+    name: JotTick Calendar Color Task Created
+    initial: '#4fc3f7'
+    max: 255
+    icon: mdi:palette
+  jottick_calendar_color_task_edited:
+    name: JotTick Calendar Color Task Edited
+    initial: '#81c784'
+    max: 255
+    icon: mdi:palette
   jottick_calendar_color_task_due:
     name: "Calendar Color - Task Due"
     initial: "#F9E900"
@@ -544,6 +554,14 @@ input_boolean:
     initial: true
     icon: mdi:calendar-check
 
+  jottick_calendar_show_task_created:
+    name: JotTick Calendar Show Task Created
+    initial: true
+    icon: mdi:checkbox-marked-circle
+  jottick_calendar_show_task_edited:
+    name: JotTick Calendar Show Task Edited
+    initial: true
+    icon: mdi:checkbox-marked-circle
   jottick_calendar_show_task_due:
     name: "Show Task Due Dates"
     initial: true

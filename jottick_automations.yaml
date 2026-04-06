@@ -904,6 +904,8 @@
     - input_boolean.jottick_calendar_show_list_created
     - input_boolean.jottick_calendar_show_list_edited
     - input_boolean.jottick_calendar_show_list_due
+    - input_boolean.jottick_calendar_show_task_created
+    - input_boolean.jottick_calendar_show_task_edited
     - input_boolean.jottick_calendar_show_task_due
     - input_boolean.jottick_calendar_show_imported
     - input_boolean.jottick_calendar_show_overdue

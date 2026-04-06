@@ -1793,7 +1793,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                         if os.path.exists(full_path):
                             try:
                                 os.remove(full_path)
-                            except:
+                            except Exception:
                                 pass
 
                 del achievements[i]
@@ -2189,7 +2189,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                         until_date = datetime.strptime(until, "%Y%m%d")
                     elif len(until) >= 15:
                         until_date = datetime.strptime(until[:15], "%Y%m%dT%H%M%S")
-                except:
+                except Exception:
                     pass
 
             day_map = {'MO': 0, 'TU': 1, 'WE': 2, 'TH': 3, 'FR': 4, 'SA': 5, 'SU': 6}
@@ -2368,7 +2368,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,Note,Created",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
                 
                 if updated and updated != created:
@@ -2385,7 +2385,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,Note,Edited",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
         
         if include_lists:
@@ -2407,7 +2407,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,List,Created",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
                 
                 if updated and updated != created:
@@ -2424,7 +2424,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,List,Edited",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
                 
                 self._export_items_due_dates(lines, checklist.get("items", []), checklist, "list", now_stamp)
@@ -2448,7 +2448,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,Task,Created",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
                 
                 if updated and updated != created:
@@ -2465,7 +2465,7 @@ class JotTickCoordinator(DataUpdateCoordinator):
                             "CATEGORIES:JotTick,Task,Edited",
                             "END:VEVENT",
                         ])
-                    except:
+                    except Exception:
                         pass
                 
                 self._export_items_due_dates(lines, task.get("items", []), task, "task", now_stamp)

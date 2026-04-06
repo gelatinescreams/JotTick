@@ -7,7 +7,9 @@
 <i>Jot notes. Tick tasks. Sync calendars. Get Notified. Simple. Now with gamification.</i>
 </p>
 
-A notes, checklists, task management, calendar and chore/gamification integration for Home Assistant. Includes iCal support, per device and list notification controls along with powerful recurring list functionality. ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
+A notes, checklists, task management, calendar and chore/gamification integration for Home Assistant. Includes iCal support, per device and list notification controls along with powerful recurring list functionality.
+
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12+-blue)
 
 ###### Notes Preview
 ![Notes Preview](assets/notes-preview.gif)
@@ -27,10 +29,11 @@ A notes, checklists, task management, calendar and chore/gamification integratio
 ### Demo
 [Test drive the features at JotTick.com](https://jottick.com)
 
-### New 1.5.5 2/13/26
-* **Added yearly/annual recurring option** : Set recurring resets on a yearly schedule with month and day picker. Perfect for birthdays, home maintenance, etc. Thanks to [@clsom](https://github.com/clsom) [@12](https://github.com/gelatinescreams/JotTick/discussions/12)
-* **Fixed item recurring dropdowns were missing monthly/quarterly options**
-* **Added Home Assistant recorder exclusions** : Prevents large JotTick sensors from bloating the recorder database : fixes 16kb edge cases for stacked notifications
+### New 1.5.6 4/6/26
+* **Added specific day selection for recurring resets** : Pick individual days (Mon, Tue, Wed, etc) for any recurring reset on lists, tasks and individual items. Thanks to [@PascalB87](https://github.com/PascalB87) [@2](https://github.com/gelatinescreams/JotTick/discussions/2)
+* **Added task created/edited calendar toggles and color pickers** : Task created and edited events now have their own show/hide toggles and customizable colors in calendar settings
+* **Fixed task calendar events using wrong toggles** : Task created/edited events were incorrectly tied to list toggles instead of their own
+* **Fixed a system logging bug**
 * **+ More [changelog.md](changelog.md)**
 
 ### Notes

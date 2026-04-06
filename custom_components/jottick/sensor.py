@@ -557,6 +557,8 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
         show_note_reminders = self._get_toggle('input_boolean.jottick_calendar_show_note_reminders', True)
         show_list_created = self._get_toggle('input_boolean.jottick_calendar_show_list_created', True)
         show_list_edited = self._get_toggle('input_boolean.jottick_calendar_show_list_edited', True)
+        show_task_created = self._get_toggle('input_boolean.jottick_calendar_show_task_created', True)
+        show_task_edited = self._get_toggle('input_boolean.jottick_calendar_show_task_edited', True)
         show_list_due = self._get_toggle('input_boolean.jottick_calendar_show_list_due', True)
         show_task_due = self._get_toggle('input_boolean.jottick_calendar_show_task_due', True)
         show_imported = self._get_toggle('input_boolean.jottick_calendar_show_imported', True)
@@ -568,8 +570,8 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
         color_list_created = self._get_color('input_text.jottick_calendar_color_list_created', 'list_created')
         color_list_edited = self._get_color('input_text.jottick_calendar_color_list_edited', 'list_edited')
         color_list_due = self._get_color('input_text.jottick_calendar_color_list_due', 'list_due')
-        color_task_created = self._colors['task_created']
-        color_task_edited = self._colors['task_edited']
+        color_task_created = self._get_color('input_text.jottick_calendar_color_task_created', 'task_created')
+        color_task_edited = self._get_color('input_text.jottick_calendar_color_task_edited', 'task_edited')
         color_task_due = self._get_color('input_text.jottick_calendar_color_task_due', 'task_due')
         color_overdue = self._get_color('input_text.jottick_calendar_color_task_overdue', 'overdue')
         color_completed = self._get_color('input_text.jottick_calendar_color_completed', 'completed')
@@ -696,7 +698,7 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
             created = task.get("createdAt", "")
             updated = task.get("updatedAt", "")
             items = task.get("items", [])
-            if show_list_created and created:
+            if show_task_created and created:
                 cdate = created[:10]
                 self._add_event(events, cdate, {
                     'type': 'task_created',
@@ -706,7 +708,7 @@ class JotTickCalendarEventsSensor(CoordinatorEntity, SensorEntity):
                     'item_id': task_id,
                     'item_type': 'task'
                 })
-            if show_list_edited and updated and created and updated[:10] != created[:10]:
+            if show_task_edited and updated and created and updated[:10] != created[:10]:
                 udate = updated[:10]
                 self._add_event(events, udate, {
                     'type': 'task_edited',
